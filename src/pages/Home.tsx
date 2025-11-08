@@ -2,7 +2,7 @@ function Home() {
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold text-gray-900">
-        Welcome to Yeboc Tongkidari CMS
+        Welcome to Yeboc Tongkidari CMS 123
       </h1>
       <p className="text-lg text-gray-600">
         A modern React application built with Vite, TypeScript, React Router, and Tailwind CSS.
