@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CURRICULUM_GROUPS, GRADES } from '../constants/tableConfig';
+import {
+  CURRICULUM_GROUPS,
+  GRADES,
+  getCurriculumByYearAndGrade,
+  type Grade,
+} from '../constants/tableConfig';
 
 function CategoryPage() {
   const { categoryName } = useParams<{ categoryName: string }>();
@@ -11,7 +16,7 @@ function CategoryPage() {
     Array.from({ length: group.endYear - group.startYear + 1 }, (_, i) => group.startYear + i),
   );
 
-  // 특정 연도가 어느 교육과정에 속하는지 찾기
+  // 특정 연도가 어느 교육과정에 속하는지 찾기 (헤더 색상용)
   const getCurriculumGroup = (year: number) => {
     return CURRICULUM_GROUPS.find((group) => year >= group.startYear && year <= group.endYear);
   };
@@ -21,9 +26,10 @@ function CategoryPage() {
   const handleCellClick = (grade: string, year: number) => {
     setSelectedCell({ grade, year });
 
-    const curriculum = getCurriculumGroup(year);
+    // 연도와 학년에 따라 정확한 교육과정 결정
+    const curriculum = getCurriculumByYearAndGrade(year, grade as Grade);
     const queryParams = new URLSearchParams({
-      curriculum: curriculum?.name || '',
+      curriculum,
       target: grade,
       year: year.toString(),
       category: categoryName || '',
@@ -34,6 +40,13 @@ function CategoryPage() {
 
   const isCellSelected = (grade: string, year: number) => {
     return selectedCell?.grade === grade && selectedCell?.year === year;
+  };
+
+  // 셀의 교육과정 배경색 가져오기
+  const getCellBgColor = (year: number, grade: string) => {
+    const curriculum = getCurriculumByYearAndGrade(year, grade as Grade);
+    const group = CURRICULUM_GROUPS.find((g) => g.name === curriculum);
+    return group?.bgColor || 'bg-gray-50';
   };
 
   return (
@@ -80,23 +93,28 @@ function CategoryPage() {
           </thead>
           <tbody>
             {GRADES.map((grade) => (
-              <tr key={grade} className="hover:bg-gray-50">
+              <tr key={grade}>
                 <td className="px-6 py-4 text-sm font-medium text-gray-900 border-b border-r border-gray-200 bg-gray-50">
                   {grade}
                 </td>
-                {allYears.map((year) => (
-                  <td
-                    key={year}
-                    onClick={() => handleCellClick(grade, year)}
-                    className={`px-6 py-4 text-sm text-center border-b border-gray-200 cursor-pointer transition-colors ${
-                      isCellSelected(grade, year)
-                        ? 'bg-blue-200 text-gray-900 font-semibold'
-                        : 'text-gray-700 hover:bg-blue-100'
-                    }`}
-                  >
-                    -
-                  </td>
-                ))}
+                {allYears.map((year) => {
+                  const bgColor = getCellBgColor(year, grade);
+                  const isSelected = isCellSelected(grade, year);
+
+                  return (
+                    <td
+                      key={year}
+                      onClick={() => handleCellClick(grade, year)}
+                      className={`px-6 py-4 text-sm text-center border-b border-gray-200 cursor-pointer transition-colors ${bgColor} ${
+                        isSelected
+                          ? 'ring-2 ring-inset ring-gray-900 font-semibold'
+                          : 'hover:brightness-95'
+                      }`}
+                    >
+                      -
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

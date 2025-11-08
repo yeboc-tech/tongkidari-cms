@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
-import About from './pages/About'
 import CategoryPage from './pages/CategoryPage'
 import SubjectPage from './pages/SubjectPage'
 
@@ -30,12 +29,6 @@ function App() {
                 >
                   과학
                 </Link>
-                <Link
-                  to="/about"
-                  className="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-blue-600"
-                >
-                  About
-                </Link>
               </div>
             </div>
           </div>
@@ -46,7 +39,6 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/category/:categoryName" element={<CategoryPage />} />
             <Route path="/subject" element={<SubjectPage />} />
-            <Route path="/about" element={<About />} />
           </Routes>
         </main>
       </div>
