@@ -1,7 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { SUBJECTS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
-import { EXAM_COLUMNS, EXAM_DATA } from '../constants/examData';
-import { ExamHistoryTable } from '../components';
+import { ExamHistoryTable, ExamHistoryTableSkeleton } from '../components';
+import { getExamHistory, type ExamColumn, type ExamDataRow } from '../api/Api';
 
 function SubjectPage() {
   const [searchParams] = useSearchParams();
@@ -11,12 +12,19 @@ function SubjectPage() {
   const target = searchParams.get('target');
   const year = searchParams.get('year');
   const category = searchParams.get('category') as CategoryName | null;
+  const subjectFromUrl = searchParams.get('subject');
 
   // 과목 목록 가져오기
   const subjects =
     category && curriculum && category in SUBJECTS && curriculum in SUBJECTS[category]
       ? SUBJECTS[category][curriculum]
       : [];
+
+  // 시험 통계 데이터 상태
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(subjectFromUrl);
+  const [isLoading, setIsLoading] = useState(false);
+  const [examColumns, setExamColumns] = useState<readonly ExamColumn[]>([]);
+  const [examData, setExamData] = useState<readonly ExamDataRow[]>([]);
 
   const handleGoBack = () => {
     if (category) {
@@ -25,6 +33,56 @@ function SubjectPage() {
       navigate('/');
     }
   };
+
+  // 과목 선택 핸들러
+  const handleSubjectClick = (subject: string) => {
+    setSelectedSubject(subject);
+
+    // URL에 subject 파라미터 추가
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('subject', subject);
+    navigate(`/subject?${newParams.toString()}`, { replace: true });
+  };
+
+  // 첫 번째 과목 자동 선택
+  useEffect(() => {
+    if (subjects.length > 0 && !selectedSubject) {
+      const firstSubject = subjects[0] as string;
+      setSelectedSubject(firstSubject);
+
+      // URL에 subject 파라미터 추가
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('subject', firstSubject);
+      navigate(`/subject?${newParams.toString()}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects.length]);
+
+  // 과목 선택 시 시험 통계 데이터 불러오기
+  useEffect(() => {
+    if (!selectedSubject || !target) return;
+
+    const fetchExamHistory = async () => {
+      setIsLoading(true);
+      try {
+        // 2013년부터 2024년까지의 데이터 요청
+        const years = Array.from({ length: 12 }, (_, i) => 2013 + i);
+        const response = await getExamHistory({
+          years,
+          subject: selectedSubject,
+          target,
+        });
+        setExamColumns(response.columns);
+        setExamData(response.data);
+      } catch (error) {
+        console.error('Failed to fetch exam history:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchExamHistory();
+  }, [selectedSubject, target]);
 
   return (
     <div className="space-y-6">
@@ -66,7 +124,12 @@ function SubjectPage() {
                 {subjects.map((subject) => (
                   <button
                     key={subject}
-                    className="px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-gray-900 font-medium hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
+                    onClick={() => handleSubjectClick(subject)}
+                    className={`px-4 py-3 bg-white border-2 rounded-lg text-gray-900 font-medium transition-colors text-center ${
+                      selectedSubject === subject
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'
+                    }`}
                   >
                     {subject}
                   </button>
@@ -84,10 +147,24 @@ function SubjectPage() {
       </div>
 
       {/* 시험 통계 테이블 */}
-      <div className="bg-white p-8 rounded-lg shadow">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">연도별 문항 수</h2>
-        <ExamHistoryTable columns={EXAM_COLUMNS} data={EXAM_DATA} />
-      </div>
+      {selectedSubject && (
+        <div className="bg-white p-8 rounded-lg shadow">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            연도별 문항 수 - {selectedSubject}
+          </h2>
+          {isLoading ? (
+            <ExamHistoryTableSkeleton />
+          ) : examData.length > 0 ? (
+            <ExamHistoryTable columns={examColumns} data={examData} />
+          ) : (
+            <div className="p-6 bg-gray-50 rounded-lg">
+              <p className="text-gray-600 text-center">
+                해당 과목의 시험 데이터가 없습니다.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
