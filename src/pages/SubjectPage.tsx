@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { SUBJECTS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
+import { SUBJECTS, GRADE_OPTIONS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
 import { ExamHistoryTable } from '../components';
 import { getExamHistory, MOCK_EXAM_COLUMNS, type ExamColumn, type ExamDataRow } from '../api/Api';
 
@@ -50,6 +50,14 @@ function SubjectPage() {
     // URL에 subject 파라미터 추가
     const newParams = new URLSearchParams(searchParams);
     newParams.set('subject', subject);
+    navigate(`/subject?${newParams.toString()}`, { replace: true });
+  };
+
+  // 학년 변경 핸들러
+  const handleGradeChange = (newGrade: string) => {
+    // URL에 target 파라미터 업데이트
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('target', newGrade);
     navigate(`/subject?${newParams.toString()}`, { replace: true });
   };
 
@@ -118,7 +126,18 @@ function SubjectPage() {
             </div>
             <div className="p-4 bg-purple-50 rounded-lg">
               <h3 className="text-sm font-semibold text-gray-600 mb-1">학년</h3>
-              <p className="text-xl font-bold text-gray-900">{target || '-'}</p>
+              <select
+                value={target || ''}
+                onChange={(e) => handleGradeChange(e.target.value)}
+                className="w-full text-xl font-bold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1 cursor-pointer"
+              >
+                {!target && <option value="">선택하세요</option>}
+                {GRADE_OPTIONS.map((grade) => (
+                  <option key={grade} value={grade}>
+                    {grade}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="p-4 bg-orange-50 rounded-lg">
               <h3 className="text-sm font-semibold text-gray-600 mb-1">연도</h3>

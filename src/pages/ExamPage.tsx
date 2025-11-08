@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ID_SPECIFICATION } from '../constants/examIdConfig';
+import { getQuestionImageUrls } from '../constants/apiConfig';
 
 function ExamPage() {
   const { id } = useParams<{ id: string }>();
@@ -7,6 +8,9 @@ function ExamPage() {
 
   // exam_id 파싱
   const examInfo = id ? ID_SPECIFICATION.parse(id) : null;
+
+  // 문제 이미지 URL 목록 생성 (1-20번)
+  const questionImageUrls = id ? getQuestionImageUrls(id, 20) : [];
 
   const handleGoBack = () => {
     navigate(-1);
@@ -79,10 +83,55 @@ function ExamPage() {
 
       <div className="bg-white p-8 rounded-lg shadow">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">문제 목록</h2>
-        <div className="p-6 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 text-center">
-            문제 목록 기능은 준비 중입니다.
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {questionImageUrls.map((url, index) => {
+            const questionNumber = index + 1;
+            return (
+              <div
+                key={questionNumber}
+                className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    문제 {questionNumber}
+                  </h3>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    새 탭에서 열기
+                  </a>
+                </div>
+                <div className="bg-gray-100 rounded-lg overflow-hidden">
+                  <img
+                    src={url}
+                    alt={`문제 ${questionNumber}`}
+                    className="w-full h-auto"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `
+                          <div class="flex items-center justify-center h-48 text-gray-500">
+                            <div class="text-center">
+                              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <p class="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
+                            </div>
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

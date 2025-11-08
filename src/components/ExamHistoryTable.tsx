@@ -51,8 +51,8 @@ function ExamHistoryTable({
     region: string,
     value: number | null
   ) => {
-    // 데이터가 없거나 필수 정보가 없으면 클릭 불가
-    if (value === null || !subject || !target || !category) return;
+    // 필수 정보가 없으면 클릭 불가
+    if (!subject || !target || !category) return;
 
     // ID_SPECIFICATION을 사용하여 exam_id 생성
     const examId = ID_SPECIFICATION.generate({
@@ -140,7 +140,7 @@ function ExamHistoryTable({
                     const month = column?.month;
                     const type = column?.type;
                     const region = column?.region;
-                    const isClickable = value !== null && subject && target && category;
+                    const isClickable = subject && target && category;
 
                     return (
                       <td

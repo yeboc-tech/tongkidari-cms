@@ -24,11 +24,11 @@ interface GetExamHistoryParams {
 
 // Mock 데이터
 export const MOCK_EXAM_COLUMNS: ExamColumn[] = [
-  { month: '3', type: '학평', region: '서울' },
-  { month: '4', type: '학평', region: '경기' },
-  { month: '6', type: '모평', region: '평가원' },
-  { month: '7', type: '학평', region: '인천' },
-  { month: '9', type: '모평', region: '평가원' },
+  { month: '03', type: '학평', region: '서울' },
+  { month: '04', type: '학평', region: '경기' },
+  { month: '06', type: '모평', region: '평가원' },
+  { month: '07', type: '학평', region: '인천' },
+  { month: '09', type: '모평', region: '평가원' },
   { month: '10', type: '학평', region: '서울' },
   { month: '11', type: '수능', region: '평가원' },
 ];
