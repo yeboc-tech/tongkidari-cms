@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import About from './pages/About'
+import CategoryPage from './pages/CategoryPage'
+import SubjectPage from './pages/SubjectPage'
 
 function App() {
   return (
@@ -17,6 +19,18 @@ function App() {
                   Home
                 </Link>
                 <Link
+                  to="/category/사회"
+                  className="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-blue-600"
+                >
+                  사회
+                </Link>
+                <Link
+                  to="/category/과학"
+                  className="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-blue-600"
+                >
+                  과학
+                </Link>
+                <Link
                   to="/about"
                   className="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-blue-600"
                 >
@@ -30,6 +44,8 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/category/:categoryName" element={<CategoryPage />} />
+            <Route path="/subject" element={<SubjectPage />} />
             <Route path="/about" element={<About />} />
           </Routes>
         </main>

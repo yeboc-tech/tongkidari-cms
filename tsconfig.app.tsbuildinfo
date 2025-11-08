@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/pages/about.tsx","./src/pages/home.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/constants/tableconfig.ts","./src/pages/about.tsx","./src/pages/categorypage.tsx","./src/pages/home.tsx","./src/pages/subjectpage.tsx"],"version":"5.9.3"}
