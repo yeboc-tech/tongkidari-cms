@@ -1,7 +1,10 @@
+import { useNavigate } from 'react-router-dom';
+import { ID_SPECIFICATION } from '../constants/examIdConfig';
+
 interface ExamColumn {
   month: string;
   type: string;
-  organizer: string;
+  region: string;
 }
 
 interface ExamDataRow {
@@ -12,9 +15,22 @@ interface ExamDataRow {
 interface ExamHistoryTableProps {
   columns: readonly ExamColumn[];
   data: readonly ExamDataRow[];
+  isLoading?: boolean;
+  subject?: string;
+  target?: string;
+  category?: string;
 }
 
-function ExamHistoryTable({ columns, data }: ExamHistoryTableProps) {
+function ExamHistoryTable({
+  columns,
+  data,
+  isLoading = false,
+  subject,
+  target,
+  category,
+}: ExamHistoryTableProps) {
+  const navigate = useNavigate();
+
   // 각 연도의 합계 계산
   const calculateYearTotal = (rowData: readonly (number | null)[]): number => {
     return rowData.reduce((sum: number, val) => sum + (val ?? 0), 0);
@@ -25,6 +41,31 @@ function ExamHistoryTable({ columns, data }: ExamHistoryTableProps) {
     return data.reduce((total: number, row) => {
       return total + calculateYearTotal(row.data);
     }, 0);
+  };
+
+  // 셀 클릭 핸들러
+  const handleCellClick = (
+    year: number,
+    month: string,
+    type: string,
+    region: string,
+    value: number | null
+  ) => {
+    // 데이터가 없거나 필수 정보가 없으면 클릭 불가
+    if (value === null || !subject || !target || !category) return;
+
+    // ID_SPECIFICATION을 사용하여 exam_id 생성
+    const examId = ID_SPECIFICATION.generate({
+      subject,
+      target,
+      year,
+      month,
+      type,
+      region,
+    });
+
+    // /exam/:id 페이지로 이동
+    navigate(`/exam/${examId}`);
   };
 
   return (
@@ -46,7 +87,7 @@ function ExamHistoryTable({ columns, data }: ExamHistoryTableProps) {
                 key={index}
                 className="px-4 py-3 border-2 border-gray-400 text-center font-bold text-gray-900"
               >
-                {col.month}
+                {col.month}월
                 <br />
                 {col.type}
               </th>
@@ -60,11 +101,11 @@ function ExamHistoryTable({ columns, data }: ExamHistoryTableProps) {
               문항 수
             </th>
           </tr>
-          {/* 두 번째 헤더 행 - 주관 기관 */}
+          {/* 두 번째 헤더 행 - 지역 */}
           <tr className="bg-yellow-100">
             {columns.map((col, index) => (
               <th key={index} className="px-4 py-2 border-2 border-gray-400 text-center text-sm text-gray-700">
-                {col.organizer}
+                {col.region}
               </th>
             ))}
           </tr>
@@ -78,17 +119,50 @@ function ExamHistoryTable({ columns, data }: ExamHistoryTableProps) {
               <td className="px-4 py-3 border-2 border-gray-400 text-center font-bold text-blue-600">
                 {row.year}
               </td>
-              {row.data.map((value, colIndex) => (
-                <td
-                  key={colIndex}
-                  className="px-4 py-3 border-2 border-gray-400 text-center text-gray-900"
-                >
-                  {value !== null ? value : '-'}
-                </td>
-              ))}
-              <td className="px-4 py-3 border-2 border-gray-400 text-center font-bold text-gray-900">
-                {calculateYearTotal(row.data)}
-              </td>
+              {isLoading ? (
+                <>
+                  {Array.from({ length: columns.length }).map((_, colIndex) => (
+                    <td
+                      key={colIndex}
+                      className="px-4 py-3 border-2 border-gray-400 text-center"
+                    >
+                      <div className="h-6 bg-gray-300 rounded animate-pulse mx-auto w-8"></div>
+                    </td>
+                  ))}
+                  <td className="px-4 py-3 border-2 border-gray-400 text-center">
+                    <div className="h-6 bg-gray-300 rounded animate-pulse mx-auto w-12"></div>
+                  </td>
+                </>
+              ) : (
+                <>
+                  {row.data.map((value, colIndex) => {
+                    const column = columns[colIndex];
+                    const month = column?.month;
+                    const type = column?.type;
+                    const region = column?.region;
+                    const isClickable = value !== null && subject && target && category;
+
+                    return (
+                      <td
+                        key={colIndex}
+                        onClick={() =>
+                          month && type && region && handleCellClick(row.year, month, type, region, value)
+                        }
+                        className={`px-4 py-3 border-2 border-gray-400 text-center text-gray-900 ${
+                          isClickable
+                            ? 'cursor-pointer hover:bg-blue-100 transition-colors'
+                            : ''
+                        }`}
+                      >
+                        {value !== null ? value : '-'}
+                      </td>
+                    );
+                  })}
+                  <td className="px-4 py-3 border-2 border-gray-400 text-center font-bold text-gray-900">
+                    {calculateYearTotal(row.data)}
+                  </td>
+                </>
+              )}
             </tr>
           ))}
           {/* 합계 행 */}
@@ -100,7 +174,11 @@ function ExamHistoryTable({ columns, data }: ExamHistoryTableProps) {
               합계
             </td>
             <td className="px-4 py-3 border-2 border-gray-400 text-center font-bold text-gray-900">
-              {calculateGrandTotal()}
+              {isLoading ? (
+                <div className="h-6 bg-gray-300 rounded animate-pulse mx-auto w-16"></div>
+              ) : (
+                calculateGrandTotal()
+              )}
             </td>
           </tr>
         </tbody>

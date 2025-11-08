@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { SUBJECTS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
-import { ExamHistoryTable, ExamHistoryTableSkeleton } from '../components';
-import { getExamHistory, type ExamColumn, type ExamDataRow } from '../api/Api';
+import { ExamHistoryTable } from '../components';
+import { getExamHistory, MOCK_EXAM_COLUMNS, type ExamColumn, type ExamDataRow } from '../api/Api';
+
+// 초기 로딩을 위한 빈 데이터 생성
+const createEmptyYearData = (year: number): ExamDataRow => ({
+  year,
+  data: Array(7).fill(null),
+});
 
 function SubjectPage() {
   const [searchParams] = useSearchParams();
@@ -23,8 +29,11 @@ function SubjectPage() {
   // 시험 통계 데이터 상태
   const [selectedSubject, setSelectedSubject] = useState<string | null>(subjectFromUrl);
   const [isLoading, setIsLoading] = useState(false);
-  const [examColumns, setExamColumns] = useState<readonly ExamColumn[]>([]);
-  const [examData, setExamData] = useState<readonly ExamDataRow[]>([]);
+  const [examColumns, setExamColumns] = useState<readonly ExamColumn[]>(MOCK_EXAM_COLUMNS);
+  const [examData, setExamData] = useState<readonly ExamDataRow[]>(
+    // 2013년부터 2024년까지 빈 데이터 생성
+    Array.from({ length: 12 }, (_, i) => createEmptyYearData(2013 + i))
+  );
 
   const handleGoBack = () => {
     if (category) {
@@ -152,17 +161,14 @@ function SubjectPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             연도별 문항 수 - {selectedSubject}
           </h2>
-          {isLoading ? (
-            <ExamHistoryTableSkeleton />
-          ) : examData.length > 0 ? (
-            <ExamHistoryTable columns={examColumns} data={examData} />
-          ) : (
-            <div className="p-6 bg-gray-50 rounded-lg">
-              <p className="text-gray-600 text-center">
-                해당 과목의 시험 데이터가 없습니다.
-              </p>
-            </div>
-          )}
+          <ExamHistoryTable
+            columns={examColumns}
+            data={examData}
+            isLoading={isLoading}
+            subject={selectedSubject || undefined}
+            target={target || undefined}
+            category={category || undefined}
+          />
         </div>
       )}
     </div>

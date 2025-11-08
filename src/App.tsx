@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import CategoryPage from './pages/CategoryPage'
 import SubjectPage from './pages/SubjectPage'
+import ExamPage from './pages/ExamPage'
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/category/:categoryName" element={<CategoryPage />} />
             <Route path="/subject" element={<SubjectPage />} />
+            <Route path="/exam/:id" element={<ExamPage />} />
           </Routes>
         </main>
       </div>
