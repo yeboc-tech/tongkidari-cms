@@ -1,5 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { SUBJECTS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
+import { EXAM_COLUMNS, EXAM_DATA } from '../constants/examData';
+import { ExamHistoryTable } from '../components';
 
 function SubjectPage() {
   const [searchParams] = useSearchParams();
@@ -79,6 +81,12 @@ function SubjectPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* 시험 통계 테이블 */}
+      <div className="bg-white p-8 rounded-lg shadow">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">연도별 문항 수</h2>
+        <ExamHistoryTable columns={EXAM_COLUMNS} data={EXAM_DATA} />
       </div>
     </div>
   );

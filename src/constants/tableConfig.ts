@@ -4,7 +4,7 @@
 export const CURRICULUM_GROUPS = [
   {
     name: '2015교육과정',
-    startYear: 2014,
+    startYear: 2013,
     endYear: 2026,
     bgColor: 'bg-blue-50',
   },
