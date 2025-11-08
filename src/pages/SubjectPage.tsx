@@ -1,13 +1,20 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { SUBJECTS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
 
 function SubjectPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const curriculum = searchParams.get('curriculum');
+  const curriculum = searchParams.get('curriculum') as CurriculumName | null;
   const target = searchParams.get('target');
   const year = searchParams.get('year');
-  const category = searchParams.get('category');
+  const category = searchParams.get('category') as CategoryName | null;
+
+  // 과목 목록 가져오기
+  const subjects =
+    category && curriculum && category in SUBJECTS && curriculum in SUBJECTS[category]
+      ? SUBJECTS[category][curriculum]
+      : [];
 
   const handleGoBack = () => {
     if (category) {
@@ -50,11 +57,26 @@ function SubjectPage() {
             </div>
           </div>
 
-          <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">과목 정보</h3>
-            <p className="text-gray-600">
-              여기에 {target} {curriculum} ({year}년) 과목 정보가 표시됩니다.
-            </p>
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">과목 목록</h3>
+            {subjects.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {subjects.map((subject) => (
+                  <button
+                    key={subject}
+                    className="px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-gray-900 font-medium hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
+                  >
+                    {subject}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 bg-gray-50 rounded-lg">
+                <p className="text-gray-600 text-center">
+                  해당 카테고리와 교육과정에 등록된 과목이 없습니다.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
