@@ -1,17 +1,67 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { ExamId } from '../domain/examId';
 import { getQuestionImageUrls } from '../constants/apiConfig';
 import { ExamResources } from '../components';
+import { supabase } from '../lib/supabase';
+import { AccuracyRate } from '../types/accuracyRate';
 
 function ExamPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [accuracyRates, setAccuracyRates] = useState<Map<number, AccuracyRate>>(new Map());
+  const [loading, setLoading] = useState(true);
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
 
   // 문제 이미지 URL 목록 생성 (1-20번)
   const questionImageUrls = id ? getQuestionImageUrls(id, 20) : [];
+
+  // 지역 제거 함수
+  const removeRegion = (examIdWithRegion: string): string => {
+    return examIdWithRegion.replace(/\([^)]+\)$/, '');
+  };
+
+  // accuracy_rate 데이터 가져오기
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchAccuracyRates = async () => {
+      setLoading(true);
+      const examIdWithoutRegion = removeRegion(id);
+
+      // 1-20번 문제의 id 목록 생성
+      const questionIds = Array.from(
+        { length: 20 },
+        (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`
+      );
+
+      const { data, error } = await supabase
+        .from('accuracy_rate')
+        .select('*')
+        .in('id', questionIds);
+
+      if (error) {
+        console.error('Error fetching accuracy rates:', error);
+      } else if (data) {
+        // 문제 번호를 키로 하는 Map 생성
+        const ratesMap = new Map<number, AccuracyRate>();
+        data.forEach((rate) => {
+          // id에서 문제 번호 추출: "경제_고3_2024_03_학평_1_문제" -> 1
+          const match = rate.id.match(/_(\d+)_문제$/);
+          if (match) {
+            const questionNumber = parseInt(match[1], 10);
+            ratesMap.set(questionNumber, rate);
+          }
+        });
+        setAccuracyRates(ratesMap);
+      }
+      setLoading(false);
+    };
+
+    fetchAccuracyRates();
+  }, [id]);
 
   const handleGoBack = () => {
     navigate(-1);
@@ -88,6 +138,8 @@ function ExamPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {questionImageUrls.map((url, index) => {
             const questionNumber = index + 1;
+            const accuracyData = accuracyRates.get(questionNumber);
+
             return (
               <div
                 key={questionNumber}
@@ -106,6 +158,43 @@ function ExamPage() {
                     새 탭에서 열기
                   </a>
                 </div>
+
+                {/* 정확도 정보 */}
+                {accuracyData && (
+                  <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
+                    <div className="bg-blue-50 px-2 py-1 rounded">
+                      <span className="text-gray-600">정답률</span>
+                      <p className="font-semibold text-blue-700">
+                        {accuracyData.accuracy_rate}%
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 px-2 py-1 rounded">
+                      <span className="text-gray-600">난이도</span>
+                      <p className="font-semibold text-purple-700">
+                        {accuracyData.difficulty}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 px-2 py-1 rounded">
+                      <span className="text-gray-600">점수</span>
+                      <p className="font-semibold text-green-700">
+                        {accuracyData.score}점
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 px-2 py-1 rounded">
+                      <span className="text-gray-600">정답</span>
+                      <p className="font-semibold text-orange-700">
+                        {accuracyData.correct_answer}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {loading && !accuracyData && (
+                  <div className="mb-3 text-xs text-gray-500">
+                    정확도 정보를 불러오는 중...
+                  </div>
+                )}
+
                 <div className="bg-gray-100 rounded-lg overflow-hidden">
                   <img
                     src={url}
