@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ID_SPECIFICATION } from '../constants/examIdConfig';
+import { ExamId } from '../domain/examId';
 
 interface ExamColumn {
   month: string;
@@ -54,8 +54,8 @@ function ExamHistoryTable({
     // 필수 정보가 없으면 클릭 불가
     if (!subject || !target || !category) return;
 
-    // ID_SPECIFICATION을 사용하여 exam_id 생성
-    const examId = ID_SPECIFICATION.generate({
+    // ExamId를 사용하여 exam_id 생성
+    const examId = ExamId.generate({
       subject,
       target,
       year,

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ID_SPECIFICATION } from '../constants/examIdConfig';
+import { ExamId } from '../domain/examId';
 import { getQuestionImageUrls } from '../constants/apiConfig';
 
 function ExamPage() {
@@ -7,7 +7,7 @@ function ExamPage() {
   const navigate = useNavigate();
 
   // exam_id 파싱
-  const examInfo = id ? ID_SPECIFICATION.parse(id) : null;
+  const examInfo = id ? ExamId.parse(id) : null;
 
   // 문제 이미지 URL 목록 생성 (1-20번)
   const questionImageUrls = id ? getQuestionImageUrls(id, 20) : [];
