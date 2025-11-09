@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   CURRICULUM_GROUPS,
   GRADES,
@@ -7,8 +7,11 @@ import {
   type Grade,
 } from '../constants/tableConfig';
 
-function CategoryPage() {
-  const { categoryName } = useParams<{ categoryName: string }>();
+interface CurriculumOverviewProps {
+  category: string;
+}
+
+function CurriculumOverview({ category }: CurriculumOverviewProps) {
   const navigate = useNavigate();
 
   // 모든 연도 배열 생성
@@ -32,7 +35,7 @@ function CategoryPage() {
       curriculum,
       target: grade,
       year: year.toString(),
-      category: categoryName || '',
+      category,
     });
 
     navigate(`/subject?${queryParams.toString()}`);
@@ -51,7 +54,7 @@ function CategoryPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">{categoryName || '카테고리'}</h1>
+      <h1 className="text-3xl font-bold text-gray-900">{category}</h1>
 
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
@@ -124,4 +127,4 @@ function CategoryPage() {
   );
 }
 
-export default CategoryPage;
+export default CurriculumOverview;

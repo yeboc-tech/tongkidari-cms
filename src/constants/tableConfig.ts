@@ -19,8 +19,8 @@ export const CURRICULUM_GROUPS = [
 // 학년 설정
 export const GRADES = ['고3', '고2', '고1'] as const;
 
-// 드롭다운용 학년 목록 (정순)
-export const GRADE_OPTIONS = ['고1', '고2', '고3'] as const;
+// 드롭다운용 학년 목록 (역순: 고3, 고2, 고1)
+export const GRADE_OPTIONS = ['고3', '고2', '고1'] as const;
 
 // 교육과정 전환 설정
 // 전환 순서: 항상 고1 → 고2 → 고3 순서로 전환
