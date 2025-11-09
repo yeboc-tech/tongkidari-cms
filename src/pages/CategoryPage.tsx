@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { SUBJECTS, GRADE_OPTIONS, CURRICULUM_GROUPS, EXAM_COLUMNS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
 import { ExamHistoryTable, CurriculumOverview } from '../components';
 import { Api, type ExamDataRow } from '../api/Api';
+import { useAuth } from '../hooks/useAuth';
 
 // 연도 목록 생성 (2013 ~ 2024)
 const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => 2013 + i);
@@ -14,6 +15,8 @@ const createEmptyYearData = (year: number): ExamDataRow => ({
 });
 
 function CategoryPage() {
+  useAuth(); // 인증 체크
+
   const { categoryId } = useParams<{ categoryId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

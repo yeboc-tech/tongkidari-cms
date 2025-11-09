@@ -5,8 +5,11 @@ import { getQuestionImageUrls } from '../constants/apiConfig';
 import { ExamResources } from '../components';
 import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
+import { useAuth } from '../hooks/useAuth';
 
 function ExamPage() {
+  useAuth(); // 인증 체크
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [accuracyRates, setAccuracyRates] = useState<Map<number, AccuracyRate>>(new Map());
