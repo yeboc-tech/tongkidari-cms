@@ -9,10 +9,10 @@ interface ExamColumn {
 
 interface ExamDataRow {
   year: number;
-  data: readonly (number | null)[];
+  data: readonly (number | null | 'forbidden')[];
 }
 
-interface ExamHistoryTableProps {
+interface ExamOverviewTableProps {
   columns: readonly ExamColumn[];
   data: readonly ExamDataRow[];
   isLoading?: boolean;
@@ -21,19 +21,24 @@ interface ExamHistoryTableProps {
   category?: string;
 }
 
-function ExamHistoryTable({
+function ExamOverviewTable({
   columns,
   data,
   isLoading = false,
   subject,
   target,
   category,
-}: ExamHistoryTableProps) {
+}: ExamOverviewTableProps) {
   const navigate = useNavigate();
 
   // 각 연도의 합계 계산
-  const calculateYearTotal = (rowData: readonly (number | null)[]): number => {
-    return rowData.reduce((sum: number, val) => sum + (val ?? 0), 0);
+  const calculateYearTotal = (rowData: readonly (number | null | 'forbidden')[]): number => {
+    return rowData.reduce((sum: number, val) => {
+      if (typeof val === 'number') {
+        return sum + val;
+      }
+      return sum;
+    }, 0);
   };
 
   // 전체 합계 계산
@@ -49,7 +54,7 @@ function ExamHistoryTable({
     month: string,
     type: string,
     region: string,
-    _value: number | null
+    _value: number | null | 'forbidden'
   ) => {
     // 필수 정보가 없으면 클릭 불가
     if (!subject || !target || !category) return;
@@ -148,13 +153,17 @@ function ExamHistoryTable({
                         onClick={() =>
                           month && type && region && handleCellClick(row.year, month, type, region, value)
                         }
-                        className={`px-4 py-3 border-2 border-gray-400 text-center text-gray-900 ${
+                        className={`px-4 py-3 border-2 border-gray-400 text-center ${
+                          value === 'forbidden'
+                            ? 'text-red-500'
+                            : 'text-gray-900'
+                        } ${
                           isClickable
                             ? 'cursor-pointer hover:bg-blue-100 transition-colors'
                             : ''
                         }`}
                       >
-                        {value !== null ? value : '-'}
+                        {value === 'forbidden' ? '🚫' : value !== null ? value : '-'}
                       </td>
                     );
                   })}
@@ -187,4 +196,4 @@ function ExamHistoryTable({
   );
 }
 
-export default ExamHistoryTable;
+export default ExamOverviewTable;

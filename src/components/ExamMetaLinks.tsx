@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
-import { HOST_URL, decomposeHangul } from '../constants/apiConfig';
+import { HOST_URL } from '../constants/apiConfig';
+import {
+  getProblemCsvFilename,
+  getProblemPageFilename,
+  getProblemDebugFilename,
+  getAccuracyRateCsvFilename,
+  getLabelCsvFilename,
+  getHistoryCsvFilename,
+} from '../ssot/examMetaUrl';
 
 interface ExamMetaLinksProps {
   examId: string;
@@ -12,43 +20,40 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
   const [fileExists, setFileExists] = useState<Map<string, boolean>>(new Map());
   const [checking, setChecking] = useState(true);
 
-  // 지역 제거 함수 (rate.csv용)
-  const removeRegion = (examIdWithRegion: string): string => {
-    // "(지역)" 형식의 마지막 괄호 부분 제거
-    return examIdWithRegion.replace(/\([^)]+\)$/, '');
-  };
-
   // URL 생성 헬퍼 함수
-  const getResourceUrl = (filename: string): string => {
-    return `${HOST_URL}/tongkidari/meta/${decomposeHangul(filename)}`;
+  const getResourceUrl = (normalizedFilename: string): string => {
+    return `${HOST_URL}/tongkidari/meta/${normalizedFilename}`;
   };
 
-  const getDisplayUrl = (filename: string): string => {
-    return `${HOST_URL}/tongkidari/meta/${filename}`;
+  const getDisplayUrl = (originalFilename: string): string => {
+    return `${HOST_URL}/tongkidari/meta/${originalFilename}`;
   };
 
-  // 지역 제거된 examId (rate.csv용)
-  const examIdWithoutRegion = removeRegion(examId);
-
-  // 리소스 URL 목록 생성
+  // 리소스 목록 생성
   const resources = {
     problemCsv: {
-      filename: `${examId}_문제.csv`,
+      originalFilename: `${examId}_문제.csv`,
+      normalizedFilename: getProblemCsvFilename(examId),
     },
     problemPages: [1, 2, 3, 4].map((page) => ({
-      filename: `${examId}_문제_p${page}.png`,
+      originalFilename: `${examId}_문제_p${page}.png`,
+      normalizedFilename: getProblemPageFilename(examId, page),
     })),
     problemDebug: [1, 2, 3, 4].map((page) => ({
-      filename: `${examId}_문제_p${page}_debug.png`,
+      originalFilename: `${examId}_문제_p${page}_debug.png`,
+      normalizedFilename: getProblemDebugFilename(examId, page),
     })),
     rateCsv: {
-      filename: `${examIdWithoutRegion}_accuracy_rate.csv`,
+      originalFilename: `${examId.replace(/\([^)]+\)$/, '')}_accuracy_rate.csv`,
+      normalizedFilename: getAccuracyRateCsvFilename(examId),
     },
     labelCsv: {
-      filename: `${examId}_label.csv`,
+      originalFilename: `${examId}_label.csv`,
+      normalizedFilename: getLabelCsvFilename(examId),
     },
     historyCsv: {
-      filename: `${examId}_히스토리.csv`,
+      originalFilename: `${examId}_히스토리.csv`,
+      normalizedFilename: getHistoryCsvFilename(examId),
     },
   };
 
@@ -71,12 +76,12 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
       const urlsToCheck: string[] = [];
 
       // 모든 파일 URL 수집
-      urlsToCheck.push(getResourceUrl(resources.problemCsv.filename));
-      resources.problemPages.forEach((r) => urlsToCheck.push(getResourceUrl(r.filename)));
-      resources.problemDebug.forEach((r) => urlsToCheck.push(getResourceUrl(r.filename)));
-      urlsToCheck.push(getResourceUrl(resources.rateCsv.filename));
-      urlsToCheck.push(getResourceUrl(resources.labelCsv.filename));
-      urlsToCheck.push(getResourceUrl(resources.historyCsv.filename));
+      urlsToCheck.push(getResourceUrl(resources.problemCsv.normalizedFilename));
+      resources.problemPages.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
+      resources.problemDebug.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
+      urlsToCheck.push(getResourceUrl(resources.rateCsv.normalizedFilename));
+      urlsToCheck.push(getResourceUrl(resources.labelCsv.normalizedFilename));
+      urlsToCheck.push(getResourceUrl(resources.historyCsv.normalizedFilename));
 
       // 모든 파일 확인
       const results = await Promise.all(
@@ -100,10 +105,10 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
   }, [examId]);
 
   // 링크 렌더링 헬퍼 함수
-  const renderLink = (filename: string) => {
-    const url = getResourceUrl(filename);
+  const renderLink = (originalFilename: string, normalizedFilename: string) => {
+    const url = getResourceUrl(normalizedFilename);
     const exists = fileExists.get(url);
-    const displayUrl = getDisplayUrl(filename);
+    const displayUrl = getDisplayUrl(originalFilename);
 
     return (
       <div className="flex items-center gap-2">
@@ -146,7 +151,7 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
         {/* Problem CSV */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">Problem CSV</p>
-          {renderLink(resources.problemCsv.filename)}
+          {renderLink(resources.problemCsv.originalFilename, resources.problemCsv.normalizedFilename)}
         </div>
 
         {/* Problem Pages */}
@@ -155,7 +160,7 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
           <div className="space-y-1">
             {resources.problemPages.map((resource, index) => (
               <div key={index}>
-                {renderLink(resource.filename)}
+                {renderLink(resource.originalFilename, resource.normalizedFilename)}
               </div>
             ))}
           </div>
@@ -167,7 +172,7 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
           <div className="space-y-1">
             {resources.problemDebug.map((resource, index) => (
               <div key={index}>
-                {renderLink(resource.filename)}
+                {renderLink(resource.originalFilename, resource.normalizedFilename)}
               </div>
             ))}
           </div>
@@ -176,19 +181,19 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
         {/* Accuracy Rate CSV */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">Accuracy Rate CSV</p>
-          {renderLink(resources.rateCsv.filename)}
+          {renderLink(resources.rateCsv.originalFilename, resources.rateCsv.normalizedFilename)}
         </div>
 
         {/* Computed Label CSV */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">Computed Label CSV</p>
-          {renderLink(resources.labelCsv.filename)}
+          {renderLink(resources.labelCsv.originalFilename, resources.labelCsv.normalizedFilename)}
         </div>
 
         {/* History Data  */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">History </p>
-          {renderLink(resources.historyCsv.filename)}
+          {renderLink(resources.historyCsv.originalFilename, resources.historyCsv.normalizedFilename)}
         </div>
       </div>
     </div>

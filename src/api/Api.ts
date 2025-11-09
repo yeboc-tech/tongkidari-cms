@@ -1,5 +1,8 @@
 // API 클래스 정의
 
+import { countTrueValues } from '../utils/csvParser';
+import { getProblemCsvUrl } from '../ssot/examMetaUrl';
+
 // Type definitions
 export interface ExamColumn {
   month: string;
@@ -9,7 +12,7 @@ export interface ExamColumn {
 
 export interface ExamDataRow {
   year: number;
-  data: (number | null)[];
+  data: (number | null | 'forbidden')[];
 }
 
 export interface ExamHistoryResponse {
@@ -40,6 +43,35 @@ const MOCK_EXAM_DATA: ExamDataRow[] = [
  * API 요청을 처리하는 클래스
  */
 export class Api {
+  /**
+   * exam_id로부터 CSV 파일에서 has_image가 True인 문항 개수를 가져옵니다
+   * @param examId - 시험 ID (예: "경제_고3_2024_03_학평(서울)")
+   * @returns has_image가 True인 문항 개수, 403일 경우 'forbidden', 파일이 없거나 에러 시 null
+   */
+  static async fetchExamQuestionCount(examId: string): Promise<number | null | 'forbidden'> {
+    try {
+      const url = getProblemCsvUrl(examId);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        // 403 Forbidden 체크
+        if (response.status === 403) {
+          return 'forbidden';
+        }
+        // 404나 다른 에러인 경우 null 반환
+        return null;
+      }
+
+      const csvText = await response.text();
+      const count = countTrueValues(csvText, 'has_image');
+
+      return count;
+    } catch (error) {
+      console.error(`Failed to fetch exam question count for ${examId}:`, error);
+      return null;
+    }
+  }
+
   /**
    * 시험 통계 데이터를 서버에서 가져오는 API
    * @param params - years: 연도 배열, subject: 과목명, target: 학년

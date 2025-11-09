@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { SUBJECTS, GRADE_OPTIONS, CURRICULUM_GROUPS, EXAM_COLUMNS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
-import { ExamHistoryTable, CurriculumOverview } from '../components';
+import { ExamOverviewTable, CurriculumOverview } from '../components';
 import { Api, type ExamDataRow } from '../api/Api';
 import { useAuth } from '../hooks/useAuth';
+import { ExamId } from '../domain/examId';
 
 // 연도 목록 생성 (2013 ~ 2024)
 const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => 2013 + i);
@@ -128,14 +129,36 @@ function CategoryPage() {
     const refreshData = async () => {
       setIsLoading(true);
       try {
-        // 2013년부터 2024년까지의 데이터 요청
+        // 2013년부터 2024년까지의 연도 배열
         const years = Array.from({ length: 12 }, (_, i) => 2013 + i);
-        const response = await Api.fetchExamHistory({
-          years,
-          subject: selectedSubject,
-          target,
+
+        // 각 연도와 컬럼에 대해 exam_id를 생성하고 데이터를 가져옴
+        const dataPromises = years.map(async (year) => {
+          // 각 컬럼에 대한 데이터 가져오기
+          const columnDataPromises = EXAM_COLUMNS.map(async (column) => {
+            const examId = ExamId.generate({
+              subject: selectedSubject,
+              target,
+              year,
+              month: column.month,
+              type: column.type,
+              region: column.region,
+            });
+
+            const count = await Api.fetchExamQuestionCount(examId);
+            return count;
+          });
+
+          const columnData = await Promise.all(columnDataPromises);
+
+          return {
+            year,
+            data: columnData,
+          };
         });
-        setExamData(response.data);
+
+        const results = await Promise.all(dataPromises);
+        setExamData(results);
       } catch (error) {
         console.error('Failed to fetch exam history:', error);
       } finally {
@@ -259,7 +282,7 @@ function CategoryPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             연도별 문항 수 - {selectedSubject}, {target}
           </h2>
-          <ExamHistoryTable
+          <ExamOverviewTable
             columns={EXAM_COLUMNS}
             data={examData}
             isLoading={isLoading}
