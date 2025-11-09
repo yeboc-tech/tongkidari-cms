@@ -38,8 +38,8 @@ function CategoryPage() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(subjectFromUrl);
   const [isLoading, setIsLoading] = useState(false);
   const [examData, setExamData] = useState<readonly ExamDataRow[]>(
-    // 2013년부터 2024년까지 빈 데이터 생성
-    Array.from({ length: 12 }, (_, i) => createEmptyYearData(2013 + i))
+    // 2024년부터 2013년까지 빈 데이터 생성 (최신순)
+    Array.from({ length: 12 }, (_, i) => createEmptyYearData(2024 - i))
   );
 
   // 다이얼로그 상태
@@ -129,8 +129,8 @@ function CategoryPage() {
     const refreshData = async () => {
       setIsLoading(true);
       try {
-        // 2013년부터 2024년까지의 연도 배열
-        const years = Array.from({ length: 12 }, (_, i) => 2013 + i);
+        // 2024년부터 2013년까지의 연도 배열 (최신순)
+        const years = Array.from({ length: 12 }, (_, i) => 2024 - i);
 
         // 각 연도와 컬럼에 대해 exam_id를 생성하고 데이터를 가져옴
         const dataPromises = years.map(async (year) => {
