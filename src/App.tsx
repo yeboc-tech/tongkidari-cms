@@ -1,23 +1,18 @@
-import { BrowserRouter, Routes, Route, Link, useLocation, useSearchParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
-import SubjectPage from './pages/SubjectPage'
+import CategoryPage from './pages/CategoryPage'
 import ExamPage from './pages/ExamPage'
 
 function Navigation() {
   const location = useLocation()
-  const [searchParams] = useSearchParams()
 
-  // subject 페이지에서 category 파라미터 확인
-  const currentCategory = location.pathname === '/subject' ? searchParams.get('category') : null
+  // URL에서 categoryId 추출 (/category/사회 -> 사회)
+  const pathParts = location.pathname.split('/')
+  const currentCategory = pathParts[1] === 'category' && pathParts[2]
+    ? decodeURIComponent(pathParts[2])
+    : null
 
-  const getLinkClassName = (category: string) => {
-    const isActive = currentCategory === category
-    return `inline-flex items-center px-1 pt-1 ${
-      isActive
-        ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-        : 'text-gray-900 hover:text-blue-600'
-    }`
-  }
+  const isActive = (category: string) => currentCategory === category
 
   return (
     <nav className="bg-white shadow-sm">
@@ -31,16 +26,28 @@ function Navigation() {
               Home
             </Link>
             <Link
-              to="/subject?category=사회"
-              className={getLinkClassName('사회')}
+              to="/category/사회"
+              className="inline-flex items-center px-1 pt-1"
             >
-              사회
+              <span className={`${
+                isActive('사회')
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-1'
+                  : 'text-gray-900 hover:text-blue-600'
+              }`}>
+                사회
+              </span>
             </Link>
             <Link
-              to="/subject?category=과학"
-              className={getLinkClassName('과학')}
+              to="/category/과학"
+              className="inline-flex items-center px-1 pt-1"
             >
-              과학
+              <span className={`${
+                isActive('과학')
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-1'
+                  : 'text-gray-900 hover:text-blue-600'
+              }`}>
+                과학
+              </span>
             </Link>
           </div>
         </div>
@@ -58,7 +65,7 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/subject" element={<SubjectPage />} />
+            <Route path="/category/:categoryId" element={<CategoryPage />} />
             <Route path="/exam/:id" element={<ExamPage />} />
           </Routes>
         </main>

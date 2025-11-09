@@ -35,10 +35,9 @@ function CurriculumOverview({ category }: CurriculumOverviewProps) {
       curriculum,
       target: grade,
       year: year.toString(),
-      category,
     });
 
-    navigate(`/subject?${queryParams.toString()}`);
+    navigate(`/category/${category}?${queryParams.toString()}`);
   };
 
   const isCellSelected = (grade: string, year: number) => {

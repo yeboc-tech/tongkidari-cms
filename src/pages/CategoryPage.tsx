@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { SUBJECTS, GRADE_OPTIONS, CURRICULUM_GROUPS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
 import { ExamHistoryTable, CurriculumOverview } from '../components';
 import { getExamHistory, MOCK_EXAM_COLUMNS, type ExamColumn, type ExamDataRow } from '../api/Api';
@@ -13,14 +13,15 @@ const createEmptyYearData = (year: number): ExamDataRow => ({
   data: Array(7).fill(null),
 });
 
-function SubjectPage() {
+function CategoryPage() {
+  const { categoryId } = useParams<{ categoryId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  const category = categoryId as CategoryName | null;
   const curriculum = searchParams.get('curriculum') as CurriculumName | null;
   const target = searchParams.get('target');
   const year = searchParams.get('year');
-  const category = searchParams.get('category') as CategoryName | null;
   const subjectFromUrl = searchParams.get('subject');
 
   // 과목 목록 가져오기
@@ -45,6 +46,28 @@ function SubjectPage() {
     navigate('/');
   };
 
+  // 초기 진입 시 기본값 설정
+  useEffect(() => {
+    const needsDefaults = !curriculum || !target;
+
+    if (needsDefaults) {
+      const newParams = new URLSearchParams(searchParams);
+
+      // 교육과정이 없으면 2015교육과정으로 설정
+      if (!curriculum) {
+        newParams.set('curriculum', '2015교육과정');
+      }
+
+      // 학년이 없으면 고3으로 설정
+      if (!target) {
+        newParams.set('target', '고3');
+      }
+
+      navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId]);
+
   // 과목 선택 핸들러
   const handleSubjectClick = (subject: string) => {
     setSelectedSubject(subject);
@@ -52,7 +75,7 @@ function SubjectPage() {
     // URL에 subject 파라미터 추가
     const newParams = new URLSearchParams(searchParams);
     newParams.set('subject', subject);
-    navigate(`/subject?${newParams.toString()}`, { replace: true });
+    navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
   };
 
   // 학년 변경 핸들러
@@ -60,36 +83,41 @@ function SubjectPage() {
     // URL에 target 파라미터 업데이트
     const newParams = new URLSearchParams(searchParams);
     newParams.set('target', newGrade);
-    navigate(`/subject?${newParams.toString()}`, { replace: true });
+    navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
   };
 
   // 교육과정 변경 핸들러
   const handleCurriculumChange = (newCurriculum: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('curriculum', newCurriculum);
-    navigate(`/subject?${newParams.toString()}`, { replace: true });
+    navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
   };
 
   // 연도 변경 핸들러
   const handleYearChange = (newYear: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('year', newYear);
-    navigate(`/subject?${newParams.toString()}`, { replace: true });
+    navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
   };
 
-  // 첫 번째 과목 자동 선택
+  // 첫 번째 과목 자동 선택 또는 유효하지 않은 과목 리셋
   useEffect(() => {
-    if (subjects.length > 0 && !selectedSubject) {
-      const firstSubject = subjects[0] as string;
-      setSelectedSubject(firstSubject);
+    if (subjects.length > 0) {
+      // 선택된 과목이 없거나, 현재 과목 목록에 없으면 첫 번째 과목으로 설정
+      const isValidSubject = selectedSubject && subjects.includes(selectedSubject);
 
-      // URL에 subject 파라미터 추가
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set('subject', firstSubject);
-      navigate(`/subject?${newParams.toString()}`, { replace: true });
+      if (!isValidSubject) {
+        const firstSubject = subjects[0] as string;
+        setSelectedSubject(firstSubject);
+
+        // URL에 subject 파라미터 추가
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('subject', firstSubject);
+        navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subjects.length]);
+  }, [categoryId, curriculum, subjects.length]);
 
   // 과목 선택 시 시험 통계 데이터 불러오기
   useEffect(() => {
@@ -290,4 +318,4 @@ function SubjectPage() {
   );
 }
 
-export default SubjectPage;
+export default CategoryPage;
