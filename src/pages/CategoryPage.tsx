@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { SUBJECTS, GRADE_OPTIONS, CURRICULUM_GROUPS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
+import { SUBJECTS, GRADE_OPTIONS, CURRICULUM_GROUPS, EXAM_COLUMNS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
 import { ExamHistoryTable, CurriculumOverview } from '../components';
-import { getExamHistory, MOCK_EXAM_COLUMNS, type ExamColumn, type ExamDataRow } from '../api/Api';
+import { Api, type ExamDataRow } from '../api/Api';
 
 // 연도 목록 생성 (2013 ~ 2024)
 const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => 2013 + i);
@@ -33,7 +33,6 @@ function CategoryPage() {
   // 시험 통계 데이터 상태
   const [selectedSubject, setSelectedSubject] = useState<string | null>(subjectFromUrl);
   const [isLoading, setIsLoading] = useState(false);
-  const [examColumns, setExamColumns] = useState<readonly ExamColumn[]>(MOCK_EXAM_COLUMNS);
   const [examData, setExamData] = useState<readonly ExamDataRow[]>(
     // 2013년부터 2024년까지 빈 데이터 생성
     Array.from({ length: 12 }, (_, i) => createEmptyYearData(2013 + i))
@@ -104,7 +103,7 @@ function CategoryPage() {
   useEffect(() => {
     if (subjects.length > 0) {
       // 선택된 과목이 없거나, 현재 과목 목록에 없으면 첫 번째 과목으로 설정
-      const isValidSubject = selectedSubject && subjects.includes(selectedSubject);
+      const isValidSubject = selectedSubject && (subjects as readonly string[]).includes(selectedSubject);
 
       if (!isValidSubject) {
         const firstSubject = subjects[0] as string;
@@ -123,17 +122,16 @@ function CategoryPage() {
   useEffect(() => {
     if (!selectedSubject || !target) return;
 
-    const fetchExamHistory = async () => {
+    const refreshData = async () => {
       setIsLoading(true);
       try {
         // 2013년부터 2024년까지의 데이터 요청
         const years = Array.from({ length: 12 }, (_, i) => 2013 + i);
-        const response = await getExamHistory({
+        const response = await Api.fetchExamHistory({
           years,
           subject: selectedSubject,
           target,
         });
-        setExamColumns(response.columns);
         setExamData(response.data);
       } catch (error) {
         console.error('Failed to fetch exam history:', error);
@@ -142,7 +140,7 @@ function CategoryPage() {
       }
     };
 
-    fetchExamHistory();
+    refreshData();
   }, [selectedSubject, target]);
 
   return (
@@ -259,7 +257,7 @@ function CategoryPage() {
             연도별 문항 수 - {selectedSubject}, {target}
           </h2>
           <ExamHistoryTable
-            columns={examColumns}
+            columns={EXAM_COLUMNS}
             data={examData}
             isLoading={isLoading}
             subject={selectedSubject || undefined}

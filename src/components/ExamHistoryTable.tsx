@@ -49,7 +49,7 @@ function ExamHistoryTable({
     month: string,
     type: string,
     region: string,
-    value: number | null
+    _value: number | null
   ) => {
     // 필수 정보가 없으면 클릭 불가
     if (!subject || !target || !category) return;

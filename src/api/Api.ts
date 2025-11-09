@@ -1,37 +1,26 @@
-// API 함수들을 정의하는 파일
+// API 클래스 정의
 
-interface ExamColumn {
+// Type definitions
+export interface ExamColumn {
   month: string;
   type: string;
   region: string;
 }
 
-interface ExamDataRow {
+export interface ExamDataRow {
   year: number;
   data: (number | null)[];
 }
 
-interface ExamHistoryResponse {
-  columns: ExamColumn[];
+export interface ExamHistoryResponse {
   data: ExamDataRow[];
 }
 
-interface GetExamHistoryParams {
+export interface FetchExamHistoryParams {
   years: number[];
   subject: string;
   target: string;
 }
-
-// Mock 데이터
-export const MOCK_EXAM_COLUMNS: ExamColumn[] = [
-  { month: '03', type: '학평', region: '서울' },
-  { month: '04', type: '학평', region: '경기' },
-  { month: '06', type: '모평', region: '평가원' },
-  { month: '07', type: '학평', region: '인천' },
-  { month: '09', type: '모평', region: '평가원' },
-  { month: '10', type: '학평', region: '서울' },
-  { month: '11', type: '수능', region: '평가원' },
-];
 
 const MOCK_EXAM_DATA: ExamDataRow[] = [
   { year: 2024, data: [20, 20, 20, 20, 20, 20, 20] },
@@ -48,40 +37,42 @@ const MOCK_EXAM_DATA: ExamDataRow[] = [
 ];
 
 /**
- * 시험 통계 데이터를 가져오는 API
- * @param params - years: 연도 배열, subject: 과목명, target: 학년
- * @returns 시험 컬럼과 데이터
+ * API 요청을 처리하는 클래스
  */
-export const getExamHistory = async ({
-  years,
-  subject,
-  target,
-}: GetExamHistoryParams): Promise<ExamHistoryResponse> => {
-  // 쿼리 스트링 생성
-  const queryParams = new URLSearchParams({
-    year: years.join(','),
+export class Api {
+  /**
+   * 시험 통계 데이터를 서버에서 가져오는 API
+   * @param params - years: 연도 배열, subject: 과목명, target: 학년
+   * @returns 시험 데이터
+   */
+  static async fetchExamHistory({
+    years,
     subject,
     target,
-  });
+  }: FetchExamHistoryParams): Promise<ExamHistoryResponse> {
+    // 쿼리 스트링 생성
+    const queryParams = new URLSearchParams({
+      year: years.join(','),
+      subject,
+      target,
+    });
 
-  // 실제 API 호출 (현재는 주석 처리)
-  // const response = await fetch(`/api/exam-history?${queryParams.toString()}`);
-  // const data = await response.json();
-  // return data;
+    // 실제 API 호출 (현재는 주석 처리)
+    // const response = await fetch(`/api/exam-history?${queryParams.toString()}`);
+    // const data = await response.json();
+    // return data;
 
-  // Mock 데이터 반환 (서버 구현 전까지 사용)
-  console.log(`API Mock Call: /api/exam-history?${queryParams.toString()}`);
+    // Mock 데이터 반환 (서버 구현 전까지 사용)
+    console.log(`API Mock Call: /api/exam-history?${queryParams.toString()}`);
 
-  // 네트워크 지연 시뮬레이션 (1초)
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+    // 네트워크 지연 시뮬레이션 (1초)
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // 요청된 연도에 해당하는 데이터만 필터링
-  const filteredData = MOCK_EXAM_DATA.filter((row) => years.includes(row.year));
+    // 요청된 연도에 해당하는 데이터만 필터링
+    const filteredData = MOCK_EXAM_DATA.filter((row) => years.includes(row.year));
 
-  return {
-    columns: MOCK_EXAM_COLUMNS,
-    data: filteredData,
-  };
-};
-
-export type { ExamColumn, ExamDataRow, ExamHistoryResponse, GetExamHistoryParams };
+    return {
+      data: filteredData,
+    };
+  }
+}

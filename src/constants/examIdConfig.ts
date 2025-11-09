@@ -22,8 +22,8 @@ export const ID_SPECIFICATION = {
    * 시험 ID 생성 함수
    */
   generate: ({ subject, target, year, month, type, region }: ExamIdParams): string => {
-    // "3월" -> "3", "10월" -> "10"
-    const monthNumber = month.replace('월', '');
+    // "3월" -> "03", "10월" -> "10" (0 패딩 처리)
+    const monthNumber = month.replace('월', '').padStart(2, '0');
     return `${subject}_${target}_${year}_${monthNumber}_${type}(${region})`;
   },
 
