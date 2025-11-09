@@ -1,7 +1,7 @@
 // API 클래스 정의
 
 import { countTrueValues } from '../utils/csvParser';
-import { getProblemCsvUrl } from '../ssot/examMetaUrl';
+import { getProblemCsvUrl, getAnswerCsvUrl } from '../ssot/examMetaUrl';
 
 // Type definitions
 export interface ExamColumn {
@@ -10,9 +10,14 @@ export interface ExamColumn {
   region: string;
 }
 
+export interface ExamCellData {
+  problem: number | null | 'forbidden';
+  answer: number | null | 'forbidden';
+}
+
 export interface ExamDataRow {
   year: number;
-  data: (number | null | 'forbidden')[];
+  data: ExamCellData[];
 }
 
 export interface ExamHistoryResponse {
@@ -26,17 +31,138 @@ export interface FetchExamHistoryParams {
 }
 
 const MOCK_EXAM_DATA: ExamDataRow[] = [
-  { year: 2024, data: [20, 20, 20, 20, 20, 20, 20] },
-  { year: 2023, data: [20, 20, 20, 20, 20, 20, 20] },
-  { year: 2022, data: [20, 20, 20, 20, 20, 20, 20] },
-  { year: 2021, data: [20, 20, 20, 20, 20, 20, 20] },
-  { year: 2020, data: [20, 20, 20, 20, 20, 20, 20] },
-  { year: 2019, data: [11, 13, 16, 10, 15, 9, 16] },
-  { year: 2018, data: [5, 5, 8, 4, 5, 5, 6] },
-  { year: 2017, data: [2, 2, 4, 2, 5, 1, 1] },
-  { year: 2016, data: [2, 1, 2, 2, 3, null, 1] },
-  { year: 2014, data: [null, null, null, 1, null, null, null] },
-  { year: 2013, data: [null, null, null, null, null, null, 1] },
+  {
+    year: 2024,
+    data: [
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+    ],
+  },
+  {
+    year: 2023,
+    data: [
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+    ],
+  },
+  {
+    year: 2022,
+    data: [
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+    ],
+  },
+  {
+    year: 2021,
+    data: [
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+    ],
+  },
+  {
+    year: 2020,
+    data: [
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20 },
+    ],
+  },
+  {
+    year: 2019,
+    data: [
+      { problem: 11, answer: 11 },
+      { problem: 13, answer: 13 },
+      { problem: 16, answer: 16 },
+      { problem: 10, answer: 10 },
+      { problem: 15, answer: 15 },
+      { problem: 9, answer: 9 },
+      { problem: 16, answer: 16 },
+    ],
+  },
+  {
+    year: 2018,
+    data: [
+      { problem: 5, answer: 5 },
+      { problem: 5, answer: 5 },
+      { problem: 8, answer: 8 },
+      { problem: 4, answer: 4 },
+      { problem: 5, answer: 5 },
+      { problem: 5, answer: 5 },
+      { problem: 6, answer: 6 },
+    ],
+  },
+  {
+    year: 2017,
+    data: [
+      { problem: 2, answer: 2 },
+      { problem: 2, answer: 2 },
+      { problem: 4, answer: 4 },
+      { problem: 2, answer: 2 },
+      { problem: 5, answer: 5 },
+      { problem: 1, answer: 1 },
+      { problem: 1, answer: 1 },
+    ],
+  },
+  {
+    year: 2016,
+    data: [
+      { problem: 2, answer: 2 },
+      { problem: 1, answer: 1 },
+      { problem: 2, answer: 2 },
+      { problem: 2, answer: 2 },
+      { problem: 3, answer: 3 },
+      { problem: null, answer: null },
+      { problem: 1, answer: 1 },
+    ],
+  },
+  {
+    year: 2014,
+    data: [
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: 1, answer: 1 },
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+    ],
+  },
+  {
+    year: 2013,
+    data: [
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: null, answer: null },
+      { problem: 1, answer: 1 },
+    ],
+  },
 ];
 
 /**
@@ -67,6 +193,34 @@ export class Api {
       return count;
     } catch (error) {
       console.error(`Failed to fetch exam question count for ${examId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * exam_id로부터 해설 CSV 파일에서 has_image가 True인 해설 개수를 가져옵니다
+   * @param examId - 시험 ID (예: "경제_고3_2024_03_학평(서울)")
+   * @returns has_image가 True인 해설 개수, 403일 경우 'forbidden', 파일이 없거나 에러 시 null
+   */
+  static async fetchExamAnswerCount(examId: string): Promise<number | null | 'forbidden'> {
+    try {
+      const url = getAnswerCsvUrl(examId);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        // 403 Forbidden 체크
+        if (response.status === 403) {
+          return 'forbidden';
+        }
+        // 404나 다른 에러인 경우 null 반환
+        return null;
+      }
+
+      const csvText = await response.text();
+      const count = countTrueValues(csvText, 'has_image');
+      return count;
+    } catch (error) {
+      console.error(`Failed to fetch exam answer count for ${examId}:`, error);
       return null;
     }
   }

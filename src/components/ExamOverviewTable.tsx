@@ -7,9 +7,14 @@ interface ExamColumn {
   region: string;
 }
 
+interface ExamCellData {
+  problem: number | null | 'forbidden';
+  answer: number | null | 'forbidden';
+}
+
 interface ExamDataRow {
   year: number;
-  data: readonly (number | null | 'forbidden')[];
+  data: readonly ExamCellData[];
 }
 
 interface ExamOverviewTableProps {
@@ -32,30 +37,36 @@ function ExamOverviewTable({
   const navigate = useNavigate();
 
   // 각 연도의 합계 계산
-  const calculateYearTotal = (rowData: readonly (number | null | 'forbidden')[]): number => {
-    return rowData.reduce((sum: number, val) => {
-      if (typeof val === 'number') {
-        return sum + val;
-      }
-      return sum;
-    }, 0);
+  const calculateYearTotal = (rowData: readonly ExamCellData[]): { problem: number; answer: number } => {
+    return rowData.reduce<{ problem: number; answer: number }>(
+      (sum, cell) => {
+        if (typeof cell.problem === 'number') {
+          sum.problem += cell.problem;
+        }
+        if (typeof cell.answer === 'number') {
+          sum.answer += cell.answer;
+        }
+        return sum;
+      },
+      { problem: 0, answer: 0 }
+    );
   };
 
   // 전체 합계 계산
-  const calculateGrandTotal = (): number => {
-    return data.reduce((total: number, row) => {
-      return total + calculateYearTotal(row.data);
-    }, 0);
+  const calculateGrandTotal = (): { problem: number; answer: number } => {
+    return data.reduce<{ problem: number; answer: number }>(
+      (total, row) => {
+        const yearTotal = calculateYearTotal(row.data);
+        total.problem += yearTotal.problem;
+        total.answer += yearTotal.answer;
+        return total;
+      },
+      { problem: 0, answer: 0 }
+    );
   };
 
   // 셀 클릭 핸들러
-  const handleCellClick = (
-    year: number,
-    month: string,
-    type: string,
-    region: string,
-    _value: number | null | 'forbidden'
-  ) => {
+  const handleCellClick = (year: number, month: string, type: string, region: string) => {
     // 필수 정보가 없으면 클릭 불가
     if (!subject || !target || !category) return;
 
@@ -140,35 +151,41 @@ function ExamOverviewTable({
                 </>
               ) : (
                 <>
-                  {row.data.map((value, colIndex) => {
+                  {row.data.map((cellData, colIndex) => {
                     const column = columns[colIndex];
                     const month = column?.month;
                     const type = column?.type;
                     const region = column?.region;
                     const isClickable = subject && target && category;
 
+                    // 각 값을 개별적으로 표시
+                    const problemText =
+                      cellData.problem === 'forbidden' ? 'x' : cellData.problem !== null ? String(cellData.problem) : '-';
+                    const answerText =
+                      cellData.answer === 'forbidden' ? 'x' : cellData.answer !== null ? String(cellData.answer) : '-';
+
+                    const problemIsForbidden = cellData.problem === 'forbidden';
+                    const answerIsForbidden = cellData.answer === 'forbidden';
+
                     return (
                       <td
                         key={colIndex}
-                        onClick={() =>
-                          month && type && region && handleCellClick(row.year, month, type, region, value)
-                        }
-                        className={`px-4 py-3 border-2 border-gray-400 text-center ${
-                          value === 'forbidden'
-                            ? 'text-red-500'
-                            : 'text-gray-900'
-                        } ${
-                          isClickable
-                            ? 'cursor-pointer hover:bg-blue-100 transition-colors'
-                            : ''
+                        onClick={() => month && type && region && handleCellClick(row.year, month, type, region)}
+                        className={`px-4 py-3 border-2 border-gray-400 text-center text-gray-900 ${
+                          isClickable ? 'cursor-pointer hover:bg-blue-100 transition-colors' : ''
                         }`}
                       >
-                        {value === 'forbidden' ? '🚫' : value !== null ? value : '-'}
+                        <span className={problemIsForbidden ? 'text-red-500' : ''}>{problemText}</span>
+                        <span>/</span>
+                        <span className={answerIsForbidden ? 'text-red-500' : ''}>{answerText}</span>
                       </td>
                     );
                   })}
                   <td className="px-4 py-3 border-2 border-gray-400 text-center font-bold text-gray-900">
-                    {calculateYearTotal(row.data)}
+                    {(() => {
+                      const total = calculateYearTotal(row.data);
+                      return `${total.problem}/${total.answer}`;
+                    })()}
                   </td>
                 </>
               )}
@@ -186,7 +203,10 @@ function ExamOverviewTable({
               {isLoading ? (
                 <div className="h-6 bg-gray-300 rounded animate-pulse mx-auto w-16"></div>
               ) : (
-                calculateGrandTotal()
+                (() => {
+                  const grandTotal = calculateGrandTotal();
+                  return `${grandTotal.problem}/${grandTotal.answer}`;
+                })()
               )}
             </td>
           </tr>

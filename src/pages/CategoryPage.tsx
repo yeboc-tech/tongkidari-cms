@@ -12,7 +12,7 @@ const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => 2013 + i);
 // 초기 로딩을 위한 빈 데이터 생성
 const createEmptyYearData = (year: number): ExamDataRow => ({
   year,
-  data: Array(7).fill(null),
+  data: Array(7).fill({ problem: null, answer: null }),
 });
 
 function CategoryPage() {
@@ -145,8 +145,13 @@ function CategoryPage() {
               region: column.region,
             });
 
-            const count = await Api.fetchExamQuestionCount(examId);
-            return count;
+            // 문제와 해설 카운트를 병렬로 가져오기
+            const [problemCount, answerCount] = await Promise.all([
+              Api.fetchExamQuestionCount(examId),
+              Api.fetchExamAnswerCount(examId),
+            ]);
+
+            return { problem: problemCount, answer: answerCount };
           });
 
           const columnData = await Promise.all(columnDataPromises);

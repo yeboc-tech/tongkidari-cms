@@ -44,6 +44,25 @@ export const getProblemCsvUrl = (examId: string): string => {
 };
 
 /**
+ * 해설 CSV 파일의 정규화된 파일명 생성
+ * @param examId - 시험 ID
+ * @returns NFD로 정규화된 파일명
+ */
+export const getAnswerCsvFilename = (examId: string): string => {
+  const filename = `${examId}_해설.csv`;
+  return normalizeToNFD(filename);
+};
+
+/**
+ * 해설 CSV 파일의 전체 URL 생성
+ * @param examId - 시험 ID
+ * @returns 해설 CSV 파일 URL
+ */
+export const getAnswerCsvUrl = (examId: string): string => {
+  return `${CDN_BASE_URL}/${getAnswerCsvFilename(examId)}`;
+};
+
+/**
  * 문제 페이지 이미지 파일의 정규화된 파일명 생성
  * @param examId - 시험 ID
  * @param page - 페이지 번호 (1-4)
