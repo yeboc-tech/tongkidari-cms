@@ -11,7 +11,7 @@ export const CONTENT_PATH = '/tongkidari/contents';
  * @param text - 분리할 한글 텍스트
  * @returns 자소 분리된 텍스트 (NFD)
  */
-const decomposeHangul = (text: string): string => {
+export const decomposeHangul = (text: string): string => {
   return text.normalize('NFD');
 };
 

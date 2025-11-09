@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExamId } from '../domain/examId';
 import { getQuestionImageUrls } from '../constants/apiConfig';
+import { ExamResources } from '../components';
 
 function ExamPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,6 +80,7 @@ function ExamPage() {
           <h3 className="text-sm font-semibold text-gray-600 mb-1">시험 ID</h3>
           <p className="text-sm font-mono text-gray-700 break-all">{id}</p>
         </div>
+        <ExamResources examId={id!} />
       </div>
 
       <div className="bg-white p-8 rounded-lg shadow">
