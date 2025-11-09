@@ -36,3 +36,25 @@ export const getQuestionImageUrl = (examId: string, questionNumber: number): str
 export const getQuestionImageUrls = (examId: string, totalQuestions: number = 20): string[] => {
   return Array.from({ length: totalQuestions }, (_, i) => getQuestionImageUrl(examId, i + 1));
 };
+
+/**
+ * 해설 이미지 URL 생성
+ * @param examId - 시험 ID (예: "정치와법_고3_2024_10_학평(서울)")
+ * @param questionNumber - 문제 번호 (1-20)
+ * @returns 해설 이미지 URL
+ */
+export const getSolutionImageUrl = (examId: string, questionNumber: number): string => {
+  const fullPath = `${examId}_${questionNumber}_해설`;
+  const decomposedPath = decomposeHangul(fullPath);
+  return `${HOST_URL}${CONTENT_PATH}/${decomposedPath}.png`;
+};
+
+/**
+ * 전체 해설 목록의 URL 배열 생성
+ * @param examId - 시험 ID
+ * @param totalQuestions - 전체 문제 수 (기본값: 20)
+ * @returns 해설 이미지 URL 배열
+ */
+export const getSolutionImageUrls = (examId: string, totalQuestions: number = 20): string[] => {
+  return Array.from({ length: totalQuestions }, (_, i) => getSolutionImageUrl(examId, i + 1));
+};

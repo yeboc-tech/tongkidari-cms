@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ExamId } from '../domain/examId';
-import { getQuestionImageUrls } from '../constants/apiConfig';
-import { ExamResources } from '../components';
+import { getQuestionImageUrls, getSolutionImageUrls } from '../constants/apiConfig';
+import { ExamMetaLinks } from '../components';
 import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
 import { useAuth } from '../hooks/useAuth';
@@ -14,12 +14,18 @@ function ExamPage() {
   const navigate = useNavigate();
   const [accuracyRates, setAccuracyRates] = useState<Map<number, AccuracyRate>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [showSolution, setShowSolution] = useState(false);
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
 
   // 문제 이미지 URL 목록 생성 (1-20번)
   const questionImageUrls = id ? getQuestionImageUrls(id, 20) : [];
+  // 해설 이미지 URL 목록 생성 (1-20번)
+  const solutionImageUrls = id ? getSolutionImageUrls(id, 20) : [];
+
+  // 현재 표시할 이미지 URL 목록
+  const currentImageUrls = showSolution ? solutionImageUrls : questionImageUrls;
 
   // 지역 제거 함수
   const removeRegion = (examIdWithRegion: string): string => {
@@ -133,24 +139,48 @@ function ExamPage() {
           <h3 className="text-sm font-semibold text-gray-600 mb-1">시험 ID</h3>
           <p className="text-sm font-mono text-gray-700 break-all">{id}</p>
         </div>
-        <ExamResources examId={id!} />
+        <ExamMetaLinks examId={id!} />
       </div>
 
       <div className="bg-white p-8 rounded-lg shadow">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">문제 목록</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {showSolution ? '해설 목록' : '문제 목록'}
+          </h2>
+          <div className="flex items-center gap-3">
+            <span className={`text-sm font-medium ${!showSolution ? 'text-blue-600' : 'text-gray-500'}`}>
+              문제 보기
+            </span>
+            <button
+              onClick={() => setShowSolution(!showSolution)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                showSolution ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  showSolution ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm font-medium ${showSolution ? 'text-blue-600' : 'text-gray-500'}`}>
+              해설 보기
+            </span>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {questionImageUrls.map((url, index) => {
+          {currentImageUrls.map((url, index) => {
             const questionNumber = index + 1;
             const accuracyData = accuracyRates.get(questionNumber);
 
             return (
               <div
-                key={questionNumber}
+                key={`${showSolution ? 'solution' : 'question'}-${questionNumber}`}
                 className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors"
               >
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    문제 {questionNumber}
+                    {showSolution ? '해설' : '문제'} {questionNumber}
                   </h3>
                   <a
                     href={url}
@@ -201,7 +231,7 @@ function ExamPage() {
                 <div className="bg-gray-100 rounded-lg overflow-hidden">
                   <img
                     src={url}
-                    alt={`문제 ${questionNumber}`}
+                    alt={`${showSolution ? '해설' : '문제'} ${questionNumber}`}
                     className="w-full h-auto"
                     loading="lazy"
                     onError={(e) => {
