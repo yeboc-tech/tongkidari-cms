@@ -64,7 +64,6 @@ export class Api {
 
       const csvText = await response.text();
       const count = countTrueValues(csvText, 'has_image');
-
       return count;
     } catch (error) {
       console.error(`Failed to fetch exam question count for ${examId}:`, error);

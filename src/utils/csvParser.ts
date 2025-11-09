@@ -3,6 +3,44 @@
  */
 
 /**
+ * CSV 라인을 파싱하여 배열로 변환 (quoted fields 처리)
+ * @param line - CSV 라인 문자열
+ * @returns 파싱된 값 배열
+ */
+function parseCSVLine(line: string): string[] {
+  const values: string[] = [];
+  let currentValue = '';
+  let insideQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (char === '"') {
+      // Handle escaped quotes ("")
+      if (insideQuotes && nextChar === '"') {
+        currentValue += '"';
+        i++; // Skip the next quote
+      } else {
+        // Toggle quote state
+        insideQuotes = !insideQuotes;
+      }
+    } else if (char === ',' && !insideQuotes) {
+      // Field separator (only when not inside quotes)
+      values.push(currentValue.trim());
+      currentValue = '';
+    } else {
+      currentValue += char;
+    }
+  }
+
+  // Push the last value
+  values.push(currentValue.trim());
+
+  return values;
+}
+
+/**
  * CSV 텍스트를 파싱하여 객체 배열로 변환
  * @param csvText - CSV 텍스트 문자열
  * @returns 파싱된 객체 배열
@@ -15,13 +53,13 @@ export function parseCSV(csvText: string): Record<string, string>[] {
   }
 
   // 첫 번째 줄을 헤더로 사용
-  const headers = lines[0].split(',').map(header => header.trim());
+  const headers = parseCSVLine(lines[0]);
 
   // 나머지 줄을 데이터로 파싱
   const data: Record<string, string>[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(value => value.trim());
+    const values = parseCSVLine(lines[i]);
 
     if (values.length === headers.length) {
       const row: Record<string, string> = {};
@@ -44,8 +82,10 @@ export function parseCSV(csvText: string): Record<string, string>[] {
 export function countTrueValues(csvText: string, columnName: string): number {
   const data = parseCSV(csvText);
 
-  return data.filter(row => {
+  const trueCount = data.filter(row => {
     const value = row[columnName];
     return value === 'True' || value === 'true' || value === 'TRUE';
   }).length;
+
+  return trueCount;
 }
