@@ -12,7 +12,8 @@ export const CONTENT_PATH = '/tongkidari/contents';
  * @returns 자소 분리된 텍스트 (NFD)
  */
 export const decomposeHangul = (text: string): string => {
-  return text.normalize('NFD');
+  // return text.normalize('NFD');
+  return text;
 };
 
 /**

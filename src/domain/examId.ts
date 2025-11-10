@@ -14,11 +14,11 @@ export interface ExamIdParams {
 
 /**
  * 시험 ID 생성 및 파싱 클래스
- * 형식: {subject}_{target}_{year}_{month}_{type}({region})
- * 예: "정치와법_고3_2024_10_학평(서울)"
+ * 형식: {subject}_{target}_{year}_{month}_{type}
+ * 예: "정치와법_고3_2024_10_학평"
  */
 export class ExamId {
-  private static readonly FORMAT = '{subject}_{target}_{year}_{month}_{type}({region})';
+  private static readonly FORMAT = '{subject}_{target}_{year}_{month}_{type}';
 
   /**
    * 시험 ID 생성
@@ -26,9 +26,9 @@ export class ExamId {
    * @returns 생성된 시험 ID
    */
   static generate(params: ExamIdParams): string {
-    const { subject, target, year, month, type, region } = params;
+    const { subject, target, year, month, type } = params;
     const normalizedMonth = normalizeMonth(month);
-    return `${subject}_${target}_${year}_${normalizedMonth}_${type}(${region})`;
+    return `${subject}_${target}_${year}_${normalizedMonth}_${type}`;
   }
 
   /**
@@ -37,8 +37,8 @@ export class ExamId {
    * @returns 파싱된 시험 정보 또는 null
    */
   static parse(examId: string): ExamIdParams | null {
-    // 형식: subject_target_year_month_type(region)
-    const regex = /^(.+)_(.+)_(\d{4})_(\d{1,2})_(.+)\((.+)\)$/;
+    // 형식: subject_target_year_month_type
+    const regex = /^(.+)_(.+)_(\d{4})_(\d{1,2})_(.+)$/;
     const match = examId.match(regex);
 
     if (!match) return null;
@@ -49,7 +49,7 @@ export class ExamId {
       year: parseInt(match[3], 10),
       month: `${match[4]}월`,
       type: match[5],
-      region: match[6],
+      region: '',
     };
   }
 
