@@ -33,7 +33,21 @@ function IndeterminateCheckbox({ checkState }: CheckboxProps) {
 }
 
 function ChapterTree({ data }: ChapterTreeProps) {
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  // 모든 항목을 펼친 상태로 초기화
+  const getAllIds = (data: Book[]): string[] => {
+    const ids: string[] = [];
+    data.forEach((book) => {
+      ids.push(book.id);
+      if (book.chapters) {
+        book.chapters.forEach((chapter) => {
+          ids.push(chapter.id);
+        });
+      }
+    });
+    return ids;
+  };
+
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(getAllIds(data)));
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (id: string) => {
