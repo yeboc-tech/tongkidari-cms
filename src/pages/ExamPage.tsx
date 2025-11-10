@@ -10,6 +10,8 @@ import CurriculumTagInput from '../components/tag-input/CurriculumTagInput/Curri
 import CustomTagInput from '../components/tag-input/CustomTagInput/CustomTagInput';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 import { 자세한통합사회_단원_태그 } from '../ssot/curriculumStructure';
+import { getRegionByExamInfo } from '../ssot/EXAM_REGION';
+import { type Grade } from '../constants/tableConfig';
 
 interface SelectedTag {
   tagIds: string[];
@@ -37,6 +39,11 @@ function ExamPage() {
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
+
+  // 지역 정보 가져오기
+  const regionInfo = examInfo
+    ? getRegionByExamInfo(examInfo.year, examInfo.target as Grade, examInfo.month, examInfo.type)
+    : '-';
 
   // 문제 이미지 URL 목록 생성 (1-20번)
   const questionImageUrls = id ? getQuestionImageUrls(id, 20) : [];
@@ -176,7 +183,7 @@ function ExamPage() {
           </div>
           <div className="p-4 bg-indigo-50 rounded-lg">
             <h3 className="text-sm font-semibold text-gray-600 mb-1">주관 지역</h3>
-            <p className="text-xl font-bold text-gray-900">{examInfo.region}</p>
+            <p className="text-xl font-bold text-gray-900">{regionInfo}</p>
           </div>
         </div>
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
