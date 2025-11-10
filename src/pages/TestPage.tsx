@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import CurriculumTagInput from '../components/tag-input/CurriculumTagInput/CurriculumTagInput';
+import CustomTagInput from '../components/tag-input/CustomTagInput/CustomTagInput';
 
 interface SelectedTag {
   tagIds: string[];
@@ -12,6 +13,7 @@ function TestPage() {
 
   const [selectedTag1, setSelectedTag1] = useState<SelectedTag | null>(null);
   const [selectedTag2, setSelectedTag2] = useState<SelectedTag | null>(null);
+  const [customTags, setCustomTags] = useState<string[]>([]);
 
   const handleSelect1 = (tag: SelectedTag | null) => {
     setSelectedTag1(tag);
@@ -21,6 +23,11 @@ function TestPage() {
   const handleSelect2 = (tag: SelectedTag | null) => {
     setSelectedTag2(tag);
     console.log('Selected tag 2:', tag);
+  };
+
+  const handleCustomTagsChange = (tags: string[]) => {
+    setCustomTags(tags);
+    console.log('Custom tags:', tags);
   };
 
   return (
@@ -68,6 +75,24 @@ function TestPage() {
                   [{selectedTag2.tagLabels.map((label) => `'${label}'`).join(', ')}]
                 </code>
               </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">커스텀 태그 입력기</h2>
+        <CustomTagInput onTagsChange={handleCustomTagsChange} />
+
+        {customTags.length > 0 && (
+          <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">선택된 태그들</h3>
+            <div className="flex flex-wrap gap-2">
+              {customTags.map((tag, index) => (
+                <code key={index} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                  {tag}
+                </code>
+              ))}
             </div>
           </div>
         )}
