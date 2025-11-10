@@ -3,6 +3,8 @@ import Home from './pages/Home'
 import CategoryPage from './pages/CategoryPage'
 import ExamPage from './pages/ExamPage'
 import TestPage from './pages/TestPage'
+import SocialPlayground from './pages/SocialPlayground'
+import SciencePlayground from './pages/SciencePlayground'
 import Auth from './lib/Auth'
 
 function Navigation() {
@@ -15,11 +17,17 @@ function Navigation() {
     ? decodeURIComponent(pathParts[2])
     : null
 
-  const isActive = (category: string) => {
-    if (category === '테스트') {
+  const isActive = (path: string) => {
+    if (path === '테스트') {
       return location.pathname === '/test'
     }
-    return currentCategory === category
+    if (path === '사회 Playground') {
+      return location.pathname === '/playground/social'
+    }
+    if (path === '과학 Playground') {
+      return location.pathname === '/playground/science'
+    }
+    return currentCategory === path
   }
 
   const handleLogout = () => {
@@ -45,6 +53,19 @@ function Navigation() {
               </span>
             </Link>
             <Link
+              to="/playground/social"
+              className="inline-flex items-center px-1 pt-1"
+            >
+              <span className={`${
+                isActive('사회 Playground')
+                  ? 'text-blue-600 border-b-2 border-blue-600 pb-1'
+                  : 'text-gray-600 hover:text-blue-600'
+              }`}>
+                <span className={isActive('사회 Playground') ? 'font-semibold' : ''}>사회</span>
+                <span className="font-thin"> Playground</span>
+              </span>
+            </Link>
+            <Link
               to="/category/과학"
               className="inline-flex items-center px-1 pt-1"
             >
@@ -57,17 +78,33 @@ function Navigation() {
               </span>
             </Link>
             <Link
-              to="/test"
+              to="/playground/science"
               className="inline-flex items-center px-1 pt-1"
             >
               <span className={`${
-                isActive('테스트')
-                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-1'
-                  : 'text-gray-900 hover:text-blue-600'
+                isActive('과학 Playground')
+                  ? 'text-blue-600 border-b-2 border-blue-600 pb-1'
+                  : 'text-gray-600 hover:text-blue-600'
               }`}>
-                테스트
+                <span className={isActive('과학 Playground') ? 'font-semibold' : ''}>과학</span>
+                <span className="font-thin"> Playground</span>
               </span>
             </Link>
+            {/* 테스트 탭: 개발 환경에서만 표시 */}
+            {import.meta.env.DEV && (
+              <Link
+                to="/test"
+                className="inline-flex items-center px-1 pt-1"
+              >
+                <span className={`${
+                  isActive('테스트')
+                    ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-1'
+                    : 'text-gray-900 hover:text-blue-600'
+                }`}>
+                  테스트
+                </span>
+              </Link>
+            )}
           </div>
           <div className="flex items-center">
             <button
@@ -96,7 +133,10 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/category/:categoryId" element={<CategoryPage />} />
           <Route path="/exam/:id" element={<ExamPage />} />
-          <Route path="/test" element={<TestPage />} />
+          <Route path="/playground/social" element={<SocialPlayground />} />
+          <Route path="/playground/science" element={<SciencePlayground />} />
+          {/* 테스트 페이지: 개발 환경에서만 접근 가능 */}
+          {import.meta.env.DEV && <Route path="/test" element={<TestPage />} />}
         </Routes>
       </main>
     </div>
