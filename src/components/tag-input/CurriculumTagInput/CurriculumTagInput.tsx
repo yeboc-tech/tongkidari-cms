@@ -28,6 +28,7 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedTags, setSelectedTags] = useState<SelectedTag[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +37,7 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
     if (!searchText.trim()) {
       setResults([]);
       setIsOpen(false);
+      setHighlightedIndex(-1);
       return;
     }
 
@@ -66,6 +68,7 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
 
     setResults(searchResults);
     setIsOpen(searchResults.length > 0);
+    setHighlightedIndex(-1); // 검색어가 바뀌면 하이라이트 초기화
   }, [searchText]);
 
   // 외부 클릭 감지
@@ -84,6 +87,19 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 하이라이트된 항목으로 스크롤
+  useEffect(() => {
+    if (highlightedIndex >= 0 && dropdownRef.current) {
+      const highlightedElement = dropdownRef.current.children[highlightedIndex] as HTMLElement;
+      if (highlightedElement) {
+        highlightedElement.scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth',
+        });
+      }
+    }
+  }, [highlightedIndex]);
 
   // 텍스트 하이라이트 함수
   const highlightText = (text: string, query: string) => {
@@ -139,9 +155,37 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
 
   // 키보드 이벤트 핸들러
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Backspace로 태그 제거
     if (e.key === 'Backspace' && searchText === '' && selectedTags.length > 0) {
-      // 마지막 태그 제거
       handleRemoveTag(selectedTags.length - 1);
+      return;
+    }
+
+    // 드롭다운이 열려있을 때만 방향키 처리
+    if (!isOpen || results.length === 0) return;
+
+    // ArrowDown: 다음 항목으로 이동
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
+    }
+
+    // ArrowUp: 이전 항목으로 이동
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    }
+
+    // Enter: 현재 하이라이트된 항목 선택
+    if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelect(results[highlightedIndex]);
+    }
+
+    // Escape: 드롭다운 닫기
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
     }
   };
 
@@ -197,11 +241,15 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
         >
           {results.map((result, index) => {
             const key = result.tagIds.join('-') + '-' + index;
+            const isHighlighted = index === highlightedIndex;
             return (
               <div
                 key={key}
                 onClick={() => handleSelect(result)}
-                className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                onMouseEnter={() => setHighlightedIndex(index)}
+                className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                  isHighlighted ? 'bg-blue-100' : 'hover:bg-blue-50'
+                }`}
               >
                 <div className="text-sm text-gray-600">
                   {highlightText(result.book.title, searchText)}
