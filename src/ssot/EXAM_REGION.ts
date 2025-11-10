@@ -17,12 +17,12 @@ export interface ExamColumn {
  */
 export const EXAM_COLUMNS = {
   '2015교육과정': [
-    { month: '3', type: '학평', region: '서울' },
-    { month: '4', type: '학평', region: '경기' },
+    { month: '3', type: '학평', region: '서울시' },
+    { month: '4', type: '학평', region: '경기도' },
     { month: '6', type: '모평', region: '평가원' },
-    { month: '7', type: '학평', region: '인천' },
+    { month: '7', type: '학평', region: '인천시' },
     { month: '9', type: '모평', region: '평가원' },
-    { month: '10', type: '학평', region: '서울' },
+    { month: '10', type: '학평', region: '서울시' },
     { month: '11', type: '수능', region: '평가원' },
   ] as const,
   '2022교육과정': [] as const,
