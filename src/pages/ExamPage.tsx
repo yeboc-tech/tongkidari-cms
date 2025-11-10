@@ -6,6 +6,20 @@ import { ExamMetaLinks } from '../components';
 import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
 import { useAuth } from '../hooks/useAuth';
+import CurriculumTagInput from '../components/tag-input/CurriculumTagInput/CurriculumTagInput';
+import CustomTagInput from '../components/tag-input/CustomTagInput/CustomTagInput';
+import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
+import { 자세한통합사회_단원_태그 } from '../ssot/curriculumStructure';
+
+interface SelectedTag {
+  tagIds: string[];
+  tagLabels: string[];
+}
+
+interface TagWithId {
+  id: string;
+  label: string;
+}
 
 function ExamPage() {
   useAuth(); // 인증 체크
@@ -15,6 +29,11 @@ function ExamPage() {
   const [accuracyRates, setAccuracyRates] = useState<Map<number, AccuracyRate>>(new Map());
   const [loading, setLoading] = useState(true);
   const [showSolution, setShowSolution] = useState(false);
+
+  // 태그 입력기 상태 관리 (문제 번호별)
+  const [madertongTags, setMadertongTags] = useState<Map<number, SelectedTag | null>>(new Map());
+  const [integratedTags, setIntegratedTags] = useState<Map<number, SelectedTag | null>>(new Map());
+  const [customTagsMap, setCustomTagsMap] = useState<Map<number, TagWithId[]>>(new Map());
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
@@ -74,6 +93,31 @@ function ExamPage() {
 
   const handleGoBack = () => {
     navigate(-1);
+  };
+
+  // 태그 입력기 핸들러 함수들
+  const handleMadertongSelect = (questionNumber: number) => (tag: SelectedTag | null) => {
+    setMadertongTags((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(questionNumber, tag);
+      return newMap;
+    });
+  };
+
+  const handleIntegratedSelect = (questionNumber: number) => (tag: SelectedTag | null) => {
+    setIntegratedTags((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(questionNumber, tag);
+      return newMap;
+    });
+  };
+
+  const handleCustomTagsChange = (questionNumber: number) => (tags: TagWithId[]) => {
+    setCustomTagsMap((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(questionNumber, tags);
+      return newMap;
+    });
   };
 
   if (!examInfo) {
@@ -227,6 +271,32 @@ function ExamPage() {
                     정확도 정보를 불러오는 중...
                   </div>
                 )}
+
+                {/* 태그 입력기 섹션 */}
+                <div className="mb-4 space-y-3">
+                  <div className="border border-gray-200 rounded-lg p-3">
+                    <CurriculumTagInput
+                      data={마더텅_단원_태그}
+                      onSelect={handleMadertongSelect(questionNumber)}
+                      placeholder="마더텅 경제 단원 태그"
+                    />
+                  </div>
+
+                  <div className="border border-gray-200 rounded-lg p-3">
+                    <CurriculumTagInput
+                      data={자세한통합사회_단원_태그}
+                      onSelect={handleIntegratedSelect(questionNumber)}
+                      placeholder="자세한통사 단원 태그"
+                    />
+                  </div>
+
+                  <div className="border border-gray-200 rounded-lg p-3">
+                    <CustomTagInput
+                      onTagsChange={handleCustomTagsChange(questionNumber)}
+                      placeholder="커스텀 태그"
+                    />
+                  </div>
+                </div>
 
                 <div className="bg-gray-100 rounded-lg overflow-hidden">
                   <img
