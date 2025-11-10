@@ -145,13 +145,13 @@ function CategoryPage() {
               region: column.region,
             });
 
-            // 문제와 해설 카운트를 병렬로 가져오기
-            const [problemCount, answerCount] = await Promise.all([
-              Api.fetchExamQuestionCount(examId),
-              Api.fetchExamAnswerCount(examId),
-            ]);
+            // 문제 카운트 가져오기
+            const problemCount = await Api.fetchExamQuestionCount(examId);
 
-            return { problem: problemCount, answer: answerCount };
+            // 해설 카운트는 현재 사용하지 않음
+            // const answerCount = await Api.fetchExamAnswerCount(examId);
+
+            return { problem: problemCount, answer: null };
           });
 
           const columnData = await Promise.all(columnDataPromises);
