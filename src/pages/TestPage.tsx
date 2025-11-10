@@ -10,17 +10,17 @@ interface SelectedTag {
 function TestPage() {
   useAuth(); // 인증 체크
 
-  const [selectedTags1, setSelectedTags1] = useState<SelectedTag[]>([]);
-  const [selectedTags2, setSelectedTags2] = useState<SelectedTag[]>([]);
+  const [selectedTag1, setSelectedTag1] = useState<SelectedTag | null>(null);
+  const [selectedTag2, setSelectedTag2] = useState<SelectedTag | null>(null);
 
-  const handleSelect1 = (tags: SelectedTag[]) => {
-    setSelectedTags1(tags);
-    console.log('Selected tags 1:', tags);
+  const handleSelect1 = (tag: SelectedTag | null) => {
+    setSelectedTag1(tag);
+    console.log('Selected tag 1:', tag);
   };
 
-  const handleSelect2 = (tags: SelectedTag[]) => {
-    setSelectedTags2(tags);
-    console.log('Selected tags 2:', tags);
+  const handleSelect2 = (tag: SelectedTag | null) => {
+    setSelectedTag2(tag);
+    console.log('Selected tag 2:', tag);
   };
 
   return (
@@ -28,58 +28,46 @@ function TestPage() {
       <h1 className="text-3xl font-bold text-gray-900">테스트 페이지</h1>
 
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">단원 태그 입력기 #1</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">자세한통사 단원 태그 입력기 #1</h2>
         <CurriculumTagInput onSelect={handleSelect1} />
 
-        {selectedTags1.length > 0 && (
+        {selectedTag1 && (
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">선택된 태그들</h3>
-            <div className="space-y-4">
-              {selectedTags1.map((tag, index) => (
-                <div key={index} className="space-y-2 pb-4 border-b border-blue-200 last:border-b-0 last:pb-0">
-                  <div>
-                    <span className="font-semibold">Tag {index + 1} IDs:</span>
-                    <code className="ml-2 text-blue-600">
-                      [{tag.tagIds.map((id) => `'${id}'`).join(', ')}]
-                    </code>
-                  </div>
-                  <div>
-                    <span className="font-semibold">Tag {index + 1} Labels:</span>
-                    <code className="ml-2 text-blue-600 text-xs">
-                      [{tag.tagLabels.map((label) => `'${label}'`).join(', ')}]
-                    </code>
-                  </div>
-                </div>
-              ))}
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">선택된 태그</h3>
+            <div className="space-y-2">
+              <div>
+                <span className="font-semibold">Tag IDs:</span>
+                <code className="ml-2 text-blue-600">[{selectedTag1.tagIds.map((id) => `'${id}'`).join(', ')}]</code>
+              </div>
+              <div>
+                <span className="font-semibold">Tag Labels:</span>
+                <code className="ml-2 text-blue-600 text-xs">
+                  [{selectedTag1.tagLabels.map((label) => `'${label}'`).join(', ')}]
+                </code>
+              </div>
             </div>
           </div>
         )}
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">단원 태그 입력기 #2</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">자세한통사 단원 태그 입력기 #2</h2>
         <CurriculumTagInput onSelect={handleSelect2} />
 
-        {selectedTags2.length > 0 && (
+        {selectedTag2 && (
           <div className="mt-6 p-4 bg-green-50 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">선택된 태그들</h3>
-            <div className="space-y-4">
-              {selectedTags2.map((tag, index) => (
-                <div key={index} className="space-y-2 pb-4 border-b border-green-200 last:border-b-0 last:pb-0">
-                  <div>
-                    <span className="font-semibold">Tag {index + 1} IDs:</span>
-                    <code className="ml-2 text-green-600">
-                      [{tag.tagIds.map((id) => `'${id}'`).join(', ')}]
-                    </code>
-                  </div>
-                  <div>
-                    <span className="font-semibold">Tag {index + 1} Labels:</span>
-                    <code className="ml-2 text-green-600 text-xs">
-                      [{tag.tagLabels.map((label) => `'${label}'`).join(', ')}]
-                    </code>
-                  </div>
-                </div>
-              ))}
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">선택된 태그</h3>
+            <div className="space-y-2">
+              <div>
+                <span className="font-semibold">Tag IDs:</span>
+                <code className="ml-2 text-green-600">[{selectedTag2.tagIds.map((id) => `'${id}'`).join(', ')}]</code>
+              </div>
+              <div>
+                <span className="font-semibold">Tag Labels:</span>
+                <code className="ml-2 text-green-600 text-xs">
+                  [{selectedTag2.tagLabels.map((label) => `'${label}'`).join(', ')}]
+                </code>
+              </div>
             </div>
           </div>
         )}
