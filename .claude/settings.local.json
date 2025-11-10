@@ -4,7 +4,8 @@
       "Bash(npm create:*)",
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
-      "Bash(node test-decompose.js:*)"
+      "Bash(node test-decompose.js:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
