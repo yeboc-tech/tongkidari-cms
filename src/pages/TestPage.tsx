@@ -10,12 +10,17 @@ interface SelectedTag {
   tagLabels: string[];
 }
 
+interface TagWithId {
+  id: string;
+  label: string;
+}
+
 function TestPage() {
   useAuth(); // 인증 체크
 
   const [selectedMadertongTag, setSelectedMadertongTag] = useState<SelectedTag | null>(null);
   const [selectedIntegratedTag, setSelectedIntegratedTag] = useState<SelectedTag | null>(null);
-  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [customTags, setCustomTags] = useState<TagWithId[]>([]);
 
   const handleSelectMadertong = (tag: SelectedTag | null) => {
     setSelectedMadertongTag(tag);
@@ -27,7 +32,7 @@ function TestPage() {
     console.log('Selected 자세한통사 tag:', tag);
   };
 
-  const handleCustomTagsChange = (tags: string[]) => {
+  const handleCustomTagsChange = (tags: TagWithId[]) => {
     setCustomTags(tags);
     console.log('Custom tags:', tags);
   };
@@ -37,8 +42,11 @@ function TestPage() {
       <h1 className="text-3xl font-bold text-gray-900">테스트 페이지</h1>
 
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">마더텅 경제 단원 태그 입력기</h2>
-        <CurriculumTagInput data={마더텅_단원_태그} onSelect={handleSelectMadertong} />
+        <CurriculumTagInput
+          data={마더텅_단원_태그}
+          onSelect={handleSelectMadertong}
+          placeholder="마더텅 경제 단원 태그 입력기"
+        />
 
         {selectedMadertongTag && (
           <div className="mt-6 p-4 bg-purple-50 rounded-lg">
@@ -60,8 +68,11 @@ function TestPage() {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">자세한통사 단원 태그 입력기</h2>
-        <CurriculumTagInput data={자세한통합사회_단원_태그} onSelect={handleSelectIntegrated} />
+        <CurriculumTagInput
+          data={자세한통합사회_단원_태그}
+          onSelect={handleSelectIntegrated}
+          placeholder="자세한통사 단원 태그 입력기"
+        />
 
         {selectedIntegratedTag && (
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
@@ -83,17 +94,22 @@ function TestPage() {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">커스텀 태그 입력기</h2>
-        <CustomTagInput onTagsChange={handleCustomTagsChange} />
+        <CustomTagInput
+          onTagsChange={handleCustomTagsChange}
+          placeholder="커스텀 태그 입력기"
+        />
 
         {customTags.length > 0 && (
           <div className="mt-6 p-4 bg-green-50 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">선택된 태그들</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {customTags.map((tag, index) => (
-                <code key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                  {tag}
-                </code>
+                <div key={index} className="flex items-center gap-2">
+                  <code className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                    {tag.label}
+                  </code>
+                  <span className="text-xs text-gray-500">ID: {tag.id}</span>
+                </div>
               ))}
             </div>
           </div>

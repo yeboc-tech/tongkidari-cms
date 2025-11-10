@@ -39,16 +39,31 @@ const fetchExistingTags = async (): Promise<string[]> => {
   return ["민간 부문의 순환", "기회비용", "편익과 비용"];
 };
 
-interface CustomTagInputProps {
-  onTagsChange: (tags: string[]) => void;
+// 태그 ID 생성 함수
+const generateTagId = (label: string): string => {
+  return label
+    .replace(/[,\s]+/g, '_') // 쉼표와 공백(연속 포함)을 _로 치환
+    .replace(/_+/g, '_') // 연속된 _를 하나로
+    .replace(/^_|_$/g, '') // 시작/끝의 _ 제거
+    .toLowerCase(); // 소문자로
+};
+
+interface TagWithId {
+  id: string;
+  label: string;
 }
 
-function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
+interface CustomTagInputProps {
+  onTagsChange: (tags: TagWithId[]) => void;
+  placeholder?: string;
+}
+
+function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검색 가능)' }: CustomTagInputProps) {
   const [inputText, setInputText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [existingTags, setExistingTags] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<TagWithId[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -71,8 +86,9 @@ function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
     }
 
     const query = inputText.toLowerCase();
+    const selectedLabels = selectedTags.map(t => t.label);
     const matchedTags = existingTags.filter(tag =>
-      matchesChosung(tag, query) && !selectedTags.includes(tag)
+      matchesChosung(tag, query) && !selectedLabels.includes(tag)
     );
 
     setSuggestions(matchedTags);
@@ -175,12 +191,19 @@ function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
   };
 
   // 태그 추가
-  const addTag = (tag: string) => {
-    const trimmedTag = tag.trim();
-    if (!trimmedTag) return;
-    if (selectedTags.includes(trimmedTag)) return;
+  const addTag = (label: string) => {
+    const trimmedLabel = label.trim();
+    if (!trimmedLabel) return;
 
-    const updatedTags = [...selectedTags, trimmedTag];
+    // 이미 존재하는 태그인지 확인 (label 기준)
+    if (selectedTags.some(t => t.label === trimmedLabel)) return;
+
+    const newTag: TagWithId = {
+      id: generateTagId(trimmedLabel),
+      label: trimmedLabel,
+    };
+
+    const updatedTags = [...selectedTags, newTag];
     setSelectedTags(updatedTags);
     onTagsChange(updatedTags);
     setInputText('');
@@ -274,10 +297,10 @@ function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
         {/* 선택된 태그들을 chip 형태로 표시 */}
         {selectedTags.map((tag, index) => (
           <div
-            key={`${tag}-${index}`}
+            key={`${tag.id}-${index}`}
             className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
           >
-            <span>{tag}</span>
+            <span>{tag.label}</span>
             <button
               onClick={() => removeTag(index)}
               className="hover:bg-green-200 rounded-full p-0.5 transition-colors"
@@ -329,7 +352,7 @@ function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
             }
           }}
           onFocus={() => inputText && suggestions.length > 0 && setIsOpen(true)}
-          placeholder={selectedTags.length === 0 ? '태그 입력 (초성 검색 가능)' : ''}
+          placeholder={selectedTags.length === 0 ? placeholder : ''}
           className="flex-1 min-w-[120px] outline-none"
         />
       </div>

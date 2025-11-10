@@ -55,9 +55,10 @@ interface SelectedTag {
 interface CurriculumTagInputProps {
   data: Book[];
   onSelect: (tag: SelectedTag | null) => void;
+  placeholder?: string;
 }
 
-function CurriculumTagInput({ data, onSelect }: CurriculumTagInputProps) {
+function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...' }: CurriculumTagInputProps) {
   const [searchText, setSearchText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -326,7 +327,7 @@ function CurriculumTagInput({ data, onSelect }: CurriculumTagInputProps) {
           onChange={(e) => setSearchText(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => searchText && results.length > 0 && setIsOpen(true)}
-          placeholder={!selectedTag ? '단원 검색...' : ''}
+          placeholder={!selectedTag ? placeholder : ''}
           className="flex-1 min-w-[120px] outline-none"
         />
       </div>
