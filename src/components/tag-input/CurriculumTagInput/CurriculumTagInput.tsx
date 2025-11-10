@@ -1,10 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-  자세한통합사회_단원_태그,
-  type Book,
-  type Chapter,
-  type Topic
-} from '../../../ssot/curriculumStructure';
+import type { Book, Chapter, Topic } from '../../../ssot/types';
 
 // 한글 초성 추출 함수
 const getChosung = (text: string): string => {
@@ -58,10 +53,11 @@ interface SelectedTag {
 }
 
 interface CurriculumTagInputProps {
+  data: Book[];
   onSelect: (tag: SelectedTag | null) => void;
 }
 
-function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
+function CurriculumTagInput({ data, onSelect }: CurriculumTagInputProps) {
   const [searchText, setSearchText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -84,7 +80,7 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
     const query = searchText.toLowerCase();
 
     // 모든 Book, Chapter, Topic을 순회하며 검색
-    자세한통합사회_단원_태그.forEach((book) => {
+    data.forEach((book) => {
       book.chapters.forEach((chapter) => {
         chapter.topics.forEach((topic) => {
           // Book, Chapter, Topic 중 하나라도 매치되면 결과에 추가 (초성 검색 포함)
@@ -108,7 +104,7 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
     setResults(searchResults);
     setIsOpen(searchResults.length > 0);
     setHighlightedIndex(-1); // 검색어가 바뀌면 하이라이트 초기화
-  }, [searchText]);
+  }, [searchText, data]);
 
   // 외부 클릭 감지
   useEffect(() => {
