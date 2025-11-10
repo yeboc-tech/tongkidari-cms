@@ -14,14 +14,20 @@ interface SearchResult {
   tagLabels: string[];
 }
 
+interface SelectedTag {
+  tagIds: string[];
+  tagLabels: string[];
+}
+
 interface CurriculumTagInputProps {
-  onSelect: (tagIds: string[], tagLabels: string[]) => void;
+  onSelect: (tags: SelectedTag[]) => void;
 }
 
 function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
   const [searchText, setSearchText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [selectedTags, setSelectedTags] = useState<SelectedTag[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -104,22 +110,85 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
 
   // 결과 선택
   const handleSelect = (result: SearchResult) => {
-    onSelect(result.tagIds, result.tagLabels);
+    const newTag: SelectedTag = {
+      tagIds: result.tagIds,
+      tagLabels: result.tagLabels,
+    };
+
+    // 중복 체크
+    const isDuplicate = selectedTags.some(
+      (tag) => tag.tagIds.join('-') === result.tagIds.join('-')
+    );
+
+    if (!isDuplicate) {
+      const updatedTags = [...selectedTags, newTag];
+      setSelectedTags(updatedTags);
+      onSelect(updatedTags);
+    }
+
     setSearchText('');
     setIsOpen(false);
   };
 
+  // 태그 제거
+  const handleRemoveTag = (index: number) => {
+    const updatedTags = selectedTags.filter((_, i) => i !== index);
+    setSelectedTags(updatedTags);
+    onSelect(updatedTags);
+  };
+
+  // 키보드 이벤트 핸들러
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && searchText === '' && selectedTags.length > 0) {
+      // 마지막 태그 제거
+      handleRemoveTag(selectedTags.length - 1);
+    }
+  };
+
   return (
     <div className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        onFocus={() => searchText && results.length > 0 && setIsOpen(true)}
-        placeholder="단원 검색..."
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
+        {/* 선택된 태그들을 chip 형태로 표시 */}
+        {selectedTags.map((tag, index) => (
+          <div
+            key={`${tag.tagIds.join('-')}-${index}`}
+            className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+          >
+            <span>{tag.tagLabels[tag.tagLabels.length - 1]}</span>
+            <button
+              onClick={() => handleRemoveTag(index)}
+              className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+              type="button"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        ))}
+
+        {/* 검색 입력 필드 */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => searchText && results.length > 0 && setIsOpen(true)}
+          placeholder={selectedTags.length === 0 ? '단원 검색...' : ''}
+          className="flex-1 min-w-[120px] outline-none"
+        />
+      </div>
 
       {isOpen && results.length > 0 && (
         <div
