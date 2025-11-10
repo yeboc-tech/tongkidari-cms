@@ -13,6 +13,33 @@ function SocialPlayground() {
 
   const [categoryType, setCategoryType] = useState<CategoryType>('통합사회');
   const [selectedSubject, setSelectedSubject] = useState<SubjectType>('경제');
+  const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
+  const [questionCount, setQuestionCount] = useState<number | null>(null);
+  const [customCount, setCustomCount] = useState<string>('');
+  const [isCustomInput, setIsCustomInput] = useState(false);
+
+  const years = ['2024', '2023', '2022', '2021', '2020', '2019', '2018'];
+  const questionCounts = [20, 25, 30, 50, 100];
+
+  const toggleYear = (year: string) => {
+    setSelectedYears((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(year)) {
+        newSet.delete(year);
+      } else {
+        newSet.add(year);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllYears = () => {
+    setSelectedYears(new Set(years));
+  };
+
+  const clearAllYears = () => {
+    setSelectedYears(new Set());
+  };
 
   // 현재 선택된 카테고리에 따라 데이터 결정
   const getCurrentData = (): Book[] => {
@@ -136,7 +163,88 @@ function SocialPlayground() {
                     <option value="hard">어려움</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="text-xs text-gray-600 block mb-2">연도</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <button
+                      onClick={selectedYears.size === years.length ? clearAllYears : selectAllYears}
+                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                        selectedYears.size === years.length
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      모두
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {years.map((year) => (
+                      <button
+                        key={year}
+                        onClick={() => toggleYear(year)}
+                        className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                          selectedYears.has(year)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {year}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* 문제수 */}
+            <div className="p-4 border-t border-gray-200">
+              <label className="text-xs text-gray-600 block mb-2">문제수</label>
+              <div className="flex flex-wrap gap-2">
+                {questionCounts.map((count) => (
+                  <button
+                    key={count}
+                    onClick={() => {
+                      setQuestionCount(count);
+                      setIsCustomInput(false);
+                      setCustomCount('');
+                    }}
+                    className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                      questionCount === count && !isCustomInput
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {count}
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setIsCustomInput(true);
+                    setQuestionCount(null);
+                  }}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                    isCustomInput
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  직접입력
+                </button>
+              </div>
+              {isCustomInput && (
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={customCount}
+                    onChange={(e) => setCustomCount(e.target.value)}
+                    placeholder="숫자 입력"
+                    className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="1"
+                  />
+                  <span className="text-xs text-gray-600">문제</span>
+                </div>
+              )}
             </div>
 
             {/* 적용 버튼 */}
