@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import CurriculumTagInput from '../components/tag-input/CurriculumTagInput/CurriculumTagInput';
 import CustomTagInput from '../components/tag-input/CustomTagInput/CustomTagInput';
+import ChapterTree from '../components/ChapterTree/ChapterTree';
 import { 자세한통합사회_단원_태그 } from '../ssot/curriculumStructure';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 
@@ -40,6 +41,12 @@ function TestPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">테스트 페이지</h1>
+
+      {/* 단원 트리 컴포넌트 테스트 */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">단원 트리 (자세한통합사회)</h2>
+        <ChapterTree data={자세한통합사회_단원_태그} />
+      </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
         <CurriculumTagInput
