@@ -6,6 +6,44 @@ import {
   type Topic
 } from '../../../ssot/curriculumStructure';
 
+// 한글 초성 추출 함수
+const getChosung = (text: string): string => {
+  const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+  return text
+    .split('')
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      // 한글 유니코드 범위: 0xAC00 ~ 0xD7A3
+      if (code >= 0xAC00 && code <= 0xD7A3) {
+        const chosungIndex = Math.floor((code - 0xAC00) / 588);
+        return CHOSUNG_LIST[chosungIndex];
+      }
+      return char;
+    })
+    .join('');
+};
+
+// 초성 검색 매칭 함수
+const matchesChosung = (text: string, query: string): boolean => {
+  // 띄어쓰기와 쉼표 제거
+  const cleanedText = text.replace(/[\s,]/g, '');
+  const cleanedQuery = query.replace(/[\s,]/g, '');
+
+  // 검색어가 초성인지 확인
+  const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  const isChosungQuery = cleanedQuery.split('').every(char => CHOSUNG_LIST.includes(char));
+
+  if (!isChosungQuery) {
+    // 일반 검색
+    return cleanedText.toLowerCase().includes(cleanedQuery.toLowerCase());
+  }
+
+  // 초성 검색
+  const textChosung = getChosung(cleanedText);
+  return textChosung.includes(cleanedQuery);
+};
+
 interface SearchResult {
   book: Book;
   chapter: Chapter;
@@ -31,6 +69,7 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const lastKeyTimeRef = useRef<number>(0); // 중복 키 이벤트 방지
 
   // 검색 로직
   useEffect(() => {
@@ -48,11 +87,11 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
     자세한통합사회_단원_태그.forEach((book) => {
       book.chapters.forEach((chapter) => {
         chapter.topics.forEach((topic) => {
-          // Book, Chapter, Topic 중 하나라도 매치되면 결과에 추가
+          // Book, Chapter, Topic 중 하나라도 매치되면 결과에 추가 (초성 검색 포함)
           if (
-            book.title.toLowerCase().includes(query) ||
-            chapter.title.toLowerCase().includes(query) ||
-            topic.title.toLowerCase().includes(query)
+            matchesChosung(book.title, query) ||
+            matchesChosung(chapter.title, query) ||
+            matchesChosung(topic.title, query)
           ) {
             searchResults.push({
               book,
@@ -105,15 +144,69 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
 
-    const lowerText = text.toLowerCase();
-    const lowerQuery = query.toLowerCase();
-    const index = lowerText.indexOf(lowerQuery);
+    // 띄어쓰기와 쉼표 제거
+    const cleanedQuery = query.replace(/[\s,]/g, '');
 
-    if (index === -1) return text;
+    // 초성 리스트
+    const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+    const isChosungQuery = cleanedQuery.split('').every(char => CHOSUNG_LIST.includes(char));
 
-    const before = text.slice(0, index);
-    const match = text.slice(index, index + query.length);
-    const after = text.slice(index + query.length);
+    if (!isChosungQuery) {
+      // 일반 검색 (기존 로직)
+      const lowerText = text.toLowerCase();
+      const lowerQuery = query.toLowerCase();
+      const index = lowerText.indexOf(lowerQuery);
+
+      if (index === -1) return text;
+
+      const before = text.slice(0, index);
+      const match = text.slice(index, index + query.length);
+      const after = text.slice(index + query.length);
+
+      return (
+        <>
+          {before}
+          <span className="bg-blue-100 text-blue-700 font-semibold">{match}</span>
+          {after}
+        </>
+      );
+    }
+
+    // 초성 검색 하이라이트
+    // 1. 원본 텍스트의 각 문자와 정규화된 인덱스 매핑 생성
+    const chars = text.split('');
+    const cleanedChars: string[] = [];
+    const indexMapping: number[] = []; // cleanedChars의 인덱스 -> 원본 text의 인덱스
+
+    chars.forEach((char, originalIndex) => {
+      if (char !== ' ' && char !== ',') {
+        cleanedChars.push(char);
+        indexMapping.push(originalIndex);
+      }
+    });
+
+    const cleanedText = cleanedChars.join('');
+
+    // 2. 정규화된 텍스트의 초성 추출
+    const textChosung = getChosung(cleanedText);
+
+    // 3. 초성에서 검색어 찾기
+    const chosungIndex = textChosung.indexOf(cleanedQuery);
+
+    if (chosungIndex === -1) return text;
+
+    // 4. 매치된 범위 계산 (정규화된 텍스트 기준)
+    const matchStart = chosungIndex;
+    const matchEnd = chosungIndex + cleanedQuery.length;
+
+    // 5. 원본 텍스트 인덱스로 변환
+    const originalStart = indexMapping[matchStart];
+    const originalEnd = indexMapping[matchEnd - 1] + 1;
+
+    // 6. 하이라이트
+    const before = text.slice(0, originalStart);
+    const match = text.slice(originalStart, originalEnd);
+    const after = text.slice(originalEnd);
 
     return (
       <>
@@ -155,8 +248,17 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
 
   // 키보드 이벤트 핸들러
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 중복 키 이벤트 방지 (10ms 이내 같은 이벤트 무시)
+    const now = Date.now();
+    if (now - lastKeyTimeRef.current < 10) {
+      return;
+    }
+    lastKeyTimeRef.current = now;
+
     // Backspace로 태그 제거
     if (e.key === 'Backspace' && searchText === '' && selectedTags.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
       handleRemoveTag(selectedTags.length - 1);
       return;
     }
@@ -167,23 +269,33 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
     // ArrowDown: 다음 항목으로 이동
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
+      e.stopPropagation();
+      setHighlightedIndex((prev) => {
+        // 아무것도 선택되지 않았으면 첫 번째 항목으로
+        if (prev === -1) return 0;
+        // 마지막 항목이 아니면 다음 항목으로
+        return prev < results.length - 1 ? prev + 1 : prev;
+      });
     }
 
     // ArrowUp: 이전 항목으로 이동
     if (e.key === 'ArrowUp') {
       e.preventDefault();
+      e.stopPropagation();
       setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
     }
 
-    // Enter: 현재 하이라이트된 항목 선택
-    if (e.key === 'Enter' && highlightedIndex >= 0) {
+    // Enter 또는 Tab: 현재 하이라이트된 항목 선택
+    if ((e.key === 'Enter' || e.key === 'Tab') && highlightedIndex >= 0) {
       e.preventDefault();
+      e.stopPropagation();
       handleSelect(results[highlightedIndex]);
     }
 
     // Escape: 드롭다운 닫기
     if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       setIsOpen(false);
       setHighlightedIndex(-1);
     }
@@ -198,7 +310,7 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
             key={`${tag.tagIds.join('-')}-${index}`}
             className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
           >
-            <span>{tag.tagLabels[tag.tagLabels.length - 1]}</span>
+            <span>{tag.tagLabels.join(' > ')}</span>
             <button
               onClick={() => handleRemoveTag(index)}
               className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
@@ -246,7 +358,6 @@ function CurriculumTagInput({ onSelect }: CurriculumTagInputProps) {
               <div
                 key={key}
                 onClick={() => handleSelect(result)}
-                onMouseEnter={() => setHighlightedIndex(index)}
                 className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
                   isHighlighted ? 'bg-blue-100' : 'hover:bg-blue-50'
                 }`}
