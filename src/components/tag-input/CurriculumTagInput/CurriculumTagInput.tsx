@@ -56,9 +56,10 @@ interface CurriculumTagInputProps {
   data: Book[];
   onSelect: (tag: SelectedTag | null) => void;
   placeholder?: string;
+  value?: SelectedTag | null;
 }
 
-function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...' }: CurriculumTagInputProps) {
+function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', value }: CurriculumTagInputProps) {
   const [searchText, setSearchText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -67,6 +68,11 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...' }
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastKeyTimeRef = useRef<number>(0); // 중복 키 이벤트 방지
+
+  // value prop이 변경되면 내부 상태 동기화
+  useEffect(() => {
+    setSelectedTag(value ?? null);
+  }, [value]);
 
   // 검색 로직
   useEffect(() => {

@@ -56,9 +56,10 @@ interface TagWithId {
 interface CustomTagInputProps {
   onTagsChange: (tags: TagWithId[]) => void;
   placeholder?: string;
+  tags?: TagWithId[];
 }
 
-function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검색 가능)' }: CustomTagInputProps) {
+function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검색 가능)', tags }: CustomTagInputProps) {
   const [inputText, setInputText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -70,6 +71,11 @@ function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검
   const lastKeyTimeRef = useRef<number>(0);
   const isComposingRef = useRef<boolean>(false);
   const shouldAddOnCompositionEndRef = useRef<boolean>(false);
+
+  // tags prop이 변경되면 내부 상태 동기화
+  useEffect(() => {
+    setSelectedTags(tags ?? []);
+  }, [tags]);
 
   // 기존 태그 목록 로드
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ExamId } from '../domain/examId';
 import { getQuestionImageUrls, getSolutionImageUrls } from '../constants/apiConfig';
 import { ExamMetaLinks } from '../components';
-import { supabase } from '../lib/supabase';
+import { Supabase } from '../api/Supabase';
 import { AccuracyRate } from '../types/accuracyRate';
 import { useAuth } from '../hooks/useAuth';
 import CurriculumTagInput from '../components/tag-input/CurriculumTagInput/CurriculumTagInput';
@@ -36,6 +36,8 @@ function ExamPage() {
   const [madertongTags, setMadertongTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [integratedTags, setIntegratedTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [customTagsMap, setCustomTagsMap] = useState<Map<number, TagWithId[]>>(new Map());
+  const [tagsLoading, setTagsLoading] = useState(true);
+  const [copiedQuestionNumber, setCopiedQuestionNumber] = useState<number | null>(null);
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
@@ -58,6 +60,35 @@ function ExamPage() {
     return examIdWithRegion.replace(/\([^)]+\)$/, '');
   };
 
+  // 문제 ID 생성 (exam_id + 문제번호)
+  const getProblemId = (questionNumber: number): string => {
+    if (!id) return '';
+    const examIdWithoutRegion = removeRegion(id);
+    return `${examIdWithoutRegion}_${questionNumber}_문제`;
+  };
+
+  // 태그 저장 함수
+  const saveTags = async (questionNumber: number, type: 'madertong' | 'integrated' | 'custom', tagIds: string[], tagLabels: string[]) => {
+    const problemId = getProblemId(questionNumber);
+    if (!problemId) return;
+
+    try {
+      // 태그가 비어있으면 삭제, 그렇지 않으면 upsert
+      if (tagIds.length === 0) {
+        await Supabase.ProblemTags.delete(problemId, type);
+      } else {
+        await Supabase.ProblemTags.upsert({
+          exam_id: problemId,
+          type,
+          tag_ids: tagIds,
+          tag_labels: tagLabels,
+        });
+      }
+    } catch (error) {
+      console.error('Error saving tags:', error);
+    }
+  };
+
   // accuracy_rate 데이터 가져오기
   useEffect(() => {
     if (!id) return;
@@ -72,14 +103,9 @@ function ExamPage() {
         (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`
       );
 
-      const { data, error } = await supabase
-        .from('accuracy_rate')
-        .select('*')
-        .in('id', questionIds);
+      try {
+        const data = await Supabase.AccuracyRates.fetch(questionIds);
 
-      if (error) {
-        console.error('Error fetching accuracy rates:', error);
-      } else if (data) {
         // 문제 번호를 키로 하는 Map 생성
         const ratesMap = new Map<number, AccuracyRate>();
         data.forEach((rate) => {
@@ -91,40 +117,143 @@ function ExamPage() {
           }
         });
         setAccuracyRates(ratesMap);
+      } catch (error) {
+        console.error('Error fetching accuracy rates:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchAccuracyRates();
+  }, [id]);
+
+  // 태그 데이터 가져오기
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchTags = async () => {
+      setTagsLoading(true);
+      const examIdWithoutRegion = removeRegion(id);
+
+      // 1-20번 문제의 id 목록 생성
+      const questionIds = Array.from(
+        { length: 20 },
+        (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`
+      );
+
+      try {
+        const data = await Supabase.ProblemTags.fetch(questionIds);
+
+        const madertongMap = new Map<number, SelectedTag | null>();
+        const integratedMap = new Map<number, SelectedTag | null>();
+        const customMap = new Map<number, TagWithId[]>();
+
+        data.forEach((tag) => {
+          // exam_id에서 문제 번호 추출
+          const match = tag.exam_id.match(/_(\d+)_문제$/);
+          if (!match) return;
+
+          const questionNumber = parseInt(match[1], 10);
+
+          if (tag.type === 'madertong') {
+            madertongMap.set(questionNumber, {
+              tagIds: tag.tag_ids,
+              tagLabels: tag.tag_labels,
+            });
+          } else if (tag.type === 'integrated') {
+            integratedMap.set(questionNumber, {
+              tagIds: tag.tag_ids,
+              tagLabels: tag.tag_labels,
+            });
+          } else if (tag.type === 'custom') {
+            const customTags = tag.tag_ids.map((id, index) => ({
+              id,
+              label: tag.tag_labels[index],
+            }));
+            customMap.set(questionNumber, customTags);
+          }
+        });
+
+        setMadertongTags(madertongMap);
+        setIntegratedTags(integratedMap);
+        setCustomTagsMap(customMap);
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+      } finally {
+        setTagsLoading(false);
+      }
+    };
+
+    fetchTags();
   }, [id]);
 
   const handleGoBack = () => {
     navigate(-1);
   };
 
+  // 문제 ID 복사 핸들러
+  const handleCopyProblemId = async (questionNumber: number) => {
+    const problemId = getProblemId(questionNumber);
+    if (!problemId) return;
+
+    try {
+      await navigator.clipboard.writeText(problemId);
+      setCopiedQuestionNumber(questionNumber);
+
+      // 1초 후 복사 상태 초기화
+      setTimeout(() => {
+        setCopiedQuestionNumber(null);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
   // 태그 입력기 핸들러 함수들
-  const handleMadertongSelect = (questionNumber: number) => (tag: SelectedTag | null) => {
+  const handleMadertongSelect = (questionNumber: number) => async (tag: SelectedTag | null) => {
+    // 낙관적 업데이트: UI 먼저 업데이트
     setMadertongTags((prev) => {
       const newMap = new Map(prev);
       newMap.set(questionNumber, tag);
       return newMap;
     });
+
+    // 서버에 저장 (null이면 빈 배열로 전달하여 삭제)
+    if (tag) {
+      await saveTags(questionNumber, 'madertong', tag.tagIds, tag.tagLabels);
+    } else {
+      await saveTags(questionNumber, 'madertong', [], []);
+    }
   };
 
-  const handleIntegratedSelect = (questionNumber: number) => (tag: SelectedTag | null) => {
+  const handleIntegratedSelect = (questionNumber: number) => async (tag: SelectedTag | null) => {
+    // 낙관적 업데이트: UI 먼저 업데이트
     setIntegratedTags((prev) => {
       const newMap = new Map(prev);
       newMap.set(questionNumber, tag);
       return newMap;
     });
+
+    // 서버에 저장 (null이면 빈 배열로 전달하여 삭제)
+    if (tag) {
+      await saveTags(questionNumber, 'integrated', tag.tagIds, tag.tagLabels);
+    } else {
+      await saveTags(questionNumber, 'integrated', [], []);
+    }
   };
 
-  const handleCustomTagsChange = (questionNumber: number) => (tags: TagWithId[]) => {
+  const handleCustomTagsChange = (questionNumber: number) => async (tags: TagWithId[]) => {
+    // 낙관적 업데이트: UI 먼저 업데이트
     setCustomTagsMap((prev) => {
       const newMap = new Map(prev);
       newMap.set(questionNumber, tags);
       return newMap;
     });
+
+    // 서버에 저장 (빈 배열이면 삭제)
+    const tagIds = tags.map(t => t.id);
+    const tagLabels = tags.map(t => t.label);
+    await saveTags(questionNumber, 'custom', tagIds, tagLabels);
   };
 
   if (!examInfo) {
@@ -233,14 +362,38 @@ function ExamPage() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {showSolution ? '해설' : '문제'} {questionNumber}
                   </h3>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  <button
+                    onClick={() => handleCopyProblemId(questionNumber)}
+                    className={`
+                      relative overflow-hidden px-3 py-1.5 rounded-full text-xs font-medium
+                      transition-all duration-200 cursor-pointer font-mono
+                      ${copiedQuestionNumber === questionNumber
+                        ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                        : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
+                      }
+                    `}
                   >
-                    새 탭에서 열기
-                  </a>
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      {copiedQuestionNumber === questionNumber ? (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          복사됨!
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          {getProblemId(questionNumber)}
+                        </>
+                      )}
+                    </span>
+                    {copiedQuestionNumber === questionNumber && (
+                      <span className="absolute inset-0 bg-green-200 animate-ping opacity-75 rounded-full" />
+                    )}
+                  </button>
                 </div>
 
                 {/* 정확도 정보 */}
@@ -281,28 +434,39 @@ function ExamPage() {
 
                 {/* 태그 입력기 섹션 */}
                 <div className="mb-4 space-y-3">
-                  <div className="border border-gray-200 rounded-lg p-3">
-                    <CurriculumTagInput
-                      data={마더텅_단원_태그}
-                      onSelect={handleMadertongSelect(questionNumber)}
-                      placeholder="마더텅 경제 단원 태그"
-                    />
-                  </div>
+                  {tagsLoading ? (
+                    <div className="text-xs text-gray-500 text-center py-2">
+                      태그 정보를 불러오는 중...
+                    </div>
+                  ) : (
+                    <>
+                      <div className="border border-gray-200 rounded-lg p-3">
+                        <CurriculumTagInput
+                          data={마더텅_단원_태그}
+                          onSelect={handleMadertongSelect(questionNumber)}
+                          placeholder="마더텅 경제 단원 태그"
+                          value={madertongTags.get(questionNumber) || null}
+                        />
+                      </div>
 
-                  <div className="border border-gray-200 rounded-lg p-3">
-                    <CurriculumTagInput
-                      data={자세한통합사회_단원_태그}
-                      onSelect={handleIntegratedSelect(questionNumber)}
-                      placeholder="자세한통사 단원 태그"
-                    />
-                  </div>
+                      <div className="border border-gray-200 rounded-lg p-3">
+                        <CurriculumTagInput
+                          data={자세한통합사회_단원_태그}
+                          onSelect={handleIntegratedSelect(questionNumber)}
+                          placeholder="자세한통사 단원 태그"
+                          value={integratedTags.get(questionNumber) || null}
+                        />
+                      </div>
 
-                  <div className="border border-gray-200 rounded-lg p-3">
-                    <CustomTagInput
-                      onTagsChange={handleCustomTagsChange(questionNumber)}
-                      placeholder="커스텀 태그"
-                    />
-                  </div>
+                      <div className="border border-gray-200 rounded-lg p-3">
+                        <CustomTagInput
+                          onTagsChange={handleCustomTagsChange(questionNumber)}
+                          placeholder="커스텀 태그"
+                          tags={customTagsMap.get(questionNumber) || []}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="bg-gray-100 rounded-lg overflow-hidden">
