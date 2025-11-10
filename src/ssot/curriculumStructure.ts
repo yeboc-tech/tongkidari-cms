@@ -1,33 +1,9 @@
 /**
- * SSOT: 교과 구조 정의
- * Single Source of Truth for curriculum structure
+ * SSOT: 자세한통합사회 교과 구조 정의
+ * Single Source of Truth for 자세한통합사회 curriculum structure
  */
 
-/**
- * 중단원 구조
- */
-interface Topic {
-  id: string; // 예: "1-1-1", "1-1-2"
-  title: string; // 예: "01. 인간, 사회, 환경을 바라보는 다양한 관점"
-}
-
-/**
- * 대단원 구조
- */
-interface Chapter {
-  id: string; // 예: "1-1", "1-2"
-  title: string; // 예: "I. 통합적 관점"
-  topics: Topic[];
-}
-
-/**
- * 교과(통합사회 1 또는 2) 구조
- */
-interface Book {
-  id: string; // 예: "1", "2"
-  title: string; // 예: "통합사회 1", "통합사회 2"
-  chapters: Chapter[];
-}
+import type { Book, Chapter, Topic } from './types';
 
 /**
  * 통합사회 전체 교과 구조 (Book 배열)
@@ -263,5 +239,3 @@ export const findBookById = (bookId: string): Book | undefined => {
   return 자세한통합사회_단원_태그.find((book) => book.id === bookId);
 };
 
-// Type exports
-export type { Book, Chapter, Topic };

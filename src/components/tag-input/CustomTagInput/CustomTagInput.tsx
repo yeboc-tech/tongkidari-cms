@@ -53,6 +53,8 @@ function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastKeyTimeRef = useRef<number>(0);
+  const isComposingRef = useRef<boolean>(false);
+  const shouldAddOnCompositionEndRef = useRef<boolean>(false);
 
   // 기존 태그 목록 로드
   useEffect(() => {
@@ -201,8 +203,14 @@ function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
     }
     lastKeyTimeRef.current = now;
 
-    // Enter: 태그 추가
+    // Enter: 태그 추가 (한글 입력 중이 아닐 때만)
     if (e.key === 'Enter') {
+      // 한글 입력 중이면 플래그 설정하고 대기
+      if (isComposingRef.current) {
+        shouldAddOnCompositionEndRef.current = true;
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
 
@@ -299,6 +307,27 @@ function CustomTagInput({ onTagsChange }: CustomTagInputProps) {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => {
+            isComposingRef.current = true;
+            shouldAddOnCompositionEndRef.current = false;
+          }}
+          onCompositionEnd={() => {
+            isComposingRef.current = false;
+
+            // 한글 입력 중 Enter가 눌렸었다면 태그 추가
+            if (shouldAddOnCompositionEndRef.current) {
+              shouldAddOnCompositionEndRef.current = false;
+
+              // 약간의 지연 후 태그 추가 (inputText가 업데이트되도록)
+              setTimeout(() => {
+                if (highlightedIndex >= 0 && suggestions.length > 0) {
+                  addTag(suggestions[highlightedIndex]);
+                } else if (inputText.trim()) {
+                  addTag(inputText);
+                }
+              }, 0);
+            }
+          }}
           onFocus={() => inputText && suggestions.length > 0 && setIsOpen(true)}
           placeholder={selectedTags.length === 0 ? '태그 입력 (초성 검색 가능)' : ''}
           className="flex-1 min-w-[120px] outline-none"
