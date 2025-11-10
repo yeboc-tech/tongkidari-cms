@@ -9,7 +9,7 @@ export interface ExamIdParams {
   year: number;
   month: string;
   type: string;
-  region: string;
+  region?: string; // 표시용으로만 사용, ID 생성에는 포함되지 않음
 }
 
 /**
@@ -49,7 +49,7 @@ export class ExamId {
       year: parseInt(match[3], 10),
       month: `${match[4]}월`,
       type: match[5],
-      region: '',
+      // region은 ID에 포함되지 않으므로 생략
     };
   }
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { SUBJECTS, CURRICULUM_GROUPS, type CategoryName, type CurriculumName } from '../ssot/subjects';
-import { GRADE_OPTIONS, EXAM_COLUMNS } from '../constants/tableConfig';
+import { GRADE_OPTIONS } from '../constants/tableConfig';
+import { getExamColumns } from '../ssot/EXAM_REGION';
 import { ExamOverviewTable, CurriculumOverview } from '../components';
 import { Api, type ExamDataRow } from '../api/Api';
 import { useAuth } from '../hooks/useAuth';
@@ -125,25 +126,27 @@ function CategoryPage() {
 
   // 과목 선택 시 시험 통계 데이터 불러오기
   useEffect(() => {
-    if (!selectedSubject || !target) return;
+    if (!selectedSubject || !target || !curriculum) return;
 
     const refreshData = async () => {
       setIsLoading(true);
       try {
+        // 교육과정에 맞는 시험 컬럼 가져오기
+        const examColumns = getExamColumns(curriculum);
+
         // 2024년부터 2013년까지의 연도 배열 (최신순)
         const years = Array.from({ length: 12 }, (_, i) => 2024 - i);
 
         // 각 연도와 컬럼에 대해 exam_id를 생성하고 데이터를 가져옴
         const dataPromises = years.map(async (year) => {
           // 각 컬럼에 대한 데이터 가져오기
-          const columnDataPromises = EXAM_COLUMNS.map(async (column) => {
+          const columnDataPromises = examColumns.map(async (column) => {
             const examId = ExamId.generate({
               subject: selectedSubject,
               target,
               year,
               month: column.month,
               type: column.type,
-              region: column.region,
             });
 
             // 문제 카운트 가져오기
@@ -173,7 +176,7 @@ function CategoryPage() {
     };
 
     refreshData();
-  }, [selectedSubject, target]);
+  }, [selectedSubject, target, curriculum]);
 
   // 카테고리별 색상
   const accentColor = category === '사회' ? '#ff00a1' : '#3b82f6';
@@ -312,13 +315,13 @@ function CategoryPage() {
       </div>
 
       {/* 시험 통계 테이블 */}
-      {selectedSubject && (
+      {selectedSubject && curriculum && (
         <div className="bg-white p-8 rounded-lg shadow">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             연도별 문항 수 - {selectedSubject}, {target}
           </h2>
           <ExamOverviewTable
-            columns={EXAM_COLUMNS}
+            columns={getExamColumns(curriculum)}
             data={examData}
             isLoading={isLoading}
             subject={selectedSubject || undefined}

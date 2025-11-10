@@ -10,17 +10,6 @@ export const GRADES = ['고3', '고2', '고1'] as const;
 // 드롭다운용 학년 목록 (역순: 고3, 고2, 고1)
 export const GRADE_OPTIONS = ['고3', '고2', '고1'] as const;
 
-// 시험 컬럼 정의 (고정값)
-export const EXAM_COLUMNS = [
-  { month: '3', type: '학평', region: '서울' },
-  { month: '4', type: '학평', region: '경기' },
-  { month: '6', type: '모평', region: '평가원' },
-  { month: '7', type: '학평', region: '인천' },
-  { month: '9', type: '모평', region: '평가원' },
-  { month: '10', type: '학평', region: '서울' },
-  { month: '11', type: '수능', region: '평가원' },
-] as const;
-
 // 교육과정 전환 설정
 // 전환 순서: 항상 고1 → 고2 → 고3 순서로 전환
 export const CURRICULUM_TRANSITIONS = [

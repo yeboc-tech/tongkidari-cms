@@ -6,6 +6,19 @@ import TestPage from './pages/TestPage'
 import SocialPlayground from './pages/SocialPlayground'
 import SciencePlayground from './pages/SciencePlayground'
 import Auth from './lib/Auth'
+import { SUBJECTS, type CategoryName } from './ssot/subjects'
+
+// 과목명으로 카테고리 찾기
+function getCategoryBySubject(subject: string): CategoryName | null {
+  for (const [category, curricula] of Object.entries(SUBJECTS)) {
+    for (const subjects of Object.values(curricula)) {
+      if (subjects.includes(subject)) {
+        return category as CategoryName;
+      }
+    }
+  }
+  return null;
+}
 
 function Navigation() {
   const location = useLocation()
@@ -13,9 +26,16 @@ function Navigation() {
 
   // URL에서 categoryId 추출 (/category/사회 -> 사회)
   const pathParts = location.pathname.split('/')
-  const currentCategory = pathParts[1] === 'category' && pathParts[2]
-    ? decodeURIComponent(pathParts[2])
-    : null
+  let currentCategory: CategoryName | null = null;
+
+  if (pathParts[1] === 'category' && pathParts[2]) {
+    currentCategory = decodeURIComponent(pathParts[2]) as CategoryName;
+  } else if (pathParts[1] === 'exam' && pathParts[2]) {
+    // /exam/경제_고3_2024_03_학평 -> 경제
+    const examId = decodeURIComponent(pathParts[2]);
+    const subject = examId.split('_')[0];
+    currentCategory = getCategoryBySubject(subject);
+  }
 
   const isActive = (path: string) => {
     if (path === '테스트') {
