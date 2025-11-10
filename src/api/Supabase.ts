@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
+import { type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
 
 /**
  * Supabase API 래퍼
@@ -10,7 +11,7 @@ import { AccuracyRate } from '../types/accuracyRate';
 
 export interface ProblemTag {
   exam_id: string;
-  type: 'madertong' | 'integrated' | 'custom';
+  type: ProblemTagType;
   tag_ids: string[];
   tag_labels: string[];
   updated_at: string;
@@ -18,7 +19,7 @@ export interface ProblemTag {
 
 export interface ProblemTagUpsertParams {
   exam_id: string;
-  type: 'madertong' | 'integrated' | 'custom';
+  type: ProblemTagType;
   tag_ids: string[];
   tag_labels: string[];
 }
@@ -77,7 +78,7 @@ export const Supabase = {
      * @param examId - 문제 ID
      * @param type - 태그 타입
      */
-    async delete(examId: string, type: 'madertong' | 'integrated' | 'custom'): Promise<void> {
+    async delete(examId: string, type: ProblemTagType): Promise<void> {
       const { error } = await supabase
         .from('problem_tags')
         .delete()

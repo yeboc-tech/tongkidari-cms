@@ -12,6 +12,7 @@ import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 import { 자세한통합사회_단원_태그 } from '../ssot/curriculumStructure';
 import { getRegionByExamInfo } from '../ssot/EXAM_REGION';
 import { type Grade } from '../constants/tableConfig';
+import { PROBLEM_TAG_TYPES, type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
 
 interface SelectedTag {
   tagIds: string[];
@@ -68,7 +69,7 @@ function ExamPage() {
   };
 
   // 태그 저장 함수
-  const saveTags = async (questionNumber: number, type: 'madertong' | 'integrated' | 'custom', tagIds: string[], tagLabels: string[]) => {
+  const saveTags = async (questionNumber: number, type: ProblemTagType, tagIds: string[], tagLabels: string[]) => {
     const problemId = getProblemId(questionNumber);
     if (!problemId) return;
 
@@ -155,17 +156,17 @@ function ExamPage() {
 
           const questionNumber = parseInt(match[1], 10);
 
-          if (tag.type === 'madertong') {
+          if (tag.type === PROBLEM_TAG_TYPES.MADERTONG) {
             madertongMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
             });
-          } else if (tag.type === 'integrated') {
+          } else if (tag.type === PROBLEM_TAG_TYPES.INTEGRATED) {
             integratedMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
             });
-          } else if (tag.type === 'custom') {
+          } else if (tag.type === PROBLEM_TAG_TYPES.CUSTOM) {
             const customTags = tag.tag_ids.map((id, index) => ({
               id,
               label: tag.tag_labels[index],
@@ -220,9 +221,9 @@ function ExamPage() {
 
     // 서버에 저장 (null이면 빈 배열로 전달하여 삭제)
     if (tag) {
-      await saveTags(questionNumber, 'madertong', tag.tagIds, tag.tagLabels);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.MADERTONG, tag.tagIds, tag.tagLabels);
     } else {
-      await saveTags(questionNumber, 'madertong', [], []);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.MADERTONG, [], []);
     }
   };
 
@@ -236,9 +237,9 @@ function ExamPage() {
 
     // 서버에 저장 (null이면 빈 배열로 전달하여 삭제)
     if (tag) {
-      await saveTags(questionNumber, 'integrated', tag.tagIds, tag.tagLabels);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.INTEGRATED, tag.tagIds, tag.tagLabels);
     } else {
-      await saveTags(questionNumber, 'integrated', [], []);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.INTEGRATED, [], []);
     }
   };
 
@@ -253,7 +254,7 @@ function ExamPage() {
     // 서버에 저장 (빈 배열이면 삭제)
     const tagIds = tags.map(t => t.id);
     const tagLabels = tags.map(t => t.label);
-    await saveTags(questionNumber, 'custom', tagIds, tagLabels);
+    await saveTags(questionNumber, PROBLEM_TAG_TYPES.CUSTOM, tagIds, tagLabels);
   };
 
   if (!examInfo) {
