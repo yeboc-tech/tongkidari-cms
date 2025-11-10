@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { SUBJECTS, GRADE_OPTIONS, CURRICULUM_GROUPS, EXAM_COLUMNS, type CategoryName, type CurriculumName } from '../constants/tableConfig';
+import { SUBJECTS, CURRICULUM_GROUPS, type CategoryName, type CurriculumName } from '../ssot/subjects';
+import { GRADE_OPTIONS, EXAM_COLUMNS } from '../constants/tableConfig';
 import { ExamOverviewTable, CurriculumOverview } from '../components';
 import { Api, type ExamDataRow } from '../api/Api';
 import { useAuth } from '../hooks/useAuth';
