@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 're
 import Home from './pages/Home'
 import CategoryPage from './pages/CategoryPage'
 import ExamPage from './pages/ExamPage'
+import TestPage from './pages/TestPage'
 import Auth from './lib/Auth'
 
 function Navigation() {
@@ -14,7 +15,12 @@ function Navigation() {
     ? decodeURIComponent(pathParts[2])
     : null
 
-  const isActive = (category: string) => currentCategory === category
+  const isActive = (category: string) => {
+    if (category === '테스트') {
+      return location.pathname === '/test'
+    }
+    return currentCategory === category
+  }
 
   const handleLogout = () => {
     Auth.logout();
@@ -50,6 +56,18 @@ function Navigation() {
                 과학
               </span>
             </Link>
+            <Link
+              to="/test"
+              className="inline-flex items-center px-1 pt-1"
+            >
+              <span className={`${
+                isActive('테스트')
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-1'
+                  : 'text-gray-900 hover:text-blue-600'
+              }`}>
+                테스트
+              </span>
+            </Link>
           </div>
           <div className="flex items-center">
             <button
@@ -78,6 +96,7 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/category/:categoryId" element={<CategoryPage />} />
           <Route path="/exam/:id" element={<ExamPage />} />
+          <Route path="/test" element={<TestPage />} />
         </Routes>
       </main>
     </div>
