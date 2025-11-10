@@ -73,9 +73,10 @@ function SocialPlayground() {
                     onClick={() => setCategoryType('사회탐구')}
                     className={`px-3 py-1 text-xs rounded-full transition-colors ${
                       categoryType === '사회탐구'
-                        ? 'bg-white text-gray-900 shadow-sm'
+                        ? 'bg-white shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
+                    style={categoryType === '사회탐구' ? { color: '#ff00a1' } : {}}
                   >
                     사회탐구
                   </button>
@@ -83,9 +84,10 @@ function SocialPlayground() {
                     onClick={() => setCategoryType('통합사회')}
                     className={`px-3 py-1 text-xs rounded-full transition-colors ${
                       categoryType === '통합사회'
-                        ? 'bg-white text-gray-900 shadow-sm'
+                        ? 'bg-white shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
+                    style={categoryType === '통합사회' ? { color: '#ff00a1' } : {}}
                   >
                     통합사회
                   </button>
@@ -99,7 +101,8 @@ function SocialPlayground() {
                   <select
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value as SubjectType)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': '#ff00a1' } as React.CSSProperties}
                   >
                     <option value="경제">경제</option>
                     <option value="정치와법" disabled>
@@ -171,9 +174,14 @@ function SocialPlayground() {
                       onClick={selectedYears.size === years.length ? clearAllYears : selectAllYears}
                       className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                         selectedYears.size === years.length
-                          ? 'bg-blue-600 text-white'
+                          ? 'text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
+                      style={
+                        selectedYears.size === years.length
+                          ? { backgroundColor: '#ff00a1' }
+                          : {}
+                      }
                     >
                       모두
                     </button>
@@ -185,9 +193,14 @@ function SocialPlayground() {
                         onClick={() => toggleYear(year)}
                         className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                           selectedYears.has(year)
-                            ? 'bg-blue-600 text-white'
+                            ? 'text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
+                        style={
+                          selectedYears.has(year)
+                            ? { backgroundColor: '#ff00a1' }
+                            : {}
+                        }
                       >
                         {year}
                       </button>
@@ -211,9 +224,14 @@ function SocialPlayground() {
                     }}
                     className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                       questionCount === count && !isCustomInput
-                        ? 'bg-blue-600 text-white'
+                        ? 'text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
+                    style={
+                      questionCount === count && !isCustomInput
+                        ? { backgroundColor: '#ff00a1' }
+                        : {}
+                    }
                   >
                     {count}
                   </button>
@@ -225,9 +243,14 @@ function SocialPlayground() {
                   }}
                   className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                     isCustomInput
-                      ? 'bg-blue-600 text-white'
+                      ? 'text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
+                  style={
+                    isCustomInput
+                      ? { backgroundColor: '#ff00a1' }
+                      : {}
+                  }
                 >
                   직접입력
                 </button>
@@ -239,7 +262,8 @@ function SocialPlayground() {
                     value={customCount}
                     onChange={(e) => setCustomCount(e.target.value)}
                     placeholder="숫자 입력"
-                    className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': '#ff00a1' } as React.CSSProperties}
                     min="1"
                   />
                   <span className="text-xs text-gray-600">문제</span>
@@ -249,7 +273,10 @@ function SocialPlayground() {
 
             {/* 적용 버튼 */}
             <div className="p-4 border-t border-gray-200">
-              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button
+                className="w-full px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#ff00a1' }}
+              >
                 필터 적용
               </button>
             </div>

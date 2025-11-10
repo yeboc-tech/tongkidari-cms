@@ -44,11 +44,16 @@ function Navigation() {
               to="/category/사회"
               className="inline-flex items-center px-1 pt-1"
             >
-              <span className={`${
-                isActive('사회')
-                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-1'
-                  : 'text-gray-900 hover:text-blue-600'
-              }`}>
+              <span
+                className={`${
+                  isActive('사회')
+                    ? 'font-semibold border-b-2 pb-1'
+                    : 'text-gray-900'
+                }`}
+                style={isActive('사회') ? { color: '#ff00a1', borderColor: '#ff00a1' } : {}}
+                onMouseEnter={(e) => !isActive('사회') && (e.currentTarget.style.color = '#ff00a1')}
+                onMouseLeave={(e) => !isActive('사회') && (e.currentTarget.style.color = '')}
+              >
                 사회
               </span>
             </Link>
@@ -56,11 +61,16 @@ function Navigation() {
               to="/playground/social"
               className="inline-flex items-center px-1 pt-1"
             >
-              <span className={`${
-                isActive('사회 Playground')
-                  ? 'text-blue-600 border-b-2 border-blue-600 pb-1'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}>
+              <span
+                className={`${
+                  isActive('사회 Playground')
+                    ? 'border-b-2 pb-1'
+                    : 'text-gray-600'
+                }`}
+                style={isActive('사회 Playground') ? { color: '#ff00a1', borderColor: '#ff00a1' } : {}}
+                onMouseEnter={(e) => !isActive('사회 Playground') && (e.currentTarget.style.color = '#ff00a1')}
+                onMouseLeave={(e) => !isActive('사회 Playground') && (e.currentTarget.style.color = '')}
+              >
                 <span className={isActive('사회 Playground') ? 'font-semibold' : ''}>사회</span>
                 <span className="font-thin"> Playground</span>
               </span>
@@ -106,7 +116,12 @@ function Navigation() {
               </Link>
             )}
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
+            <input
+              type="text"
+              placeholder="Search Everything"
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
             <button
               onClick={handleLogout}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 transition-colors"

@@ -174,6 +174,10 @@ function CategoryPage() {
     refreshData();
   }, [selectedSubject, target]);
 
+  // 카테고리별 색상
+  const accentColor = category === '사회' ? '#ff00a1' : '#3b82f6';
+  const accentColorLight = category === '사회' ? 'rgb(255, 0, 161, 0.1)' : 'rgb(59, 130, 246, 0.1)';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -181,7 +185,8 @@ function CategoryPage() {
         <div className="flex gap-3">
           <button
             onClick={() => setIsDialogOpen(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 text-white rounded-md transition-opacity hover:opacity-90"
+            style={{ backgroundColor: accentColor }}
           >
             📅 교육과정 보기
           </button>
@@ -197,7 +202,7 @@ function CategoryPage() {
       <div className="bg-white p-8 rounded-lg shadow">
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
+            <div className="p-4 rounded-lg" style={{ backgroundColor: accentColorLight }}>
               <h3 className="text-sm font-semibold text-gray-600 mb-1">카테고리</h3>
               <p className="text-xl font-bold text-gray-900">{category || '-'}</p>
             </div>
@@ -241,11 +246,23 @@ function CategoryPage() {
                   <button
                     key={subject}
                     onClick={() => handleSubjectClick(subject)}
-                    className={`px-4 py-3 bg-white border-2 rounded-lg text-gray-900 font-medium transition-colors text-center ${
-                      selectedSubject === subject
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'
-                    }`}
+                    className="px-4 py-3 bg-white border-2 rounded-lg text-gray-900 font-medium transition-colors text-center"
+                    style={{
+                      borderColor: selectedSubject === subject ? accentColor : '#e5e7eb',
+                      backgroundColor: selectedSubject === subject ? accentColorLight : 'white',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedSubject !== subject) {
+                        e.currentTarget.style.borderColor = accentColor;
+                        e.currentTarget.style.backgroundColor = accentColorLight;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedSubject !== subject) {
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.backgroundColor = 'white';
+                      }
+                    }}
                   >
                     {subject}
                   </button>
@@ -267,11 +284,23 @@ function CategoryPage() {
                 <button
                   key={grade}
                   onClick={() => handleGradeChange(grade)}
-                  className={`px-4 py-3 bg-white border-2 rounded-lg text-gray-900 font-medium transition-colors text-center ${
-                    target === grade
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'
-                  }`}
+                  className="px-4 py-3 bg-white border-2 rounded-lg text-gray-900 font-medium transition-colors text-center"
+                  style={{
+                    borderColor: target === grade ? accentColor : '#e5e7eb',
+                    backgroundColor: target === grade ? accentColorLight : 'white',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (target !== grade) {
+                      e.currentTarget.style.borderColor = accentColor;
+                      e.currentTarget.style.backgroundColor = accentColorLight;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (target !== grade) {
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }
+                  }}
                 >
                   {grade}
                 </button>
@@ -334,7 +363,8 @@ function CategoryPage() {
                 <button
                   type="button"
                   onClick={() => setIsDialogOpen(false)}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: accentColor }}
                 >
                   닫기
                 </button>
