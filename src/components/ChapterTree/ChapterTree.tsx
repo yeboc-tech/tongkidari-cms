@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Book, Chapter, Topic } from '../../ssot/types';
+import type { Book, Chapter, Topic, Subtopic } from '../../ssot/types';
 
 interface ChapterTreeProps {
   data: Book[];
@@ -34,7 +34,7 @@ function IndeterminateCheckbox({ checkState }: CheckboxProps) {
 }
 
 function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
-  // 모든 항목을 펼친 상태로 초기화
+  // 모든 항목을 펼친 상태로 초기화 (subtopics가 있는 Topic도 포함)
   const getAllIds = (data: Book[]): string[] => {
     const ids: string[] = [];
     data.forEach((book) => {
@@ -42,6 +42,13 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
       if (book.chapters) {
         book.chapters.forEach((chapter) => {
           ids.push(chapter.id);
+          if (chapter.topics) {
+            chapter.topics.forEach((topic) => {
+              if (topic.subtopics && topic.subtopics.length > 0) {
+                ids.push(topic.id); // subtopics가 있는 Topic만 추가
+              }
+            });
+          }
         });
       }
     });
@@ -50,6 +57,11 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(getAllIds(data)));
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+
+  // data가 변경될 때마다 모든 항목을 펼친 상태로 재설정
+  useEffect(() => {
+    setExpandedItems(new Set(getAllIds(data)));
+  }, [data]);
 
   // checkedItems가 변경될 때 부모 컴포넌트에 알림
   useEffect(() => {
@@ -71,7 +83,7 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
   };
 
   // Get all child IDs for a given item
-  const getAllChildIds = (item: Book | Chapter): string[] => {
+  const getAllChildIds = (item: Book | Chapter | Topic): string[] => {
     const ids: string[] = [];
 
     if ('chapters' in item) {
@@ -79,13 +91,28 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
       item.chapters.forEach((chapter) => {
         ids.push(chapter.id);
         if (chapter.topics) {
-          chapter.topics.forEach((topic) => ids.push(topic.id));
+          chapter.topics.forEach((topic) => {
+            ids.push(topic.id);
+            if (topic.subtopics) {
+              topic.subtopics.forEach((subtopic) => ids.push(subtopic.id));
+            }
+          });
         }
       });
     } else if ('topics' in item) {
       // Chapter
       if (item.topics) {
-        item.topics.forEach((topic) => ids.push(topic.id));
+        item.topics.forEach((topic) => {
+          ids.push(topic.id);
+          if (topic.subtopics) {
+            topic.subtopics.forEach((subtopic) => ids.push(subtopic.id));
+          }
+        });
+      }
+    } else if ('subtopics' in item) {
+      // Topic
+      if (item.subtopics) {
+        item.subtopics.forEach((subtopic) => ids.push(subtopic.id));
       }
     }
 
@@ -93,7 +120,7 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
   };
 
   // Get check state for an item (checked, unchecked, or indeterminate)
-  const getCheckState = (item: Book | Chapter): 'checked' | 'unchecked' | 'indeterminate' => {
+  const getCheckState = (item: Book | Chapter | Topic): 'checked' | 'unchecked' | 'indeterminate' => {
     const childIds = getAllChildIds(item);
     if (childIds.length === 0) {
       return checkedItems.has(item.id) ? 'checked' : 'unchecked';
@@ -111,7 +138,7 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
   };
 
   // Handle checkbox change with cascading
-  const handleCheckboxChange = (id: string, item: Book | Chapter | Topic) => {
+  const handleCheckboxChange = (id: string, item: Book | Chapter | Topic | Subtopic) => {
     setCheckedItems((prev) => {
       const newSet = new Set(prev);
 
@@ -119,16 +146,16 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
         // Uncheck: remove this item and all children
         newSet.delete(id);
 
-        if ('chapters' in item || 'topics' in item) {
-          const childIds = getAllChildIds(item as Book | Chapter);
+        if ('chapters' in item || 'topics' in item || 'subtopics' in item) {
+          const childIds = getAllChildIds(item as Book | Chapter | Topic);
           childIds.forEach((childId) => newSet.delete(childId));
         }
       } else {
         // Check: add this item and all children
         newSet.add(id);
 
-        if ('chapters' in item || 'topics' in item) {
-          const childIds = getAllChildIds(item as Book | Chapter);
+        if ('chapters' in item || 'topics' in item || 'subtopics' in item) {
+          const childIds = getAllChildIds(item as Book | Chapter | Topic);
           childIds.forEach((childId) => newSet.add(childId));
         }
       }
@@ -137,13 +164,13 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
     });
   };
 
-  const renderTopic = (topic: Topic, level: number) => {
+  const renderSubtopic = (subtopic: Subtopic, level: number) => {
     const indent = level * 24;
-    const isChecked = checkedItems.has(topic.id);
+    const isChecked = checkedItems.has(subtopic.id);
 
     return (
       <div
-        key={topic.id}
+        key={subtopic.id}
         className="flex items-center py-1 hover:bg-gray-50"
         style={{ paddingLeft: `${indent}px` }}
       >
@@ -152,7 +179,7 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
           className="flex items-center cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            handleCheckboxChange(topic.id, topic);
+            handleCheckboxChange(subtopic.id, subtopic);
           }}
         >
           <input
@@ -162,7 +189,72 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
             onChange={() => {}}
           />
         </div>
-        <span className="text-sm cursor-pointer">{topic.title}</span>
+        <span className="text-sm cursor-pointer">{subtopic.title}</span>
+      </div>
+    );
+  };
+
+  const renderTopic = (topic: Topic, level: number) => {
+    const isExpanded = expandedItems.has(topic.id);
+    const hasChildren = topic.subtopics && topic.subtopics.length > 0;
+    const indent = level * 24;
+    const checkState = hasChildren ? getCheckState(topic) : (checkedItems.has(topic.id) ? 'checked' : 'unchecked');
+
+    return (
+      <div key={topic.id}>
+        <div
+          className="flex items-center py-1 hover:bg-gray-50"
+          style={{ paddingLeft: `${indent}px` }}
+        >
+          <div
+            className="cursor-pointer"
+            onClick={() => hasChildren && toggleExpanded(topic.id)}
+          >
+            {hasChildren ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+                className={`transition-transform ${isExpanded ? 'rotate-180' : 'rotate-90'}`}
+                style={{ width: '24px', color: isExpanded ? 'rgb(112, 112, 112)' : 'rgb(192, 192, 192)' }}
+              >
+                <path
+                  fill="currentColor"
+                  d="M16.586 15.5c.89 0 1.337-1.077.707-1.707l-4.586-4.586c-.39-.39-1.024-.39-1.414 0l-4.586 4.586c-.63.63-.184 1.707.707 1.707h9.172z"
+                />
+              </svg>
+            ) : (
+              <div className="w-6 h-6" />
+            )}
+          </div>
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCheckboxChange(topic.id, topic);
+            }}
+          >
+            {hasChildren ? (
+              <IndeterminateCheckbox checkState={checkState as 'checked' | 'unchecked' | 'indeterminate'} />
+            ) : (
+              <input
+                type="checkbox"
+                className="w-4 h-4 mr-2 cursor-pointer"
+                checked={checkState === 'checked'}
+                onChange={() => {}}
+              />
+            )}
+          </div>
+          <span className="text-sm cursor-pointer">{topic.title}</span>
+        </div>
+
+        {hasChildren && isExpanded && (
+          <div>
+            {topic.subtopics!.map((subtopic) => renderSubtopic(subtopic, level + 1))}
+          </div>
+        )}
       </div>
     );
   };

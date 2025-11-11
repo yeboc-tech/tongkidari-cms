@@ -6,22 +6,32 @@ import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 import type { Book } from '../ssot/types';
 import { Supabase } from '../api/Supabase';
 import { PROBLEM_TAG_TYPES } from '../ssot/PROBLEM_TAG_TYPES';
-import { getQuestionImageUrl } from '../constants/apiConfig';
+import OneProblem from '../components/OneProblem';
+import { SUBJECTS } from '../ssot/subjects';
 
 type CategoryType = '통합사회' | '사회탐구';
-type SubjectType = '경제' | '정치와법' | '사회문화' | '한국지리' | '세계지리' | '윤리와사상' | '생활과윤리';
+type SubjectType = (typeof SUBJECTS.사회['2015교육과정'])[number];
 
 function SocialPlayground() {
   useAuth(); // 인증 체크
 
+  // 첫 번째 사용 가능한 과목을 기본값으로 설정
+  const getFirstAvailableSubject = (): SubjectType => {
+    const availableSubject = SUBJECTS.사회['2015교육과정'].find((subject) =>
+      마더텅_단원_태그.some((book) => book.id === subject)
+    );
+    return (availableSubject || SUBJECTS.사회['2015교육과정'][0]) as SubjectType;
+  };
+
   const [categoryType, setCategoryType] = useState<CategoryType>('사회탐구');
-  const [selectedSubject, setSelectedSubject] = useState<SubjectType>('경제');
+  const [selectedSubject, setSelectedSubject] = useState<SubjectType>(getFirstAvailableSubject());
   const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
   const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [customCount, setCustomCount] = useState<string>('');
   const [isCustomInput, setIsCustomInput] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const years = ['2024', '2023', '2022', '2021', '2020', '2019', '2018'];
   const questionCounts = [20, 25, 30, 50, 100];
@@ -64,16 +74,19 @@ function SocialPlayground() {
 
   // 필터 적용 버튼 클릭 시 검색 수행
   const handleApplyFilter = async () => {
-    if (categoryType === '사회탐구' && selectedTagIds.length > 0) {
-      try {
+    setIsLoading(true);
+    try {
+      if (categoryType === '사회탐구' && selectedTagIds.length > 0) {
         const examIds = await Supabase.ProblemTags.searchByTagIds(PROBLEM_TAG_TYPES.MOTHER, selectedTagIds);
         setSearchResults(examIds);
-      } catch (error) {
-        console.error('검색 실패:', error);
+      } else {
         setSearchResults([]);
       }
-    } else {
+    } catch (error) {
+      console.error('검색 실패:', error);
       setSearchResults([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -144,25 +157,16 @@ function SocialPlayground() {
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
                     style={{ '--tw-ring-color': '#ff00a1' } as React.CSSProperties}
                   >
-                    <option value="경제">경제</option>
-                    <option value="정치와법" disabled>
-                      정치와 법 (준비 중)
-                    </option>
-                    <option value="사회문화" disabled>
-                      사회·문화 (준비 중)
-                    </option>
-                    <option value="한국지리" disabled>
-                      한국지리 (준비 중)
-                    </option>
-                    <option value="세계지리" disabled>
-                      세계지리 (준비 중)
-                    </option>
-                    <option value="윤리와사상" disabled>
-                      윤리와 사상 (준비 중)
-                    </option>
-                    <option value="생활과윤리" disabled>
-                      생활과 윤리 (준비 중)
-                    </option>
+                    {SUBJECTS.사회['2015교육과정'].map((subject) => {
+                      // 마더텅_단원_태그에 해당 과목이 있는지 확인
+                      const isAvailable = 마더텅_단원_태그.some((book) => book.id === subject);
+                      return (
+                        <option key={subject} value={subject} disabled={!isAvailable}>
+                          {subject}
+                          {!isAvailable && ' (준비 중)'}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}
@@ -312,39 +316,36 @@ function SocialPlayground() {
           </div>
 
           <div className="p-6 overflow-y-auto h-[calc(100%-4rem)]">
-            {searchResults.length > 0 ? (
-              /* 검색 결과 그리드 */
-              <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+            {isLoading ? (
+              /* 로딩 스피너 */
+              <div className="flex items-center justify-center py-12">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#ff00a1' }}></div>
+                  <p className="text-gray-600 text-sm">문제를 검색하고 있습니다...</p>
+                </div>
+              </div>
+            ) : searchResults.length > 0 ? (
+              /* 검색 결과 목록 */
+              <div className="space-y-4">
                 {searchResults.map((problemId) => {
                   const parsed = parseProblemId(problemId);
                   if (!parsed) return null;
 
-                  const imageUrl = getQuestionImageUrl(parsed.examId, parsed.questionNumber);
-
                   return (
-                    <div
+                    <OneProblem
                       key={problemId}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                    >
-                      <div className="aspect-[3/4] bg-gray-100 rounded overflow-hidden mb-3">
-                        <img
-                          src={imageUrl}
-                          alt={`문제 ${problemId}`}
-                          className="w-full h-full object-contain"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling!.classList.remove('hidden');
-                          }}
-                        />
-                        <div className="hidden w-full h-full flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">이미지 로드 실패</span>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-900 font-mono">{problemId}</p>
-                        <p className="text-xs text-gray-500">정답률: --</p>
-                      </div>
-                    </div>
+                      questionNumber={parsed.questionNumber}
+                      title={`문제 ${parsed.questionNumber}`}
+                      problemId={problemId}
+                      accuracyLoading={false}
+                      motherTongTag={null}
+                      integratedTag={null}
+                      customTags={[]}
+                      tagsLoading={false}
+                      onMotherTongSelect={() => {}}
+                      onIntegratedSelect={() => {}}
+                      onCustomTagsChange={() => {}}
+                    />
                   );
                 })}
               </div>

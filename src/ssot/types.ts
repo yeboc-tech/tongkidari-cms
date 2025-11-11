@@ -4,11 +4,20 @@
  */
 
 /**
+ * 소단원 구조 (3단계 구조에서 사용)
+ */
+export interface Subtopic {
+  id: string; // 예: "아시아사-1-1-1", "아시아사-1-1-2"
+  title: string; // 예: "01. 동아시아의 자연환경과 생업"
+}
+
+/**
  * 중단원 구조
  */
 export interface Topic {
   id: string; // 예: "1-1-1", "1-1-2", "economy-1-1"
   title: string; // 예: "01. 인간, 사회, 환경을 바라보는 다양한 관점"
+  subtopics?: Subtopic[]; // 선택적: 3단계 구조에서 사용
 }
 
 /**
