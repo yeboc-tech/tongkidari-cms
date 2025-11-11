@@ -1,5 +1,5 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
 import { ExamId } from '../domain/examId';
 import { ExamMetaLinks } from '../components';
 import { Supabase } from '../api/Supabase';
@@ -16,6 +16,8 @@ function ExamPage() {
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const problemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [accuracyRates, setAccuracyRates] = useState<Map<number, AccuracyRate>>(new Map());
   const [loading, setLoading] = useState(true);
   const [showSolution, setShowSolution] = useState(false);
@@ -160,6 +162,27 @@ function ExamPage() {
     fetchTags();
   }, [id]);
 
+  // problem_number 쿼리 파라미터로 특정 문제로 스크롤
+  useEffect(() => {
+    const problemNumber = searchParams.get('problem_number');
+    if (!problemNumber || tagsLoading || loading) return;
+
+    const targetProblemNumber = parseInt(problemNumber, 10);
+    if (isNaN(targetProblemNumber) || targetProblemNumber < 1 || targetProblemNumber > 20) return;
+
+    // 문제 ref가 설정될 때까지 약간의 지연
+    const timer = setTimeout(() => {
+      const element = problemRefs.current.get(targetProblemNumber);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 스크롤 후 쿼리 파라미터 제거
+        setSearchParams({});
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [searchParams, tagsLoading, loading, setSearchParams]);
+
   const handleGoBack = () => {
     navigate(-1);
   };
@@ -302,7 +325,6 @@ function ExamPage() {
             const questionNumber = index + 1;
             const accuracyData = accuracyRates.get(questionNumber);
             const commonProps = {
-              key: `${showSolution ? 'solution' : 'question'}-${questionNumber}`,
               questionNumber,
               problemId: getProblemId(questionNumber),
               accuracyData,
@@ -316,10 +338,21 @@ function ExamPage() {
               onCustomTagsChange: handleCustomTagsChange(questionNumber),
             };
 
-            return showSolution ? (
-              <OneAnswer {...commonProps} title={`해설 ${questionNumber}`} />
-            ) : (
-              <OneProblem {...commonProps} title={`문제 ${questionNumber}`} />
+            return (
+              <div
+                key={`${showSolution ? 'solution' : 'question'}-${questionNumber}`}
+                ref={(el) => {
+                  if (el) {
+                    problemRefs.current.set(questionNumber, el);
+                  }
+                }}
+              >
+                {showSolution ? (
+                  <OneAnswer {...commonProps} title={`해설 ${questionNumber}`} />
+                ) : (
+                  <OneProblem {...commonProps} title={`문제 ${questionNumber}`} />
+                )}
+              </div>
             );
           })}
         </div>

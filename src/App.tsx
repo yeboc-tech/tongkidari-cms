@@ -7,6 +7,7 @@ import SocialPlayground from './pages/SocialPlayground'
 import SciencePlayground from './pages/SciencePlayground'
 import Auth from './lib/Auth'
 import { SUBJECTS, type CategoryName } from './ssot/subjects'
+import { SearchInput } from './components'
 
 // 과목명으로 카테고리 찾기
 function getCategoryBySubject(subject: string): CategoryName | null {
@@ -137,11 +138,7 @@ function Navigation() {
             )}
           </div>
           <div className="flex items-center gap-4">
-            <input
-              type="text"
-              placeholder="Search Everything"
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <SearchInput />
             <button
               onClick={handleLogout}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 transition-colors"
