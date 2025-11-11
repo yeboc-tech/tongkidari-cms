@@ -11,6 +11,14 @@ import { ExamId } from '../domain/examId';
 // 연도 목록 생성 (2013 ~ 2024)
 const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => 2013 + i);
 
+// 과목별 문제 수 (임시 하드코딩)
+const PROBLEM_COUNTS: Record<string, number> = {
+  사회문화: 1638,
+  정치와법: 660,
+  경제: 1620,
+  생활과윤리: 1640,
+};
+
 // 초기 로딩을 위한 빈 데이터 생성
 const createEmptyYearData = (year: number): ExamDataRow => ({
   year,
@@ -268,7 +276,12 @@ function CategoryPage() {
                       }
                     }}
                   >
-                    {subject}
+                    <div className="flex flex-col items-center gap-1">
+                      <span>{subject}</span>
+                      <span className="text-xs text-gray-600">
+                        {PROBLEM_COUNTS[subject]?.toLocaleString() || '-'}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
