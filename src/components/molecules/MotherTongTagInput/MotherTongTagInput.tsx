@@ -13,7 +13,15 @@ export interface MotherTongTagInputProps {
 }
 
 function MotherTongTagInput({ onSelect, placeholder = '마더텅 경제 단원 태그', value }: MotherTongTagInputProps) {
-  return <CurriculumTagInput data={마더텅_단원_태그} onSelect={onSelect} placeholder={placeholder} value={value} />;
+  return (
+    <CurriculumTagInput
+      data={마더텅_단원_태그}
+      onSelect={onSelect}
+      placeholder={placeholder}
+      value={value}
+      color="#e34f6e"
+    />
+  );
 }
 
 export default MotherTongTagInput;

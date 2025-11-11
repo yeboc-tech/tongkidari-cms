@@ -6,6 +6,7 @@ import { Supabase } from '../api/Supabase';
 import { AccuracyRate } from '../types/accuracyRate';
 import { useAuth } from '../hooks/useAuth';
 import OneProblem, { type SelectedTag, type TagWithId } from '../components/OneProblem/OneProblem';
+import OneAnswer from '../components/OneAnswer/OneAnswer';
 import { getRegionByExamInfo } from '../ssot/EXAM_REGION';
 import { type Grade } from '../constants/tableConfig';
 import { PROBLEM_TAG_TYPES, type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
@@ -24,7 +25,6 @@ function ExamPage() {
   const [integratedTags, setIntegratedTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [customTagsMap, setCustomTagsMap] = useState<Map<number, TagWithId[]>>(new Map());
   const [tagsLoading, setTagsLoading] = useState(true);
-  const [copiedQuestionNumber, setCopiedQuestionNumber] = useState<number | null>(null);
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
@@ -164,24 +164,6 @@ function ExamPage() {
     navigate(-1);
   };
 
-  // 문제 ID 복사 핸들러
-  const handleCopyProblemId = async (questionNumber: number) => {
-    const problemId = getProblemId(questionNumber);
-    if (!problemId) return;
-
-    try {
-      await navigator.clipboard.writeText(problemId);
-      setCopiedQuestionNumber(questionNumber);
-
-      // 1초 후 복사 상태 초기화
-      setTimeout(() => {
-        setCopiedQuestionNumber(null);
-      }, 1000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
-  };
-
   // 태그 입력기 핸들러 함수들
   const handleMadertongSelect = (questionNumber: number) => async (tag: SelectedTag | null) => {
     // 낙관적 업데이트: UI 먼저 업데이트
@@ -319,26 +301,25 @@ function ExamPage() {
           {Array.from({ length: 20 }, (_, index) => {
             const questionNumber = index + 1;
             const accuracyData = accuracyRates.get(questionNumber);
+            const commonProps = {
+              key: `${showSolution ? 'solution' : 'question'}-${questionNumber}`,
+              questionNumber,
+              problemId: getProblemId(questionNumber),
+              accuracyData,
+              accuracyLoading: loading,
+              motherTongTag: madertongTags.get(questionNumber) || null,
+              integratedTag: integratedTags.get(questionNumber) || null,
+              customTags: customTagsMap.get(questionNumber) || [],
+              tagsLoading,
+              onMotherTongSelect: handleMadertongSelect(questionNumber),
+              onIntegratedSelect: handleIntegratedSelect(questionNumber),
+              onCustomTagsChange: handleCustomTagsChange(questionNumber),
+            };
 
-            return (
-              <OneProblem
-                key={`${showSolution ? 'solution' : 'question'}-${questionNumber}`}
-                questionNumber={questionNumber}
-                title={`${showSolution ? '해설' : '문제'} ${questionNumber}`}
-                problemId={getProblemId(questionNumber)}
-                showSolution={showSolution}
-                accuracyData={accuracyData}
-                accuracyLoading={loading}
-                motherTongTag={madertongTags.get(questionNumber) || null}
-                integratedTag={integratedTags.get(questionNumber) || null}
-                customTags={customTagsMap.get(questionNumber) || []}
-                tagsLoading={tagsLoading}
-                onCopyProblemId={() => handleCopyProblemId(questionNumber)}
-                onMotherTongSelect={handleMadertongSelect(questionNumber)}
-                onIntegratedSelect={handleIntegratedSelect(questionNumber)}
-                onCustomTagsChange={handleCustomTagsChange(questionNumber)}
-                isCopied={copiedQuestionNumber === questionNumber}
-              />
+            return showSolution ? (
+              <OneAnswer {...commonProps} title={`해설 ${questionNumber}`} />
+            ) : (
+              <OneProblem {...commonProps} title={`문제 ${questionNumber}`} />
             );
           })}
         </div>

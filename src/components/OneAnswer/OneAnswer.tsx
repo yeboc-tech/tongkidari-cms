@@ -3,7 +3,7 @@ import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
 import { AccuracyRate } from '../../types/accuracyRate';
-import { getQuestionImageUrl } from '../../constants/apiConfig';
+import { getSolutionImageUrl } from '../../constants/apiConfig';
 
 // ========== Types ==========
 
@@ -17,10 +17,10 @@ export interface TagWithId {
   label: string;
 }
 
-export interface OneProblemProps {
+export interface OneAnswerProps {
   // 기본 정보
   questionNumber: number;
-  title: string; // 예: "문제 1"
+  title: string; // 예: "해설 1"
   problemId: string;
 
   // 정확도 데이터
@@ -41,7 +41,7 @@ export interface OneProblemProps {
 
 // ========== Component ==========
 
-function OneProblem({
+function OneAnswer({
   questionNumber,
   title,
   problemId,
@@ -54,14 +54,14 @@ function OneProblem({
   onMotherTongSelect: onMotherTongSelect,
   onIntegratedSelect,
   onCustomTagsChange,
-}: OneProblemProps) {
+}: OneAnswerProps) {
   const [isCopied, setIsCopied] = useState(false);
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');
 
-  // 문제 이미지 URL 생성
-  const imageUrl = getQuestionImageUrl(examId, questionNumber);
+  // 해설 이미지 URL 생성
+  const imageUrl = getSolutionImageUrl(examId, questionNumber);
 
   // 복사 핸들러
   const handleCopyProblemId = async () => {
@@ -171,7 +171,7 @@ function OneProblem({
         )}
       </div>
 
-      {/* 문제 이미지 */}
+      {/* 해설 이미지 */}
       <div className="bg-gray-100 rounded-lg overflow-hidden">
         <img
           src={imageUrl}
@@ -201,4 +201,4 @@ function OneProblem({
   );
 }
 
-export default OneProblem;
+export default OneAnswer;

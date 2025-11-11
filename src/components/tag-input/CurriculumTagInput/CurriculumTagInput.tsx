@@ -57,9 +57,28 @@ interface CurriculumTagInputProps {
   onSelect: (tag: SelectedTag | null) => void;
   placeholder?: string;
   value?: SelectedTag | null;
+  color?: string; // 태그 색상 (hex)
 }
 
-function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', value }: CurriculumTagInputProps) {
+// 색상 유틸리티 함수
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+};
+
+function CurriculumTagInput({
+  data,
+  onSelect,
+  placeholder = '단원 검색...',
+  value,
+  color = '#3b82f6',
+}: CurriculumTagInputProps) {
   const [searchText, setSearchText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -68,6 +87,14 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastKeyTimeRef = useRef<number>(0); // 중복 키 이벤트 방지
+
+  // 색상 계산
+  const rgb = hexToRgb(color);
+  const bgColor = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)` : 'rgba(59, 130, 246, 0.1)';
+  const textColor = color;
+  const hoverBgColor = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)` : 'rgba(59, 130, 246, 0.2)';
+  const ringColor = color;
+  const dropdownHoverBgColor = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.05)` : 'rgba(59, 130, 246, 0.05)';
 
   // value prop이 변경되면 내부 상태 동기화
   useEffect(() => {
@@ -297,13 +324,15 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', 
   return (
     <div className="relative">
       <div
-        className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-text"
+        className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 cursor-text"
+        style={{ '--tw-ring-color': ringColor } as React.CSSProperties}
         onClick={() => inputRef.current?.focus()}
       >
         {/* 선택된 태그를 chip 형태로 표시 */}
         {selectedTag && (
           <div
-            className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+            className="flex items-center gap-1 px-3 py-1 rounded-full text-sm"
+            style={{ backgroundColor: bgColor, color: textColor }}
           >
             <span>{selectedTag.tagLabels.join(' > ')}</span>
             <button
@@ -311,7 +340,16 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', 
                 e.stopPropagation();
                 handleRemoveTag();
               }}
-              className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+              className="rounded-full p-0.5 transition-colors"
+              style={{
+                ['--hover-bg' as string]: hoverBgColor,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = hoverBgColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
               type="button"
             >
               <svg
@@ -356,9 +394,20 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', 
               <div
                 key={key}
                 onClick={() => handleSelect(result)}
-                className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                  isHighlighted ? 'bg-blue-100' : 'hover:bg-blue-50'
-                }`}
+                className="px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0"
+                style={{
+                  backgroundColor: isHighlighted ? bgColor : 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isHighlighted) {
+                    e.currentTarget.style.backgroundColor = dropdownHoverBgColor;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isHighlighted) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
               >
                 <div className="text-sm text-gray-600">
                   {highlightText(result.book.title, searchText)}
