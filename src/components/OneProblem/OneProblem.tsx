@@ -33,6 +33,9 @@ export interface OneProblemProps {
   customTags: TagWithId[];
   tagsLoading: boolean;
 
+  // 모드 ('edit' | 'view')
+  mode?: 'edit' | 'view';
+
   // 이벤트 핸들러
   onMotherTongSelect: (tag: SelectedTag | null) => void;
   onIntegratedSelect: (tag: SelectedTag | null) => void;
@@ -51,6 +54,7 @@ function OneProblem({
   integratedTag,
   customTags,
   tagsLoading,
+  mode = 'edit',
   onMotherTongSelect: onMotherTongSelect,
   onIntegratedSelect,
   onCustomTagsChange,
@@ -150,20 +154,69 @@ function OneProblem({
         <div className="mb-3 text-xs text-gray-500">정확도 정보를 불러오는 중...</div>
       )}
 
-      {/* 태그 입력기 섹션 */}
+      {/* 태그 섹션 */}
       <div className="mb-4 space-y-3">
         {tagsLoading ? (
           <div className="text-xs text-gray-500 text-center py-2">태그 정보를 불러오는 중...</div>
+        ) : mode === 'edit' ? (
+          <>
+            {/* Edit 모드: 태그 입력기 */}
+            <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
+            <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
+            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} />
+          </>
         ) : (
           <>
+            {/* View 모드: 태그 라벨만 표시 */}
             {/* 마더텅 단원 태그 */}
-            <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
+            <div>
+              <label className="text-xs text-gray-600 block mb-1.5">마더텅 {subject} 단원 태그</label>
+              <div className="flex flex-wrap gap-2">
+                {motherTongTag && motherTongTag.tagLabels.length > 0 ? (
+                  <span
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{ backgroundColor: '#fce7ec', color: '#e34f6e' }}
+                  >
+                    {motherTongTag.tagLabels.join(' > ')}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400">마더텅 단원 태그가 없습니다</span>
+                )}
+              </div>
+            </div>
 
             {/* 자세한통사 단원 태그 */}
-            <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
+            <div>
+              <label className="text-xs text-gray-600 block mb-1.5">자세한통사 단원 태그</label>
+              <div className="flex flex-wrap gap-2">
+                {integratedTag && integratedTag.tagLabels.length > 0 ? (
+                  <span
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{ backgroundColor: '#d1fae5', color: '#10b981' }}
+                  >
+                    {integratedTag.tagLabels.join(' > ')}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400">자세한통사 단원 태그가 없습니다</span>
+                )}
+              </div>
+            </div>
 
             {/* 커스텀 태그 */}
-            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} />
+            <div>
+              <label className="text-xs text-gray-600 block mb-1.5">커스텀 태그</label>
+              <div className="flex flex-wrap gap-2">
+                {customTags && customTags.length > 0 ? (
+                  customTags.map((tag, index) => (
+                    <span key={index} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                      {tag.label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-400">커스텀 태그가 없습니다</span>
+                )}
+              </div>
+            </div>
           </>
         )}
       </div>

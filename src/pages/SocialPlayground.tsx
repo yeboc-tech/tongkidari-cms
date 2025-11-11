@@ -325,6 +325,7 @@ function SocialPlayground() {
                     integratedTag={problemInfo.integratedTag}
                     customTags={problemInfo.customTags}
                     tagsLoading={false}
+                    mode="view"
                     onMotherTongSelect={() => {}}
                     onIntegratedSelect={() => {}}
                     onCustomTagsChange={() => {}}
