@@ -87,8 +87,8 @@ function ExamPage() {
         // 문제 번호를 키로 하는 Map 생성
         const ratesMap = new Map<number, AccuracyRate>();
         data.forEach((rate) => {
-          // id에서 문제 번호 추출: "경제_고3_2024_03_학평_1_문제" -> 1
-          const match = rate.id.match(/_(\d+)_문제$/);
+          // problem_id에서 문제 번호 추출: "경제_고3_2024_03_학평_1_문제" -> 1
+          const match = rate.problem_id.match(/_(\d+)_문제$/);
           if (match) {
             const questionNumber = parseInt(match[1], 10);
             ratesMap.set(questionNumber, rate);

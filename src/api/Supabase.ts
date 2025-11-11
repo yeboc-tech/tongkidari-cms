@@ -148,7 +148,7 @@ export const Supabase = {
      * @returns 정확도 데이터 배열
      */
     async fetch(questionIds: string[]): Promise<AccuracyRate[]> {
-      const { data, error } = await supabase.from('accuracy_rate').select('*').in('id', questionIds);
+      const { data, error } = await supabase.from('accuracy_rate').select('*').in('problem_id', questionIds);
 
       if (error) {
         console.error('Error fetching accuracy rates:', error);
@@ -170,11 +170,11 @@ export const Supabase = {
       return [];
     }
 
-    // accuracy_rate 테이블에서 데이터 가져오기 (id가 problem_id 역할)
+    // accuracy_rate 테이블에서 데이터 가져오기
     const { data: accuracyData, error: accuracyError } = await supabase
       .from('accuracy_rate')
       .select('*')
-      .in('id', problemIds);
+      .in('problem_id', problemIds);
 
     if (accuracyError) {
       console.error('Error fetching accuracy rates:', accuracyError);
@@ -195,7 +195,7 @@ export const Supabase = {
     // accuracy_rate를 Map으로 변환
     const accuracyMap = new Map<string, AccuracyRate>();
     (accuracyData || []).forEach((item) => {
-      accuracyMap.set(item.id, item);
+      accuracyMap.set(item.problem_id, item);
     });
 
     // problem_tags를 problem_id별로 그룹화

@@ -1,5 +1,5 @@
 export interface AccuracyRate {
-  id: string;
+  problem_id: string;
   correct_answer: string;
   difficulty: string;
   score: number;
