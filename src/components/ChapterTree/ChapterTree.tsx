@@ -3,6 +3,7 @@ import type { Book, Chapter, Topic } from '../../ssot/types';
 
 interface ChapterTreeProps {
   data: Book[];
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 interface CheckboxProps {
@@ -32,7 +33,7 @@ function IndeterminateCheckbox({ checkState }: CheckboxProps) {
   );
 }
 
-function ChapterTree({ data }: ChapterTreeProps) {
+function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
   // 모든 항목을 펼친 상태로 초기화
   const getAllIds = (data: Book[]): string[] => {
     const ids: string[] = [];
@@ -49,6 +50,13 @@ function ChapterTree({ data }: ChapterTreeProps) {
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(getAllIds(data)));
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+
+  // checkedItems가 변경될 때 부모 컴포넌트에 알림
+  useEffect(() => {
+    if (onSelectionChange) {
+      onSelectionChange(Array.from(checkedItems));
+    }
+  }, [checkedItems, onSelectionChange]);
 
   const toggleExpanded = (id: string) => {
     setExpandedItems((prev) => {

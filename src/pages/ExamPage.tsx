@@ -79,7 +79,7 @@ function ExamPage() {
         await Supabase.ProblemTags.delete(problemId, type);
       } else {
         await Supabase.ProblemTags.upsert({
-          exam_id: problemId,
+          problem_id: problemId,
           type,
           tag_ids: tagIds,
           tag_labels: tagLabels,
@@ -150,8 +150,8 @@ function ExamPage() {
         const customMap = new Map<number, TagWithId[]>();
 
         data.forEach((tag) => {
-          // exam_id에서 문제 번호 추출
-          const match = tag.exam_id.match(/_(\d+)_문제$/);
+          // problem_id에서 문제 번호 추출
+          const match = tag.problem_id.match(/_(\d+)_문제$/);
           if (!match) return;
 
           const questionNumber = parseInt(match[1], 10);

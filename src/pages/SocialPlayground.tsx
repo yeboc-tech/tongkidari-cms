@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import ChapterTree from '../components/ChapterTree/ChapterTree';
 import { 자세한통합사회_단원_태그 } from '../ssot/curriculumStructure';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 import type { Book } from '../ssot/types';
+import { Supabase } from '../api/Supabase';
+import { PROBLEM_TAG_TYPES } from '../ssot/PROBLEM_TAG_TYPES';
+import { getQuestionImageUrl } from '../constants/apiConfig';
 
 type CategoryType = '통합사회' | '사회탐구';
 type SubjectType = '경제' | '정치와법' | '사회문화' | '한국지리' | '세계지리' | '윤리와사상' | '생활과윤리';
@@ -11,12 +14,14 @@ type SubjectType = '경제' | '정치와법' | '사회문화' | '한국지리' |
 function SocialPlayground() {
   useAuth(); // 인증 체크
 
-  const [categoryType, setCategoryType] = useState<CategoryType>('통합사회');
+  const [categoryType, setCategoryType] = useState<CategoryType>('사회탐구');
   const [selectedSubject, setSelectedSubject] = useState<SubjectType>('경제');
   const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
   const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [customCount, setCustomCount] = useState<string>('');
   const [isCustomInput, setIsCustomInput] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [searchResults, setSearchResults] = useState<string[]>([]);
 
   const years = ['2024', '2023', '2022', '2021', '2020', '2019', '2018'];
   const questionCounts = [20, 25, 30, 50, 100];
@@ -50,6 +55,48 @@ function SocialPlayground() {
       const subjectData = 마더텅_단원_태그.find((book) => book.id === selectedSubject);
       return subjectData ? [subjectData] : [];
     }
+  };
+
+  // ChapterTree에서 선택된 ID들을 받아 저장
+  const handleSelectionChange = useCallback((selectedIds: string[]) => {
+    setSelectedTagIds(selectedIds);
+  }, []);
+
+  // 필터 적용 버튼 클릭 시 검색 수행
+  const handleApplyFilter = async () => {
+    if (categoryType === '사회탐구' && selectedTagIds.length > 0) {
+      try {
+        const examIds = await Supabase.ProblemTags.searchByTagIds(
+          PROBLEM_TAG_TYPES.MADERTONG,
+          selectedTagIds
+        );
+        setSearchResults(examIds);
+      } catch (error) {
+        console.error('검색 실패:', error);
+        setSearchResults([]);
+      }
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  // problem_id를 파싱하여 examId와 questionNumber 추출
+  const parseProblemId = (problemId: string): { examId: string; questionNumber: number } | null => {
+    // 형식: "경제_고3_2024_03_학평_1_문제"
+    // _문제를 제거
+    let cleaned = problemId;
+    if (problemId.endsWith('_문제')) {
+      cleaned = problemId.slice(0, -3); // "_문제" 제거
+    }
+
+    const parts = cleaned.split('_');
+    if (parts.length < 6) return null;
+
+    const questionNumber = parseInt(parts[parts.length - 1], 10);
+    if (isNaN(questionNumber)) return null;
+
+    const examIdPart = parts.slice(0, -1).join('_');
+    return { examId: examIdPart, questionNumber };
   };
 
   return (
@@ -128,7 +175,10 @@ function SocialPlayground() {
               )}
 
               {getCurrentData().length > 0 ? (
-                <ChapterTree data={getCurrentData()} />
+                <ChapterTree
+                  data={getCurrentData()}
+                  onSelectionChange={handleSelectionChange}
+                />
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">
                   선택한 과목의 데이터가 준비 중입니다
@@ -274,6 +324,7 @@ function SocialPlayground() {
             {/* 적용 버튼 */}
             <div className="p-4 border-t border-gray-200">
               <button
+                onClick={handleApplyFilter}
                 className="w-full px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90"
                 style={{ backgroundColor: '#ff00a1' }}
               >
@@ -288,34 +339,53 @@ function SocialPlayground() {
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">문제 목록</h2>
-              <span className="text-sm text-gray-500">총 0개</span>
+              <span className="text-sm text-gray-500">총 {searchResults.length}개</span>
             </div>
           </div>
 
           <div className="p-6 overflow-y-auto h-[calc(100%-4rem)]">
-            {/* 이미지 그리드 */}
-            <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-              {/* 플레이스홀더 카드 */}
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <div
-                  key={item}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                >
-                  <div className="aspect-[3/4] bg-gray-100 rounded flex items-center justify-center mb-3">
-                    <span className="text-gray-400">문제 이미지</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-900">문제 #{item}</p>
-                    <p className="text-xs text-gray-500">정답률: --</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {searchResults.length > 0 ? (
+              /* 검색 결과 그리드 */
+              <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                {searchResults.map((problemId) => {
+                  const parsed = parseProblemId(problemId);
+                  if (!parsed) return null;
 
-            {/* 결과 없음 상태 */}
-            <div className="hidden text-center py-12">
-              <p className="text-gray-400">필터를 적용하여 문제를 검색하세요</p>
-            </div>
+                  const imageUrl = getQuestionImageUrl(parsed.examId, parsed.questionNumber);
+
+                  return (
+                    <div
+                      key={problemId}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    >
+                      <div className="aspect-[3/4] bg-gray-100 rounded overflow-hidden mb-3">
+                        <img
+                          src={imageUrl}
+                          alt={`문제 ${problemId}`}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling!.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="hidden w-full h-full flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">이미지 로드 실패</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-gray-900 font-mono">{problemId}</p>
+                        <p className="text-xs text-gray-500">정답률: --</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* 결과 없음 상태 */
+              <div className="text-center py-12">
+                <p className="text-gray-400">필터를 적용하여 문제를 검색하세요</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

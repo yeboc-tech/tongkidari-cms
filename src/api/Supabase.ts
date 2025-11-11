@@ -10,7 +10,7 @@ import { type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
 // ========== Types ==========
 
 export interface ProblemTag {
-  exam_id: string;
+  problem_id: string;
   type: ProblemTagType;
   tag_ids: string[];
   tag_labels: string[];
@@ -18,7 +18,7 @@ export interface ProblemTag {
 }
 
 export interface ProblemTagUpsertParams {
-  exam_id: string;
+  problem_id: string;
   type: ProblemTagType;
   tag_ids: string[];
   tag_labels: string[];
@@ -33,14 +33,14 @@ export const Supabase = {
   ProblemTags: {
     /**
      * 여러 문제의 태그 데이터를 한 번에 가져오기
-     * @param examIds - 문제 ID 배열
+     * @param problemIds - 문제 ID 배열
      * @returns 태그 데이터 배열
      */
-    async fetch(examIds: string[]): Promise<ProblemTag[]> {
+    async fetch(problemIds: string[]): Promise<ProblemTag[]> {
       const { data, error } = await supabase
         .from('problem_tags')
         .select('*')
-        .in('exam_id', examIds);
+        .in('problem_id', problemIds);
 
       if (error) {
         console.error('Error fetching problem tags:', error);
@@ -51,6 +51,42 @@ export const Supabase = {
     },
 
     /**
+     * 특정 타입과 태그 ID로 문제 검색
+     * tag_ids 배열에 selectedTagIds 중 하나라도 포함되면 해당 problem_id 반환
+     * @param type - 태그 타입
+     * @param selectedTagIds - 선택된 태그 ID 배열
+     * @returns problem_id 배열
+     */
+    async searchByTagIds(type: ProblemTagType, selectedTagIds: string[]): Promise<string[]> {
+      if (selectedTagIds.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('problem_tags')
+        .select('problem_id, tag_ids')
+        .eq('type', type);
+
+      if (error) {
+        console.error('Error searching problem tags:', error);
+        throw error;
+      }
+
+      if (!data) {
+        return [];
+      }
+
+      // tag_ids에 selectedTagIds 중 하나라도 포함되는 항목 필터링
+      const matchedProblemIds = data
+        .filter((row) => {
+          return row.tag_ids.some((tagId: string) => selectedTagIds.includes(tagId));
+        })
+        .map((row) => row.problem_id);
+
+      return matchedProblemIds;
+    },
+
+    /**
      * 태그 데이터 저장 또는 업데이트
      * @param params - 저장할 태그 정보
      */
@@ -58,13 +94,13 @@ export const Supabase = {
       const { error } = await supabase
         .from('problem_tags')
         .upsert({
-          exam_id: params.exam_id,
+          problem_id: params.problem_id,
           type: params.type,
           tag_ids: params.tag_ids,
           tag_labels: params.tag_labels,
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'exam_id,type'
+          onConflict: 'problem_id,type'
         });
 
       if (error) {
@@ -75,14 +111,14 @@ export const Supabase = {
 
     /**
      * 특정 문제의 특정 타입 태그 삭제
-     * @param examId - 문제 ID
+     * @param problemId - 문제 ID
      * @param type - 태그 타입
      */
-    async delete(examId: string, type: ProblemTagType): Promise<void> {
+    async delete(problemId: string, type: ProblemTagType): Promise<void> {
       const { error } = await supabase
         .from('problem_tags')
         .delete()
-        .eq('exam_id', examId)
+        .eq('problem_id', problemId)
         .eq('type', type);
 
       if (error) {
