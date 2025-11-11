@@ -60,6 +60,9 @@ function OneAnswer({
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');
 
+  // problemId에서 subject 추출: "경제_고3_2024_03_학평_1_문제" -> "경제"
+  const subject = problemId.split('_')[0];
+
   // 해설 이미지 URL 생성
   const imageUrl = getSolutionImageUrl(examId, questionNumber);
 
@@ -153,8 +156,8 @@ function OneAnswer({
           <div className="text-xs text-gray-500 text-center py-2">태그 정보를 불러오는 중...</div>
         ) : (
           <>
-            {/* 마더텅 경제 단원 태그 */}
-            <MotherTongTagInput onSelect={onMotherTongSelect} value={motherTongTag} />
+            {/* 마더텅 단원 태그 */}
+            <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
 
             {/* 자세한통사 단원 태그 */}
             <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />

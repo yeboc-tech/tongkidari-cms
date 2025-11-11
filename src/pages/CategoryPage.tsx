@@ -13,10 +13,11 @@ const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => 2013 + i);
 
 // 과목별 문제 수 (임시 하드코딩)
 const PROBLEM_COUNTS: Record<string, number> = {
-  사회문화: 1638,
-  정치와법: 660,
   경제: 1620,
+  동아시아사: 0, // TODO: 문제 수 추가 필요
+  사회문화: 1638,
   생활과윤리: 1640,
+  정치와법: 660,
 };
 
 // 초기 로딩을 위한 빈 데이터 생성

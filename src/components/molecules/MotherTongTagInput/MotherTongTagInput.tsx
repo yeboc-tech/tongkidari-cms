@@ -7,17 +7,26 @@ export interface SelectedTag {
 }
 
 export interface MotherTongTagInputProps {
+  subject?: string;
   onSelect: (tag: SelectedTag | null) => void;
   placeholder?: string;
   value?: SelectedTag | null;
 }
 
-function MotherTongTagInput({ onSelect, placeholder = '마더텅 경제 단원 태그', value }: MotherTongTagInputProps) {
+function MotherTongTagInput({ subject, onSelect, placeholder, value }: MotherTongTagInputProps) {
+  // subject가 주어지면 해당 과목의 데이터만 필터링, 없으면 전체 데이터 사용
+  const filteredData = subject
+    ? 마더텅_단원_태그.filter((book) => book.id === subject)
+    : 마더텅_단원_태그;
+
+  // subject에 따른 기본 placeholder
+  const defaultPlaceholder = subject ? `마더텅 ${subject} 단원 태그` : '마더텅 단원 태그';
+
   return (
     <CurriculumTagInput
-      data={마더텅_단원_태그}
+      data={filteredData}
       onSelect={onSelect}
-      placeholder={placeholder}
+      placeholder={placeholder || defaultPlaceholder}
       value={value}
       color="#e34f6e"
     />
