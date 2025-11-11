@@ -1,8 +1,8 @@
-import CurriculumTagInput from '../tag-input/CurriculumTagInput/CurriculumTagInput';
+import MotherTongTagInput from '../molecules/MotherTongTagInput';
+import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
-import { 마더텅_단원_태그 } from '../../ssot/마더텅_단원_태그';
-import { 자세한통합사회_단원_태그 } from '../../ssot/curriculumStructure';
 import { AccuracyRate } from '../../types/accuracyRate';
+import { getQuestionImageUrl, getSolutionImageUrl } from '../../constants/apiConfig';
 
 // ========== Types ==========
 
@@ -20,8 +20,8 @@ export interface OneProblemProps {
   // 기본 정보
   questionNumber: number;
   title: string; // 예: "문제 1" 또는 "해설 1"
-  imageUrl: string;
   problemId: string;
+  showSolution: boolean; // 문제인지 해설인지
 
   // 정확도 데이터
   accuracyData?: AccuracyRate;
@@ -46,10 +46,10 @@ export interface OneProblemProps {
 // ========== Component ==========
 
 function OneProblem({
-  questionNumber: _questionNumber,
+  questionNumber,
   title,
-  imageUrl,
   problemId,
+  showSolution,
   accuracyData,
   accuracyLoading,
   motherTongTag: motherTongTag,
@@ -62,6 +62,14 @@ function OneProblem({
   onCustomTagsChange,
   isCopied,
 }: OneProblemProps) {
+  // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
+  const examId = problemId.replace(/_\d+_문제$/, '');
+
+  // 이미지 URL 생성
+  const imageUrl = showSolution
+    ? getSolutionImageUrl(examId, questionNumber)
+    : getQuestionImageUrl(examId, questionNumber);
+
   return (
     <div className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
       {/* 헤더: 제목과 복사 버튼 */}
@@ -139,22 +147,12 @@ function OneProblem({
           <>
             {/* 마더텅 경제 단원 태그 */}
             <div className="border border-gray-200 rounded-lg p-3">
-              <CurriculumTagInput
-                data={마더텅_단원_태그}
-                onSelect={onMotherTongSelect}
-                placeholder="마더텅 경제 단원 태그"
-                value={motherTongTag}
-              />
+              <MotherTongTagInput onSelect={onMotherTongSelect} value={motherTongTag} />
             </div>
 
             {/* 자세한통사 단원 태그 */}
             <div className="border border-gray-200 rounded-lg p-3">
-              <CurriculumTagInput
-                data={자세한통합사회_단원_태그}
-                onSelect={onIntegratedSelect}
-                placeholder="자세한통사 단원 태그"
-                value={integratedTag}
-              />
+              <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
             </div>
 
             {/* 커스텀 태그 */}

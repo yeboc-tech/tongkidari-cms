@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ExamId } from '../domain/examId';
-import { getQuestionImageUrls, getSolutionImageUrls } from '../constants/apiConfig';
 import { ExamMetaLinks } from '../components';
 import { Supabase } from '../api/Supabase';
 import { AccuracyRate } from '../types/accuracyRate';
@@ -34,14 +33,6 @@ function ExamPage() {
   const regionInfo = examInfo
     ? getRegionByExamInfo(examInfo.year, examInfo.target as Grade, examInfo.month, examInfo.type)
     : '-';
-
-  // 문제 이미지 URL 목록 생성 (1-20번)
-  const questionImageUrls = id ? getQuestionImageUrls(id, 20) : [];
-  // 해설 이미지 URL 목록 생성 (1-20번)
-  const solutionImageUrls = id ? getSolutionImageUrls(id, 20) : [];
-
-  // 현재 표시할 이미지 URL 목록
-  const currentImageUrls = showSolution ? solutionImageUrls : questionImageUrls;
 
   // 지역 제거 함수
   const removeRegion = (examIdWithRegion: string): string => {
@@ -325,7 +316,7 @@ function ExamPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {currentImageUrls.map((url, index) => {
+          {Array.from({ length: 20 }, (_, index) => {
             const questionNumber = index + 1;
             const accuracyData = accuracyRates.get(questionNumber);
 
@@ -334,8 +325,8 @@ function ExamPage() {
                 key={`${showSolution ? 'solution' : 'question'}-${questionNumber}`}
                 questionNumber={questionNumber}
                 title={`${showSolution ? '해설' : '문제'} ${questionNumber}`}
-                imageUrl={url}
                 problemId={getProblemId(questionNumber)}
+                showSolution={showSolution}
                 accuracyData={accuracyData}
                 accuracyLoading={loading}
                 motherTongTag={madertongTags.get(questionNumber) || null}
