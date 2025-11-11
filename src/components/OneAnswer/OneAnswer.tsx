@@ -154,19 +154,13 @@ function OneAnswer({
         ) : (
           <>
             {/* 마더텅 경제 단원 태그 */}
-            <div className="border border-gray-200 rounded-lg p-3">
-              <MotherTongTagInput onSelect={onMotherTongSelect} value={motherTongTag} />
-            </div>
+            <MotherTongTagInput onSelect={onMotherTongSelect} value={motherTongTag} />
 
             {/* 자세한통사 단원 태그 */}
-            <div className="border border-gray-200 rounded-lg p-3">
-              <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
-            </div>
+            <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
 
             {/* 커스텀 태그 */}
-            <div className="border border-gray-200 rounded-lg p-3">
-              <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} />
-            </div>
+            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} />
           </>
         )}
       </div>
