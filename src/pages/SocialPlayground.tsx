@@ -66,10 +66,7 @@ function SocialPlayground() {
   const handleApplyFilter = async () => {
     if (categoryType === '사회탐구' && selectedTagIds.length > 0) {
       try {
-        const examIds = await Supabase.ProblemTags.searchByTagIds(
-          PROBLEM_TAG_TYPES.MADERTONG,
-          selectedTagIds
-        );
+        const examIds = await Supabase.ProblemTags.searchByTagIds(PROBLEM_TAG_TYPES.MOTHER, selectedTagIds);
         setSearchResults(examIds);
       } catch (error) {
         console.error('검색 실패:', error);
@@ -119,9 +116,7 @@ function SocialPlayground() {
                   <button
                     onClick={() => setCategoryType('사회탐구')}
                     className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                      categoryType === '사회탐구'
-                        ? 'bg-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                      categoryType === '사회탐구' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                     }`}
                     style={categoryType === '사회탐구' ? { color: '#ff00a1' } : {}}
                   >
@@ -130,9 +125,7 @@ function SocialPlayground() {
                   <button
                     onClick={() => setCategoryType('통합사회')}
                     className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                      categoryType === '통합사회'
-                        ? 'bg-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                      categoryType === '통합사회' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                     }`}
                     style={categoryType === '통합사회' ? { color: '#ff00a1' } : {}}
                   >
@@ -175,14 +168,9 @@ function SocialPlayground() {
               )}
 
               {getCurrentData().length > 0 ? (
-                <ChapterTree
-                  data={getCurrentData()}
-                  onSelectionChange={handleSelectionChange}
-                />
+                <ChapterTree data={getCurrentData()} onSelectionChange={handleSelectionChange} />
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  선택한 과목의 데이터가 준비 중입니다
-                </div>
+                <div className="text-center py-8 text-gray-400 text-sm">선택한 과목의 데이터가 준비 중입니다</div>
               )}
             </div>
 
@@ -227,11 +215,7 @@ function SocialPlayground() {
                           ? 'text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
-                      style={
-                        selectedYears.size === years.length
-                          ? { backgroundColor: '#ff00a1' }
-                          : {}
-                      }
+                      style={selectedYears.size === years.length ? { backgroundColor: '#ff00a1' } : {}}
                     >
                       모두
                     </button>
@@ -242,15 +226,9 @@ function SocialPlayground() {
                         key={year}
                         onClick={() => toggleYear(year)}
                         className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                          selectedYears.has(year)
-                            ? 'text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          selectedYears.has(year) ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
-                        style={
-                          selectedYears.has(year)
-                            ? { backgroundColor: '#ff00a1' }
-                            : {}
-                        }
+                        style={selectedYears.has(year) ? { backgroundColor: '#ff00a1' } : {}}
                       >
                         {year}
                       </button>
@@ -277,11 +255,7 @@ function SocialPlayground() {
                         ? 'text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
-                    style={
-                      questionCount === count && !isCustomInput
-                        ? { backgroundColor: '#ff00a1' }
-                        : {}
-                    }
+                    style={questionCount === count && !isCustomInput ? { backgroundColor: '#ff00a1' } : {}}
                   >
                     {count}
                   </button>
@@ -292,15 +266,9 @@ function SocialPlayground() {
                     setQuestionCount(null);
                   }}
                   className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    isCustomInput
-                      ? 'text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    isCustomInput ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
-                  style={
-                    isCustomInput
-                      ? { backgroundColor: '#ff00a1' }
-                      : {}
-                  }
+                  style={isCustomInput ? { backgroundColor: '#ff00a1' } : {}}
                 >
                   직접입력
                 </button>

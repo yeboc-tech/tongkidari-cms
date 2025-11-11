@@ -99,10 +99,7 @@ function ExamPage() {
       const examIdWithoutRegion = removeRegion(id);
 
       // 1-20번 문제의 id 목록 생성
-      const questionIds = Array.from(
-        { length: 20 },
-        (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`
-      );
+      const questionIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`);
 
       try {
         const data = await Supabase.AccuracyRates.fetch(questionIds);
@@ -137,10 +134,7 @@ function ExamPage() {
       const examIdWithoutRegion = removeRegion(id);
 
       // 1-20번 문제의 id 목록 생성
-      const questionIds = Array.from(
-        { length: 20 },
-        (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`
-      );
+      const questionIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`);
 
       try {
         const data = await Supabase.ProblemTags.fetch(questionIds);
@@ -156,17 +150,17 @@ function ExamPage() {
 
           const questionNumber = parseInt(match[1], 10);
 
-          if (tag.type === PROBLEM_TAG_TYPES.MADERTONG) {
+          if (tag.type === PROBLEM_TAG_TYPES.MOTHER) {
             madertongMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
             });
-          } else if (tag.type === PROBLEM_TAG_TYPES.INTEGRATED) {
+          } else if (tag.type === PROBLEM_TAG_TYPES.DETAIL_TONGSA) {
             integratedMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
             });
-          } else if (tag.type === PROBLEM_TAG_TYPES.CUSTOM) {
+          } else if (tag.type === PROBLEM_TAG_TYPES.CUSTOM_TONGSA) {
             const customTags = tag.tag_ids.map((id, index) => ({
               id,
               label: tag.tag_labels[index],
@@ -221,9 +215,9 @@ function ExamPage() {
 
     // 서버에 저장 (null이면 빈 배열로 전달하여 삭제)
     if (tag) {
-      await saveTags(questionNumber, PROBLEM_TAG_TYPES.MADERTONG, tag.tagIds, tag.tagLabels);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.MOTHER, tag.tagIds, tag.tagLabels);
     } else {
-      await saveTags(questionNumber, PROBLEM_TAG_TYPES.MADERTONG, [], []);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.MOTHER, [], []);
     }
   };
 
@@ -237,9 +231,9 @@ function ExamPage() {
 
     // 서버에 저장 (null이면 빈 배열로 전달하여 삭제)
     if (tag) {
-      await saveTags(questionNumber, PROBLEM_TAG_TYPES.INTEGRATED, tag.tagIds, tag.tagLabels);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.DETAIL_TONGSA, tag.tagIds, tag.tagLabels);
     } else {
-      await saveTags(questionNumber, PROBLEM_TAG_TYPES.INTEGRATED, [], []);
+      await saveTags(questionNumber, PROBLEM_TAG_TYPES.DETAIL_TONGSA, [], []);
     }
   };
 
@@ -252,9 +246,9 @@ function ExamPage() {
     });
 
     // 서버에 저장 (빈 배열이면 삭제)
-    const tagIds = tags.map(t => t.id);
-    const tagLabels = tags.map(t => t.label);
-    await saveTags(questionNumber, PROBLEM_TAG_TYPES.CUSTOM, tagIds, tagLabels);
+    const tagIds = tags.map((t) => t.id);
+    const tagLabels = tags.map((t) => t.label);
+    await saveTags(questionNumber, PROBLEM_TAG_TYPES.CUSTOM_TONGSA, tagIds, tagLabels);
   };
 
   if (!examInfo) {
@@ -262,9 +256,7 @@ function ExamPage() {
       <div className="space-y-6">
         <div className="bg-white p-8 rounded-lg shadow">
           <h1 className="text-3xl font-bold text-red-600 mb-4">잘못된 시험 ID</h1>
-          <p className="text-gray-600 mb-4">
-            시험 정보를 찾을 수 없습니다. ID 형식을 확인해주세요.
-          </p>
+          <p className="text-gray-600 mb-4">시험 정보를 찾을 수 없습니다. ID 형식을 확인해주세요.</p>
           <button
             onClick={() => navigate('/')}
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
@@ -325,9 +317,7 @@ function ExamPage() {
 
       <div className="bg-white p-8 rounded-lg shadow">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {showSolution ? '해설 목록' : '문제 목록'}
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">{showSolution ? '해설 목록' : '문제 목록'}</h2>
           <div className="flex items-center gap-3">
             <span className={`text-sm font-medium ${!showSolution ? 'text-blue-600' : 'text-gray-500'}`}>
               문제 보기
@@ -344,9 +334,7 @@ function ExamPage() {
                 }`}
               />
             </button>
-            <span className={`text-sm font-medium ${showSolution ? 'text-blue-600' : 'text-gray-500'}`}>
-              해설 보기
-            </span>
+            <span className={`text-sm font-medium ${showSolution ? 'text-blue-600' : 'text-gray-500'}`}>해설 보기</span>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -368,9 +356,10 @@ function ExamPage() {
                     className={`
                       relative overflow-hidden px-3 py-1.5 rounded-full text-xs font-medium
                       transition-all duration-200 cursor-pointer font-mono
-                      ${copiedQuestionNumber === questionNumber
-                        ? 'bg-green-100 text-green-700 border-2 border-green-300'
-                        : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
+                      ${
+                        copiedQuestionNumber === questionNumber
+                          ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                          : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
                       }
                     `}
                   >
@@ -385,7 +374,12 @@ function ExamPage() {
                       ) : (
                         <>
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            />
                           </svg>
                           {getProblemId(questionNumber)}
                         </>
@@ -402,43 +396,31 @@ function ExamPage() {
                   <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
                     <div className="bg-blue-50 px-2 py-1 rounded">
                       <span className="text-gray-600">정답률</span>
-                      <p className="font-semibold text-blue-700">
-                        {accuracyData.accuracy_rate}%
-                      </p>
+                      <p className="font-semibold text-blue-700">{accuracyData.accuracy_rate}%</p>
                     </div>
                     <div className="bg-purple-50 px-2 py-1 rounded">
                       <span className="text-gray-600">난이도</span>
-                      <p className="font-semibold text-purple-700">
-                        {accuracyData.difficulty}
-                      </p>
+                      <p className="font-semibold text-purple-700">{accuracyData.difficulty}</p>
                     </div>
                     <div className="bg-green-50 px-2 py-1 rounded">
                       <span className="text-gray-600">점수</span>
-                      <p className="font-semibold text-green-700">
-                        {accuracyData.score}점
-                      </p>
+                      <p className="font-semibold text-green-700">{accuracyData.score}점</p>
                     </div>
                     <div className="bg-orange-50 px-2 py-1 rounded">
                       <span className="text-gray-600">정답</span>
-                      <p className="font-semibold text-orange-700">
-                        {accuracyData.correct_answer}
-                      </p>
+                      <p className="font-semibold text-orange-700">{accuracyData.correct_answer}</p>
                     </div>
                   </div>
                 )}
 
                 {loading && !accuracyData && (
-                  <div className="mb-3 text-xs text-gray-500">
-                    정확도 정보를 불러오는 중...
-                  </div>
+                  <div className="mb-3 text-xs text-gray-500">정확도 정보를 불러오는 중...</div>
                 )}
 
                 {/* 태그 입력기 섹션 */}
                 <div className="mb-4 space-y-3">
                   {tagsLoading ? (
-                    <div className="text-xs text-gray-500 text-center py-2">
-                      태그 정보를 불러오는 중...
-                    </div>
+                    <div className="text-xs text-gray-500 text-center py-2">태그 정보를 불러오는 중...</div>
                   ) : (
                     <>
                       <div className="border border-gray-200 rounded-lg p-3">
