@@ -159,10 +159,10 @@ function CategoryPage() {
             });
 
             // 문제 카운트 가져오기
-            const problemCount = await Api.fetchExamQuestionCount(examId);
+            const problemCount = await Api.Meta.fetchQuestionCount(examId);
 
             // 해설 카운트는 현재 사용하지 않음
-            // const answerCount = await Api.fetchExamAnswerCount(examId);
+            // const answerCount = await Api.Meta.fetchAnswerCount(examId);
 
             return { problem: problemCount, answer: null };
           });

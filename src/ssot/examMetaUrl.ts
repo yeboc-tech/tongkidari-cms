@@ -3,7 +3,9 @@
  * Single Source of Truth for exam metadata file URLs
  */
 
-const CDN_BASE_URL = 'https://cdn.y3c.kr/tongkidari/meta';
+import { CDN_BASE_URL } from '../env';
+
+const META_BASE_URL = `${CDN_BASE_URL}meta`;
 
 /**
  * 문제 CSV 파일명 생성
@@ -20,7 +22,7 @@ export const getProblemCsvFilename = (examId: string): string => {
  * @returns 문제 CSV 파일 URL
  */
 export const getProblemCsvUrl = (examId: string): string => {
-  return `${CDN_BASE_URL}/${getProblemCsvFilename(examId)}`;
+  return `${META_BASE_URL}/${getProblemCsvFilename(examId)}`;
 };
 
 /**
@@ -38,7 +40,7 @@ export const getAnswerCsvFilename = (examId: string): string => {
  * @returns 해설 CSV 파일 URL
  */
 export const getAnswerCsvUrl = (examId: string): string => {
-  return `${CDN_BASE_URL}/${getAnswerCsvFilename(examId)}`;
+  return `${META_BASE_URL}/${getAnswerCsvFilename(examId)}`;
 };
 
 /**
@@ -58,7 +60,7 @@ export const getProblemPageFilename = (examId: string, page: number): string => 
  * @returns 문제 페이지 이미지 URL
  */
 export const getProblemPageUrl = (examId: string, page: number): string => {
-  return `${CDN_BASE_URL}/${getProblemPageFilename(examId, page)}`;
+  return `${META_BASE_URL}/${getProblemPageFilename(examId, page)}`;
 };
 
 /**
@@ -78,7 +80,7 @@ export const getProblemDebugFilename = (examId: string, page: number): string =>
  * @returns 문제 디버그 이미지 URL
  */
 export const getProblemDebugUrl = (examId: string, page: number): string => {
-  return `${CDN_BASE_URL}/${getProblemDebugFilename(examId, page)}`;
+  return `${META_BASE_URL}/${getProblemDebugFilename(examId, page)}`;
 };
 
 /**
@@ -96,7 +98,7 @@ export const getAccuracyRateCsvFilename = (examId: string): string => {
  * @returns 정확도 CSV 파일 URL
  */
 export const getAccuracyRateCsvUrl = (examId: string): string => {
-  return `${CDN_BASE_URL}/${getAccuracyRateCsvFilename(examId)}`;
+  return `${META_BASE_URL}/${getAccuracyRateCsvFilename(examId)}`;
 };
 
 /**
@@ -114,7 +116,7 @@ export const getLabelCsvFilename = (examId: string): string => {
  * @returns 레이블 CSV 파일 URL
  */
 export const getLabelCsvUrl = (examId: string): string => {
-  return `${CDN_BASE_URL}/${getLabelCsvFilename(examId)}`;
+  return `${META_BASE_URL}/${getLabelCsvFilename(examId)}`;
 };
 
 /**
@@ -132,5 +134,23 @@ export const getHistoryCsvFilename = (examId: string): string => {
  * @returns 히스토리 CSV 파일 URL
  */
 export const getHistoryCsvUrl = (examId: string): string => {
-  return `${CDN_BASE_URL}/${getHistoryCsvFilename(examId)}`;
+  return `${META_BASE_URL}/${getHistoryCsvFilename(examId)}`;
+};
+
+/**
+ * PDF 파일명 생성
+ * @param examId - 시험 ID
+ * @returns 파일명
+ */
+export const getPdfFilename = (examId: string): string => {
+  return `${examId}.pdf`;
+};
+
+/**
+ * PDF 파일의 전체 URL 생성
+ * @param examId - 시험 ID
+ * @returns PDF 파일 URL
+ */
+export const getPdfUrl = (examId: string): string => {
+  return `${CDN_BASE_URL}pdfs/${getPdfFilename(examId)}`;
 };
