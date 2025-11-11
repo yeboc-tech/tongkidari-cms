@@ -299,7 +299,10 @@ function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
+      <div
+        className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-text"
+        onClick={() => inputRef.current?.focus()}
+      >
         {/* 선택된 태그들을 chip 형태로 표시 */}
         {selectedTags.map((tag, index) => (
           <div
@@ -308,7 +311,10 @@ function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검
           >
             <span>{tag.label}</span>
             <button
-              onClick={() => removeTag(index)}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTag(index);
+              }}
               className="hover:bg-green-200 rounded-full p-0.5 transition-colors"
               type="button"
             >
@@ -359,7 +365,7 @@ function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검
           }}
           onFocus={() => inputText && suggestions.length > 0 && setIsOpen(true)}
           placeholder={selectedTags.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[120px] outline-none"
+          className="flex-1 min-w-0 outline-none"
         />
       </div>
 

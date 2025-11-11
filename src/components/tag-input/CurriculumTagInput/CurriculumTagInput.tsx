@@ -296,7 +296,10 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', 
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
+      <div
+        className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-text"
+        onClick={() => inputRef.current?.focus()}
+      >
         {/* 선택된 태그를 chip 형태로 표시 */}
         {selectedTag && (
           <div
@@ -304,7 +307,10 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', 
           >
             <span>{selectedTag.tagLabels.join(' > ')}</span>
             <button
-              onClick={handleRemoveTag}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemoveTag();
+              }}
               className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
               type="button"
             >
@@ -334,7 +340,7 @@ function CurriculumTagInput({ data, onSelect, placeholder = '단원 검색...', 
           onKeyDown={handleKeyDown}
           onFocus={() => searchText && results.length > 0 && setIsOpen(true)}
           placeholder={!selectedTag ? placeholder : ''}
-          className="flex-1 min-w-[120px] outline-none"
+          className="flex-1 min-w-0 outline-none"
         />
       </div>
 
