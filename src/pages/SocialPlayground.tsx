@@ -4,7 +4,7 @@ import ChapterTree from '../components/ChapterTree/ChapterTree';
 import { 자세한통합사회_단원_태그 } from '../ssot/curriculumStructure';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 import type { Book } from '../ssot/types';
-import { Supabase } from '../api/Supabase';
+import { Supabase, type ProblemInfo } from '../api/Supabase';
 import { PROBLEM_TAG_TYPES } from '../ssot/PROBLEM_TAG_TYPES';
 import OneProblem from '../components/OneProblem';
 import { SUBJECTS } from '../ssot/subjects';
@@ -30,7 +30,7 @@ function SocialPlayground() {
   const [customCount, setCustomCount] = useState<string>('');
   const [isCustomInput, setIsCustomInput] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [searchResults, setSearchResults] = useState<ProblemInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const years = ['2024', '2023', '2022', '2021', '2020', '2019', '2018'];
@@ -77,8 +77,13 @@ function SocialPlayground() {
     setIsLoading(true);
     try {
       if (categoryType === '사회탐구' && selectedTagIds.length > 0) {
-        const examIds = await Supabase.ProblemTags.searchByTagIds(PROBLEM_TAG_TYPES.MOTHER, selectedTagIds);
-        setSearchResults(examIds);
+        // 1. 태그로 problem_id 목록 검색
+        const problemIds = await Supabase.ProblemTags.searchByTagIds(PROBLEM_TAG_TYPES.MOTHER, selectedTagIds);
+
+        // 2. problem_id로 모든 정보 가져오기 (accuracy_rate + problem_tags)
+        const problemInfos = await Supabase.fetchProblemInfoByIds(problemIds);
+
+        setSearchResults(problemInfos);
       } else {
         setSearchResults([]);
       }
@@ -88,25 +93,6 @@ function SocialPlayground() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // problem_id를 파싱하여 examId와 questionNumber 추출
-  const parseProblemId = (problemId: string): { examId: string; questionNumber: number } | null => {
-    // 형식: "경제_고3_2024_03_학평_1_문제"
-    // _문제를 제거
-    let cleaned = problemId;
-    if (problemId.endsWith('_문제')) {
-      cleaned = problemId.slice(0, -3); // "_문제" 제거
-    }
-
-    const parts = cleaned.split('_');
-    if (parts.length < 6) return null;
-
-    const questionNumber = parseInt(parts[parts.length - 1], 10);
-    if (isNaN(questionNumber)) return null;
-
-    const examIdPart = parts.slice(0, -1).join('_');
-    return { examId: examIdPart, questionNumber };
   };
 
   return (
@@ -327,27 +313,23 @@ function SocialPlayground() {
             ) : searchResults.length > 0 ? (
               /* 검색 결과 목록 */
               <div className="space-y-4">
-                {searchResults.map((problemId) => {
-                  const parsed = parseProblemId(problemId);
-                  if (!parsed) return null;
-
-                  return (
-                    <OneProblem
-                      key={problemId}
-                      questionNumber={parsed.questionNumber}
-                      title={`문제 ${parsed.questionNumber}`}
-                      problemId={problemId}
-                      accuracyLoading={false}
-                      motherTongTag={null}
-                      integratedTag={null}
-                      customTags={[]}
-                      tagsLoading={false}
-                      onMotherTongSelect={() => {}}
-                      onIntegratedSelect={() => {}}
-                      onCustomTagsChange={() => {}}
-                    />
-                  );
-                })}
+                {searchResults.map((problemInfo) => (
+                  <OneProblem
+                    key={problemInfo.problemId}
+                    questionNumber={problemInfo.questionNumber}
+                    title={`문제 ${problemInfo.questionNumber}`}
+                    problemId={problemInfo.problemId}
+                    accuracyData={problemInfo.accuracyData}
+                    accuracyLoading={false}
+                    motherTongTag={problemInfo.motherTongTag}
+                    integratedTag={problemInfo.integratedTag}
+                    customTags={problemInfo.customTags}
+                    tagsLoading={false}
+                    onMotherTongSelect={() => {}}
+                    onIntegratedSelect={() => {}}
+                    onCustomTagsChange={() => {}}
+                  />
+                ))}
               </div>
             ) : (
               /* 결과 없음 상태 */
