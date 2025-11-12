@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { ExamId } from '../domain/examId';
 import { ExamMetaLinks } from '../components';
 import { Supabase } from '../api/Supabase';
-import { Api } from '../api/Api';
+import { Api, type BBox } from '../api/Api';
 import { type PdfListMap } from '../api/Api';
 import { AccuracyRate } from '../types/accuracyRate';
 import { useAuth } from '../hooks/useAuth';
@@ -30,6 +30,10 @@ function ExamPage() {
   const [integratedTags, setIntegratedTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [customTagsMap, setCustomTagsMap] = useState<Map<number, TagWithId[]>>(new Map());
   const [tagsLoading, setTagsLoading] = useState(true);
+
+  // 편집된 콘텐츠 상태 (문제 ID별 base64와 bbox 맵)
+  const [editedBase64Map, setEditedBase64Map] = useState<Map<string, string>>(new Map());
+  const [editedBBoxMap, setEditedBBoxMap] = useState<Map<string, BBox>>(new Map());
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
@@ -177,6 +181,40 @@ function ExamPage() {
     };
 
     fetchTags();
+  }, [id]);
+
+  // 편집된 콘텐츠 조회
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchEditedContents = async () => {
+      const examIdWithoutRegion = removeRegion(id);
+
+      // 1-20번 문제의 id 목록 생성
+      const questionIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`);
+
+      try {
+        const editedContents = await Supabase.EditedContent.fetchByResourceIds(questionIds);
+        const base64Map = new Map<string, string>();
+        const bboxMap = new Map<string, BBox>();
+
+        editedContents.forEach((ec) => {
+          if (ec.base64) {
+            base64Map.set(ec.resource_id, ec.base64);
+          }
+          if (ec.json?.bbox) {
+            bboxMap.set(ec.resource_id, ec.json.bbox);
+          }
+        });
+
+        setEditedBase64Map(base64Map);
+        setEditedBBoxMap(bboxMap);
+      } catch (error) {
+        console.error('Error fetching edited contents:', error);
+      }
+    };
+
+    fetchEditedContents();
   }, [id]);
 
   // problem_number 쿼리 파라미터로 특정 문제로 스크롤
@@ -341,15 +379,18 @@ function ExamPage() {
           {Array.from({ length: 20 }, (_, index) => {
             const questionNumber = index + 1;
             const accuracyData = accuracyRates.get(questionNumber);
+            const problemId = getProblemId(questionNumber);
             const commonProps = {
               questionNumber,
-              problemId: getProblemId(questionNumber),
+              problemId,
               accuracyData,
               accuracyLoading: loading,
               motherTongTag: madertongTags.get(questionNumber) || null,
               integratedTag: integratedTags.get(questionNumber) || null,
               customTags: customTagsMap.get(questionNumber) || [],
               tagsLoading,
+              editedBase64: editedBase64Map.get(problemId),
+              editedBBox: editedBBoxMap.get(problemId),
               onMotherTongSelect: handleMadertongSelect(questionNumber),
               onIntegratedSelect: handleIntegratedSelect(questionNumber),
               onCustomTagsChange: handleCustomTagsChange(questionNumber),

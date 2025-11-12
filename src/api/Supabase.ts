@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
 import { type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
+import { type BBox } from './Api';
 
 /**
  * Supabase API 래퍼
@@ -8,6 +9,14 @@ import { type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
  */
 
 // ========== Types ==========
+
+export interface EditedContent {
+  resource_id: string;
+  json: any;
+  base64: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface ProblemTag {
   problem_id: string;
@@ -152,6 +161,89 @@ export const Supabase = {
 
       if (error) {
         console.error('Error fetching accuracy rates:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+  },
+
+  /**
+   * EditedContent 관련 API
+   */
+  EditedContent: {
+    /**
+     * 편집된 콘텐츠 저장 또는 업데이트
+     * @param resourceId - 리소스 ID (문제 ID)
+     * @param bbox - BBox 데이터
+     * @param base64 - 크롭된 이미지의 base64 문자열
+     */
+    async upsertBBox(resourceId: string, bbox: BBox, base64: string): Promise<void> {
+      const { error } = await supabase.from('edited_contents').upsert(
+        {
+          resource_id: resourceId,
+          json: { bbox },
+          base64,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'resource_id',
+        },
+      );
+
+      if (error) {
+        console.error('Error upserting edited content:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * 편집된 콘텐츠 조회
+     * @param resourceId - 리소스 ID
+     * @returns 편집된 콘텐츠 또는 null
+     */
+    async fetch(resourceId: string): Promise<EditedContent | null> {
+      const { data, error } = await supabase.from('edited_contents').select('*').eq('resource_id', resourceId).single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // 데이터 없음 (not found)
+          return null;
+        }
+        console.error('Error fetching edited content:', error);
+        throw error;
+      }
+
+      return data;
+    },
+
+    /**
+     * 편집된 콘텐츠 삭제
+     * @param resourceId - 리소스 ID
+     */
+    async delete(resourceId: string): Promise<void> {
+      const { error } = await supabase.from('edited_contents').delete().eq('resource_id', resourceId);
+
+      if (error) {
+        console.error('Error deleting edited content:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * 여러 리소스의 편집된 콘텐츠 조회
+     * @param resourceIds - 리소스 ID 배열
+     * @returns 편집된 콘텐츠 배열
+     */
+    async fetchByResourceIds(resourceIds: string[]): Promise<EditedContent[]> {
+      if (resourceIds.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabase.from('edited_contents').select('*').in('resource_id', resourceIds);
+
+      if (error) {
+        console.error('Error fetching edited contents:', error);
         throw error;
       }
 

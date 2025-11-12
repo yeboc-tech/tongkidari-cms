@@ -33,6 +33,12 @@ export interface OneAnswerProps {
   customTags: TagWithId[];
   tagsLoading: boolean;
 
+  // 편집된 이미지 (base64)
+  editedBase64?: string;
+
+  // 편집된 BBox (해설에서는 사용하지 않지만 인터페이스 통일)
+  editedBBox?: any;
+
   // 이벤트 핸들러
   onMotherTongSelect: (tag: SelectedTag | null) => void;
   onIntegratedSelect: (tag: SelectedTag | null) => void;
@@ -51,6 +57,8 @@ function OneAnswer({
   integratedTag,
   customTags,
   tagsLoading,
+  editedBase64,
+  editedBBox: _editedBBox,
   onMotherTongSelect: onMotherTongSelect,
   onIntegratedSelect,
   onCustomTagsChange,
@@ -63,8 +71,8 @@ function OneAnswer({
   // problemId에서 subject 추출: "경제_고3_2024_03_학평_1_문제" -> "경제"
   const subject = problemId.split('_')[0];
 
-  // 해설 이미지 URL 생성
-  const imageUrl = getSolutionImageUrl(examId, questionNumber);
+  // 해설 이미지 URL 생성 (base64가 있으면 우선 사용)
+  const imageUrl = editedBase64 ? `data:image/png;base64,${editedBase64}` : getSolutionImageUrl(examId, questionNumber);
 
   // 복사 핸들러
   const handleCopyProblemId = async () => {
@@ -82,7 +90,11 @@ function OneAnswer({
   };
 
   return (
-    <div className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+    <div
+      className={`border-2 rounded-lg p-4 transition-colors ${
+        editedBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
+      }`}
+    >
       {/* 헤더: 제목과 복사 버튼 */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
