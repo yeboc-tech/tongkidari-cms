@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from 'react';
 import { ExamId } from '../domain/examId';
 import { ExamMetaLinks } from '../components';
 import { Supabase } from '../api/Supabase';
+import { Api } from '../api/Api';
+import { type PdfListMap } from '../api/Api';
 import { AccuracyRate } from '../types/accuracyRate';
 import { useAuth } from '../hooks/useAuth';
 import OneProblem, { type SelectedTag, type TagWithId } from '../components/OneProblem/OneProblem';
@@ -21,6 +23,7 @@ function ExamPage() {
   const [accuracyRates, setAccuracyRates] = useState<Map<number, AccuracyRate>>(new Map());
   const [loading, setLoading] = useState(true);
   const [showSolution, setShowSolution] = useState(false);
+  const [pdfListMap, setPdfListMap] = useState<PdfListMap>({});
 
   // 태그 입력기 상태 관리 (문제 번호별)
   const [madertongTags, setMadertongTags] = useState<Map<number, SelectedTag | null>>(new Map());
@@ -104,6 +107,20 @@ function ExamPage() {
 
     fetchAccuracyRates();
   }, [id]);
+
+  // PDF 목록 가져오기
+  useEffect(() => {
+    const fetchPdfList = async () => {
+      try {
+        const pdfMap = await Api.Pdf.generatePdfFileMap();
+        setPdfListMap(pdfMap);
+      } catch (error) {
+        console.error('Error fetching PDF list:', error);
+      }
+    };
+
+    fetchPdfList();
+  }, []);
 
   // 태그 데이터 가져오기
   useEffect(() => {
@@ -295,7 +312,7 @@ function ExamPage() {
           <h3 className="text-sm font-semibold text-gray-600 mb-1">시험 ID</h3>
           <p className="text-sm font-mono text-gray-700 break-all">{id}</p>
         </div>
-        <ExamMetaLinks examId={id!} />
+        <ExamMetaLinks examId={id!} pdfInfo={id ? pdfListMap[removeRegion(id)] || null : null} />
       </div>
 
       <div className="bg-white p-8 rounded-lg shadow">

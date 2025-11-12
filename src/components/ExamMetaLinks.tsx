@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HOST_URL } from '../constants/apiConfig';
+import { CDN_BASE_URL } from '../env';
 import {
   getProblemCsvFilename,
   getProblemPageFilename,
@@ -8,15 +9,17 @@ import {
   getLabelCsvFilename,
   getHistoryCsvFilename,
 } from '../ssot/examMetaUrl';
+import { type PdfInfo } from '../api/Api';
 
 interface ExamMetaLinksProps {
   examId: string;
+  pdfInfo?: PdfInfo | null;
 }
 
 /**
  * 시험 관련 메타 데이터 링크 목록을 표시하는 컴포넌트
  */
-function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
+function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
   const [fileExists, setFileExists] = useState<Map<string, boolean>>(new Map());
   const [checking, setChecking] = useState(true);
 
@@ -29,8 +32,18 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
     return `${HOST_URL}/tongkidari/meta/${originalFilename}`;
   };
 
+  const getPdfResourceUrl = (filename: string): string => {
+    return `${CDN_BASE_URL}pdfs/${filename}`;
+  };
+
   // 리소스 목록 생성
   const resources = {
+    problemPdf: pdfInfo?.problemPdf ? {
+      url: getPdfResourceUrl(pdfInfo.problemPdf),
+    } : null,
+    answerPdf: pdfInfo?.answerPdf ? {
+      url: getPdfResourceUrl(pdfInfo.answerPdf),
+    } : null,
     problemCsv: {
       originalFilename: `${examId}_문제.csv`,
       normalizedFilename: getProblemCsvFilename(examId),
@@ -61,9 +74,7 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
   useEffect(() => {
     const checkFileExists = async (url: string): Promise<boolean> => {
       try {
-        console.log('Checking URL:', url);
         const response = await fetch(url, { method: 'HEAD' });
-        console.log(`URL: ${url}, Status: ${response.status}, OK: ${response.ok}`);
         return response.ok;
       } catch (error) {
         console.error('Fetch error for URL:', url, error);
@@ -76,6 +87,12 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
       const urlsToCheck: string[] = [];
 
       // 모든 파일 URL 수집
+      if (resources.problemPdf) {
+        urlsToCheck.push(resources.problemPdf.url);
+      }
+      if (resources.answerPdf) {
+        urlsToCheck.push(resources.answerPdf.url);
+      }
       urlsToCheck.push(getResourceUrl(resources.problemCsv.normalizedFilename));
       resources.problemPages.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
       resources.problemDebug.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
@@ -102,7 +119,45 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
     };
 
     checkAllFiles();
-  }, [examId]);
+  }, [examId, pdfInfo]);
+
+  // PDF 링크 렌더링 함수
+  const renderPdfLink = (url: string) => {
+    const exists = fileExists.get(url);
+
+    return (
+      <div className="flex items-center gap-2">
+        {/* 상태 아이콘 */}
+        {checking ? (
+          <span className="text-gray-400">⏳</span>
+        ) : exists ? (
+          <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        )}
+
+        {/* 링크 */}
+        {exists ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 font-mono text-xs break-all"
+          >
+            {url}
+          </a>
+        ) : (
+          <span className="text-gray-400 font-mono text-xs break-all cursor-not-allowed">
+            {url}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   // 링크 렌더링 헬퍼 함수
   const renderLink = (originalFilename: string, normalizedFilename: string) => {
@@ -148,6 +203,26 @@ function ExamMetaLinks({ examId }: ExamMetaLinksProps) {
     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
       <h3 className="text-sm font-semibold text-gray-600 mb-2">Exam Meta Links</h3>
       <div className="space-y-3 text-sm">
+        {/* Problem PDF */}
+        <div>
+          <p className="font-semibold text-gray-700 mb-1">Problem PDF</p>
+          {resources.problemPdf ? (
+            renderPdfLink(resources.problemPdf.url)
+          ) : (
+            <span className="text-gray-400 text-xs">확인된 경로 없음</span>
+          )}
+        </div>
+
+        {/* Answer PDF */}
+        <div>
+          <p className="font-semibold text-gray-700 mb-1">Answer PDF</p>
+          {resources.answerPdf ? (
+            renderPdfLink(resources.answerPdf.url)
+          ) : (
+            <span className="text-gray-400 text-xs">확인된 경로 없음</span>
+          )}
+        </div>
+
         {/* Problem CSV */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">Problem CSV</p>

@@ -160,5 +160,5 @@ export const getPdfUrl = (examId: string): string => {
  * @returns PDF 목록 CSV 파일 URL
  */
 export const getPdfListCsvUrl = (): string => {
-  return `${CDN_BASE_URL}list.csv`;
+  return `${CDN_BASE_URL}pdfs/list.csv`;
 };
