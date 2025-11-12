@@ -26,6 +26,31 @@ export interface PdfInfo {
 
 export type PdfListMap = Record<string, PdfInfo>;
 
+export interface BBox {
+  page: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface ProblemMetadata {
+  doc_type: string;
+  id: string;
+  subject: string;
+  year: string;
+  month: string;
+  target: string;
+  problem_number: string;
+  has_image: string;
+  image_path: string;
+  source_pdf: string;
+  page: string;
+  bbox: BBox;
+  exam_id: string;
+  conversion_error: string;
+}
+
 export interface ExamDataRow {
   year: number;
   data: ExamCellData[];
@@ -237,6 +262,105 @@ export const Api = {
         return count;
       } catch (error) {
         console.error(`Failed to fetch exam answer count for ${examId}:`, error);
+        return null;
+      }
+    },
+
+    /**
+     * problem_id로 CSV 파일에서 해당 문제의 메타데이터를 가져옵니다
+     * @param problemId - 문제 ID (예: "경제_고3_2021_11_수능_1_문제")
+     * @returns 문제 메타데이터, 찾지 못한 경우 null
+     */
+    async fetchProblemMetadata(problemId: string): Promise<ProblemMetadata | null> {
+      try {
+        // problemId에서 examId 추출 (마지막 _숫자_문제 제거)
+        const match = problemId.match(/^(.+)_\d+_문제$/);
+        if (!match) {
+          console.error('Invalid problem ID format:', problemId);
+          return null;
+        }
+        const examId = match[1];
+
+        const url = getProblemCsvUrl(examId);
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const csvText = await response.text();
+        const lines = csvText.split('\n');
+
+        // 간단한 CSV 파서: 큰따옴표로 감싸진 필드 처리
+        const parseCSVLine = (line: string): string[] => {
+          const columns: string[] = [];
+          let current = '';
+          let inQuotes = false;
+
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                // 이스케이프된 따옴표 ("")
+                current += '"';
+                i++; // 다음 따옴표 스킵
+              } else {
+                // 따옴표 시작/끝
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              // 컬럼 구분자
+              columns.push(current);
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          columns.push(current); // 마지막 컬럼
+          return columns;
+        };
+
+        // 헤더 스킵
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const columns = parseCSVLine(line);
+          if (columns.length < 13) continue;
+
+          const id = columns[1];
+          if (id !== problemId) continue;
+
+          // bbox 컬럼(11번째)을 JSON 파싱
+          let bbox: BBox = { page: 0, x0: 0, y0: 0, x1: 0, y1: 0 };
+          try {
+            bbox = JSON.parse(columns[11]);
+          } catch (e) {
+            console.error('Failed to parse bbox:', e, columns[11]);
+          }
+
+          return {
+            doc_type: columns[0],
+            id: columns[1],
+            subject: columns[2],
+            year: columns[3],
+            month: columns[4],
+            target: columns[5],
+            problem_number: columns[6],
+            has_image: columns[7],
+            image_path: columns[8],
+            source_pdf: columns[9],
+            page: columns[10],
+            bbox,
+            exam_id: columns[12],
+            conversion_error: columns[13] || '',
+          };
+        }
+
+        return null;
+      } catch (error) {
+        console.error(`Failed to fetch problem metadata for ${problemId}:`, error);
         return null;
       }
     },

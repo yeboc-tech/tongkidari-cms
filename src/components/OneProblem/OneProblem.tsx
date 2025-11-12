@@ -2,8 +2,13 @@ import { useState } from 'react';
 import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
+import BBoxEditor from '../BBoxEditor/BBoxEditor';
 import { AccuracyRate } from '../../types/accuracyRate';
 import { getQuestionImageUrl } from '../../constants/apiConfig';
+import { Api } from '../../api/Api';
+import { type ProblemMetadata } from '../../api/Api';
+import { getProblemPageFilename } from '../../ssot/examMetaUrl';
+import { HOST_URL } from '../../constants/apiConfig';
 
 // ========== Types ==========
 
@@ -60,6 +65,9 @@ function OneProblem({
   onCustomTagsChange,
 }: OneProblemProps) {
   const [isCopied, setIsCopied] = useState(false);
+  const [showBBoxEditor, setShowBBoxEditor] = useState(false);
+  const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');
@@ -69,6 +77,31 @@ function OneProblem({
 
   // 문제 이미지 URL 생성
   const imageUrl = getQuestionImageUrl(examId, questionNumber);
+
+  // 이미지 클릭 핸들러
+  const handleImageClick = async () => {
+    setLoadingMetadata(true);
+    try {
+      const metadata = await Api.Meta.fetchProblemMetadata(problemId);
+      if (metadata) {
+        setProblemMetadata(metadata);
+        setShowBBoxEditor(true);
+      } else {
+        alert('문제 메타데이터를 찾을 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to fetch problem metadata:', error);
+      alert('문제 메타데이터를 불러오는데 실패했습니다.');
+    } finally {
+      setLoadingMetadata(false);
+    }
+  };
+
+  // Problem Page 이미지 URL 생성
+  const getProblemPageUrl = (page: number): string => {
+    const filename = getProblemPageFilename(examId, page + 1); // page는 0-indexed이므로 +1
+    return `${HOST_URL}/tongkidari/meta/${filename}`;
+  };
 
   // 복사 핸들러
   const handleCopyProblemId = async () => {
@@ -226,8 +259,9 @@ function OneProblem({
         <img
           src={imageUrl}
           alt={title}
-          className="w-full h-auto"
+          className="w-full h-auto cursor-pointer hover:opacity-80 transition-opacity"
           loading="lazy"
+          onClick={handleImageClick}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
@@ -247,6 +281,25 @@ function OneProblem({
           }}
         />
       </div>
+
+      {/* Loading Indicator */}
+      {loadingMetadata && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg">
+            <p>메타데이터를 불러오는 중...</p>
+          </div>
+        </div>
+      )}
+
+      {/* BBox Editor Modal */}
+      {showBBoxEditor && problemMetadata && (
+        <BBoxEditor
+          imageUrl={getProblemPageUrl(problemMetadata.bbox.page)}
+          bbox={problemMetadata.bbox}
+          onClose={() => setShowBBoxEditor(false)}
+          problemId={problemId}
+        />
+      )}
     </div>
   );
 }
