@@ -15,12 +15,10 @@ export interface MotherTongTagInputProps {
 
 function MotherTongTagInput({ subject, onSelect, placeholder, value }: MotherTongTagInputProps) {
   // subject가 주어지면 해당 과목의 데이터만 필터링, 없으면 전체 데이터 사용
-  const filteredData = subject
-    ? 마더텅_단원_태그.filter((book) => book.id === subject)
-    : 마더텅_단원_태그;
+  const filteredData = subject ? 마더텅_단원_태그.filter((book) => book.id === subject) : 마더텅_단원_태그;
 
   // subject에 따른 기본 placeholder
-  const defaultPlaceholder = subject ? `마더텅 ${subject} 단원 태그` : '마더텅 단원 태그';
+  const defaultPlaceholder = subject ? `MT ${subject} 단원 태그` : 'MT 단원 태그';
 
   return (
     <CurriculumTagInput

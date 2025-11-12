@@ -295,7 +295,7 @@ function OneProblem({
             {/* View 모드: 태그 라벨만 표시 */}
             {/* 마더텅 단원 태그 */}
             <div>
-              <label className="text-xs text-gray-600 block mb-1.5">마더텅 {subject} 단원 태그</label>
+              <label className="text-xs text-gray-600 block mb-1.5">MT {subject} 단원 태그</label>
               <div className="flex flex-wrap gap-2">
                 {motherTongTag && motherTongTag.tagLabels.length > 0 ? (
                   <span
@@ -305,7 +305,7 @@ function OneProblem({
                     {motherTongTag.tagLabels.join(' > ')}
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-400">마더텅 단원 태그가 없습니다</span>
+                  <span className="text-sm text-gray-400">MT 단원 태그가 없습니다</span>
                 )}
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
-import { type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
+import { PROBLEM_TAG_TYPES, type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
 import { type BBox } from './Api';
 
 /**
@@ -320,7 +320,7 @@ export const Supabase = {
       const customTags: TagWithId[] = [];
 
       tags.forEach((tag) => {
-        if (tag.type === '마더텅_단원_태그') {
+        if (tag.type === PROBLEM_TAG_TYPES.MOTHER) {
           motherTongTag = {
             tagIds: tag.tag_ids,
             tagLabels: tag.tag_labels,
