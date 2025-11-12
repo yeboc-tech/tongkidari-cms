@@ -1,20 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { ExamId } from '../domain/examId';
+import { type ExamCellData, type ExamDataRow } from '../api/Api';
 
 interface ExamColumn {
   month: string;
   type: string;
   region: string;
-}
-
-interface ExamCellData {
-  problem: number | null | 'forbidden';
-  answer: number | null | 'forbidden';
-}
-
-interface ExamDataRow {
-  year: number;
-  data: readonly ExamCellData[];
 }
 
 interface ExamOverviewTableProps {
@@ -24,6 +15,8 @@ interface ExamOverviewTableProps {
   subject?: string;
   target?: string;
   category?: string;
+  showProblemPdf: boolean;
+  showAnswerPdf: boolean;
 }
 
 function ExamOverviewTable({
@@ -33,6 +26,8 @@ function ExamOverviewTable({
   subject,
   target,
   category,
+  showProblemPdf,
+  showAnswerPdf,
 }: ExamOverviewTableProps) {
   const navigate = useNavigate();
 
@@ -86,7 +81,7 @@ function ExamOverviewTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border-2 border-gray-400">
+        <table className="min-w-full bg-white border-2 border-gray-400">
         <thead>
           {/* 첫 번째 헤더 행 - 월 */}
           <tr className="bg-yellow-100">
@@ -177,7 +172,17 @@ function ExamOverviewTable({
                           isClickable ? 'cursor-pointer hover:bg-blue-100 transition-colors' : ''
                         }`}
                       >
-                        <span className={problemIsForbidden ? 'text-red-500' : ''}>{problemText}</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={problemIsForbidden ? 'text-red-500' : ''}>{problemText}</span>
+                          <div className="flex gap-1">
+                            {showProblemPdf && cellData.hasProblemPdf && (
+                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full" title="문제 PDF 있음" />
+                            )}
+                            {showAnswerPdf && cellData.hasAnswerPdf && (
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" title="해설 PDF 있음" />
+                            )}
+                          </div>
+                        </div>
                       </td>
                     );
                   })}

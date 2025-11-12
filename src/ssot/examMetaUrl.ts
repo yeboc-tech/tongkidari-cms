@@ -154,3 +154,11 @@ export const getPdfFilename = (examId: string): string => {
 export const getPdfUrl = (examId: string): string => {
   return `${CDN_BASE_URL}pdfs/${getPdfFilename(examId)}`;
 };
+
+/**
+ * PDF 목록 CSV 파일의 전체 URL 생성
+ * @returns PDF 목록 CSV 파일 URL
+ */
+export const getPdfListCsvUrl = (): string => {
+  return `${CDN_BASE_URL}list.csv`;
+};

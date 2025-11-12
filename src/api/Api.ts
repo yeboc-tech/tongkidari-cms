@@ -1,7 +1,7 @@
 // API 클래스 정의
 
 import { countTrueValues } from '../utils/csvParser';
-import { getProblemCsvUrl, getAnswerCsvUrl, getPdfUrl } from '../ssot/examMetaUrl';
+import { getProblemCsvUrl, getAnswerCsvUrl, getPdfListCsvUrl } from '../ssot/examMetaUrl';
 
 // Type definitions
 export interface ExamColumn {
@@ -13,7 +13,18 @@ export interface ExamColumn {
 export interface ExamCellData {
   problem: number | null | 'forbidden';
   answer: number | null | 'forbidden';
+  hasProblemPdf: boolean;
+  hasAnswerPdf: boolean;
 }
+
+export interface PdfInfo {
+  problemPdf: string | null;
+  answerPdf: string | null;
+  _isProblemNFC?: boolean; // 문제 PDF 파일명에 NFC 정규화 이슈가 있는 경우 true
+  _isAnswerNFC?: boolean; // 해설 PDF 파일명에 NFC 정규화 이슈가 있는 경우 true
+}
+
+export type PdfListMap = Record<string, PdfInfo>;
 
 export interface ExamDataRow {
   year: number;
@@ -34,133 +45,133 @@ const MOCK_EXAM_DATA: ExamDataRow[] = [
   {
     year: 2024,
     data: [
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2023,
     data: [
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2022,
     data: [
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2021,
     data: [
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2020,
     data: [
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
-      { problem: 20, answer: 20 },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 20, answer: 20, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2019,
     data: [
-      { problem: 11, answer: 11 },
-      { problem: 13, answer: 13 },
-      { problem: 16, answer: 16 },
-      { problem: 10, answer: 10 },
-      { problem: 15, answer: 15 },
-      { problem: 9, answer: 9 },
-      { problem: 16, answer: 16 },
+      { problem: 11, answer: 11, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 13, answer: 13, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 16, answer: 16, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 10, answer: 10, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 15, answer: 15, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 9, answer: 9, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 16, answer: 16, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2018,
     data: [
-      { problem: 5, answer: 5 },
-      { problem: 5, answer: 5 },
-      { problem: 8, answer: 8 },
-      { problem: 4, answer: 4 },
-      { problem: 5, answer: 5 },
-      { problem: 5, answer: 5 },
-      { problem: 6, answer: 6 },
+      { problem: 5, answer: 5, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 5, answer: 5, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 8, answer: 8, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 4, answer: 4, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 5, answer: 5, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 5, answer: 5, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 6, answer: 6, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2017,
     data: [
-      { problem: 2, answer: 2 },
-      { problem: 2, answer: 2 },
-      { problem: 4, answer: 4 },
-      { problem: 2, answer: 2 },
-      { problem: 5, answer: 5 },
-      { problem: 1, answer: 1 },
-      { problem: 1, answer: 1 },
+      { problem: 2, answer: 2, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 2, answer: 2, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 4, answer: 4, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 2, answer: 2, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 5, answer: 5, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 1, answer: 1, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 1, answer: 1, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2016,
     data: [
-      { problem: 2, answer: 2 },
-      { problem: 1, answer: 1 },
-      { problem: 2, answer: 2 },
-      { problem: 2, answer: 2 },
-      { problem: 3, answer: 3 },
-      { problem: null, answer: null },
-      { problem: 1, answer: 1 },
+      { problem: 2, answer: 2, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 1, answer: 1, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 2, answer: 2, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 2, answer: 2, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 3, answer: 3, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 1, answer: 1, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2014,
     data: [
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: 1, answer: 1 },
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: null, answer: null },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 1, answer: 1, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
   {
     year: 2013,
     data: [
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: null, answer: null },
-      { problem: 1, answer: 1 },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false },
+      { problem: 1, answer: 1, hasProblemPdf: false, hasAnswerPdf: false },
     ],
   },
 ];
@@ -276,21 +287,88 @@ export const Api = {
    */
   Pdf: {
     /**
-     * PDF 파일이 존재하는지 확인합니다
-     * @param examId - 시험 ID (예: "경제_고3_2024_03_학평(서울)")
-     * @returns PDF 파일 존재 여부
+     * list.csv에서 모든 PDF 목록을 가져와서 examId별로 매핑합니다
+     * @returns examId를 키로 하고 문제/해설 PDF 정보를 값으로 하는 Map
      */
-    async isExistPdf(examId: string): Promise<boolean> {
+    async generatePdfFileMap(): Promise<PdfListMap> {
       try {
-        const url = getPdfUrl(examId);
-        // HEAD 요청으로 파일 존재 여부만 확인 (용량 효율적)
-        const response = await fetch(url, { method: 'HEAD' });
+        const url = getPdfListCsvUrl();
+        const response = await fetch(url);
 
-        // 200 OK 응답이면 파일 존재
-        return response.ok;
+        if (!response.ok) {
+          console.error('Failed to fetch PDF list CSV');
+          return {};
+        }
+
+        const csvText = await response.text();
+        const lines = csvText.split('\n').filter((line) => line.trim().length > 0);
+
+        const pdfMap: PdfListMap = {};
+
+        for (const line of lines) {
+          // CSV 파일의 첫 번째 컬럼만 추출 (쉼표로 구분)
+          const columns = line.split(',');
+          const originalFilename = columns[0].trim();
+          const filename = originalFilename.normalize('NFC'); // NFC로 정규화
+          const hasNfcIssue = originalFilename !== filename; // 정규화 이슈 확인
+
+          // .pdf로 끝나지 않으면 스킵
+          if (!filename.endsWith('.pdf')) {
+            continue;
+          }
+
+          // 파일명에서 .pdf 제거
+          const withoutExt = filename.slice(0, -4);
+
+          // _문제 또는 _해설로 끝나는지 확인
+          let type: 'problem' | 'answer' | null = null;
+          let withoutType = withoutExt;
+
+          if (withoutExt.endsWith('_문제')) {
+            type = 'problem';
+            withoutType = withoutExt.slice(0, -3); // "_문제" 제거
+          } else if (withoutExt.endsWith('_해설')) {
+            type = 'answer';
+            withoutType = withoutExt.slice(0, -3); // "_해설" 제거
+          } else {
+            continue; // 문제도 해설도 아니면 스킵
+          }
+
+          // 마지막 _region 제거하여 baseExamId 생성
+          const lastUnderscoreIndex = withoutType.lastIndexOf('_');
+          if (lastUnderscoreIndex === -1) {
+            continue;
+          }
+
+          const baseExamId = withoutType.substring(0, lastUnderscoreIndex);
+
+          // Map에 저장
+          if (!pdfMap[baseExamId]) {
+            pdfMap[baseExamId] = {
+              problemPdf: null,
+              answerPdf: null,
+            };
+          }
+
+          if (type === 'problem') {
+            pdfMap[baseExamId].problemPdf = filename;
+            // NFC 정규화 이슈가 있는 경우에만 플래그 설정
+            if (hasNfcIssue) {
+              pdfMap[baseExamId]._isProblemNFC = true;
+            }
+          } else if (type === 'answer') {
+            pdfMap[baseExamId].answerPdf = filename;
+            // NFC 정규화 이슈가 있는 경우에만 플래그 설정
+            if (hasNfcIssue) {
+              pdfMap[baseExamId]._isAnswerNFC = true;
+            }
+          }
+        }
+
+        return pdfMap;
       } catch (error) {
-        console.error(`Failed to check PDF existence for ${examId}:`, error);
-        return false;
+        console.error('Failed to fetch PDF list:', error);
+        return {};
       }
     },
   },

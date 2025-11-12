@@ -4,7 +4,7 @@ import { SUBJECTS, CURRICULUM_GROUPS, type CategoryName, type CurriculumName } f
 import { GRADE_OPTIONS } from '../constants/tableConfig';
 import { getExamColumns } from '../ssot/EXAM_REGION';
 import { ExamOverviewTable, CurriculumOverview } from '../components';
-import { Api, type ExamDataRow } from '../api/Api';
+import { Api, type ExamDataRow, type PdfListMap } from '../api/Api';
 import { useAuth } from '../hooks/useAuth';
 import { ExamId } from '../domain/examId';
 
@@ -23,7 +23,7 @@ const PROBLEM_COUNTS: Record<string, number> = {
 // 초기 로딩을 위한 빈 데이터 생성
 const createEmptyYearData = (year: number): ExamDataRow => ({
   year,
-  data: Array(7).fill({ problem: null, answer: null }),
+  data: Array(7).fill({ problem: null, answer: null, hasProblemPdf: false, hasAnswerPdf: false }),
 });
 
 function CategoryPage() {
@@ -48,10 +48,17 @@ function CategoryPage() {
   // 시험 통계 데이터 상태
   const [selectedSubject, setSelectedSubject] = useState<string | null>(subjectFromUrl);
   const [isLoading, setIsLoading] = useState(false);
+
+  // PDF 표시 상태 관리
+  const [showProblemPdf, setShowProblemPdf] = useState(true);
+  const [showAnswerPdf, setShowAnswerPdf] = useState(true);
   const [examData, setExamData] = useState<readonly ExamDataRow[]>(
     // 2024년부터 2013년까지 빈 데이터 생성 (최신순)
-    Array.from({ length: 12 }, (_, i) => createEmptyYearData(2024 - i))
+    Array.from({ length: 12 }, (_, i) => createEmptyYearData(2024 - i)),
   );
+
+  // PDF 목록 캐시
+  const [pdfListMap, setPdfFileMap] = useState<PdfListMap>({});
 
   // 다이얼로그 상태
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -81,6 +88,20 @@ function CategoryPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId]);
+
+  // PDF 목록 가져오기 (한 번만 실행)
+  useEffect(() => {
+    const loadPdfList = async () => {
+      try {
+        const pdfFileMap = await Api.Pdf.generatePdfFileMap();
+        setPdfFileMap(pdfFileMap);
+      } catch (error) {
+        console.error('Failed to load PDF list:', error);
+      }
+    };
+
+    loadPdfList();
+  }, []);
 
   // 과목 선택 핸들러
   const handleSubjectClick = (subject: string) => {
@@ -164,7 +185,12 @@ function CategoryPage() {
             // 해설 카운트는 현재 사용하지 않음
             // const answerCount = await Api.Meta.fetchAnswerCount(examId);
 
-            return { problem: problemCount, answer: null };
+            // PDF 존재 여부 확인 (pdfListMap에서 조회)
+            const pdfInfo = pdfListMap[examId];
+            const hasProblemPdf = pdfInfo ? pdfInfo.problemPdf !== null : false;
+            const hasAnswerPdf = pdfInfo ? pdfInfo.answerPdf !== null : false;
+
+            return { problem: problemCount, answer: null, hasProblemPdf, hasAnswerPdf };
           });
 
           const columnData = await Promise.all(columnDataPromises);
@@ -185,7 +211,7 @@ function CategoryPage() {
     };
 
     refreshData();
-  }, [selectedSubject, target, curriculum]);
+  }, [selectedSubject, target, curriculum, pdfListMap]);
 
   // 카테고리별 색상
   const accentColor = category === '사회' ? '#ff00a1' : '#3b82f6';
@@ -279,18 +305,14 @@ function CategoryPage() {
                   >
                     <div className="flex flex-col items-center gap-1">
                       <span>{subject}</span>
-                      <span className="text-xs text-gray-600">
-                        {PROBLEM_COUNTS[subject]?.toLocaleString() || '-'}
-                      </span>
+                      <span className="text-xs text-gray-600">{PROBLEM_COUNTS[subject]?.toLocaleString() || '-'}</span>
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
               <div className="p-6 bg-gray-50 rounded-lg">
-                <p className="text-gray-600 text-center">
-                  해당 카테고리와 교육과정에 등록된 과목이 없습니다.
-                </p>
+                <p className="text-gray-600 text-center">해당 카테고리와 교육과정에 등록된 과목이 없습니다.</p>
               </div>
             )}
           </div>
@@ -331,14 +353,45 @@ function CategoryPage() {
       {/* 시험 통계 테이블 */}
       {selectedSubject && curriculum && (
         <div className="bg-white p-8 rounded-lg shadow">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            연도별 문항 수 - {selectedSubject}, {target}
-          </h2>
+          <div className="flex items-start justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              연도별 문항 수 - {selectedSubject}, {target}
+            </h2>
+            {/* PDF 레전드 */}
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showProblemPdf}
+                  onChange={(e) => setShowProblemPdf(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  문제 PDF
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showAnswerPdf}
+                  onChange={(e) => setShowAnswerPdf(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                  해설 PDF
+                </span>
+              </label>
+            </div>
+          </div>
           <ExamOverviewTable
             columns={getExamColumns(curriculum)}
             data={examData}
             isLoading={isLoading}
             subject={selectedSubject || undefined}
+            showProblemPdf={showProblemPdf}
+            showAnswerPdf={showAnswerPdf}
             target={target || undefined}
             category={category || undefined}
           />
@@ -347,7 +400,12 @@ function CategoryPage() {
 
       {/* 교육과정 다이얼로그 */}
       {isDialogOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto"
+          aria-labelledby="modal-title"
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             {/* 배경 오버레이 */}
             <div
@@ -357,7 +415,9 @@ function CategoryPage() {
             ></div>
 
             {/* 중앙 정렬을 위한 트릭 */}
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+              &#8203;
+            </span>
 
             {/* 모달 컨텐츠 */}
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl sm:w-full">
