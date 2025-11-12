@@ -354,9 +354,11 @@ function OneProblem({
         <img
           src={imageUrl}
           alt={title}
-          className="w-full h-auto cursor-pointer hover:opacity-80 transition-opacity"
+          className={`w-full h-auto transition-opacity ${
+            mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''
+          }`}
           loading="lazy"
-          onClick={handleImageClick}
+          onClick={mode === 'edit' ? handleImageClick : undefined}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
