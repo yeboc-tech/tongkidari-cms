@@ -297,35 +297,14 @@ export const Supabase = {
   }): Promise<string[]> {
     const { type, tagIds, years, accuracyMin, accuracyMax } = params;
 
-    // 1. problem_tags에서 tag_ids가 overlaps되는 problem_ids 가져오기
-    const { data: tagData, error: tagError } = await supabase
-      .from('problem_tags')
-      .select('problem_id')
-      .eq('type', type)
-      .overlaps('tag_ids', tagIds);
-
-    if (tagError) {
-      console.error('Error fetching problem tags:', tagError);
-      throw tagError;
-    }
-
-    if (!tagData || tagData.length === 0) {
-      return [];
-    }
-
-    const tagFilteredIds = tagData.map((row) => row.problem_id);
-
-    // 2. accuracy_rate 테이블에서 조건에 맞는 데이터 가져오기
-    let query = supabase.from('accuracy_rate').select('problem_id, accuracy_rate').in('problem_id', tagFilteredIds);
-
-    if (accuracyMin !== undefined && accuracyMin !== null) {
-      query = query.gte('accuracy_rate', accuracyMin);
-    }
-    if (accuracyMax !== undefined && accuracyMax !== null) {
-      query = query.lte('accuracy_rate', accuracyMax);
-    }
-
-    const { data, error } = await query;
+    // RPC 함수를 사용하여 데이터베이스에서 직접 join과 필터링 수행
+    const { data, error } = await supabase.rpc('search_problems_by_filter', {
+      p_type: type,
+      p_tag_ids: tagIds,
+      p_years: years && years.length > 0 ? years : null,
+      p_accuracy_min: accuracyMin ?? null,
+      p_accuracy_max: accuracyMax ?? null,
+    });
 
     if (error) {
       console.error('Error searching by filter:', error);
@@ -336,21 +315,7 @@ export const Supabase = {
       return [];
     }
 
-    // 3. 연도 필터링 (클라이언트에서)
-    let filteredData = data;
-    if (years && years.length > 0) {
-      filteredData = data.filter((row) => {
-        // problem_id에서 연도 추출: "경제_고3_2024_03_학평_1_문제" -> "2024"
-        const parts = row.problem_id.split('_');
-        if (parts.length >= 3) {
-          const year = parts[2]; // 세 번째 요소가 연도
-          return years.includes(year);
-        }
-        return false;
-      });
-    }
-
-    return filteredData.map((row) => row.problem_id);
+    return (data as Array<{ problem_id: string }>).map((row) => row.problem_id);
   },
 
   /**
@@ -364,45 +329,24 @@ export const Supabase = {
       return [];
     }
 
-    // accuracy_rate 테이블에서 데이터 가져오기
-    const { data: accuracyData, error: accuracyError } = await supabase
-      .from('accuracy_rate')
-      .select('*')
-      .in('problem_id', problemIds);
-
-    if (accuracyError) {
-      console.error('Error fetching accuracy rates:', accuracyError);
-      throw accuracyError;
-    }
-
-    // problem_tags 테이블에서 모든 타입의 태그 가져오기
-    const { data: tagsData, error: tagsError } = await supabase
-      .from('problem_tags')
-      .select('*')
-      .in('problem_id', problemIds);
-
-    if (tagsError) {
-      console.error('Error fetching problem tags:', tagsError);
-      throw tagsError;
-    }
-
-    // accuracy_rate를 Map으로 변환
-    const accuracyMap = new Map<string, AccuracyRate>();
-    (accuracyData || []).forEach((item) => {
-      accuracyMap.set(item.problem_id, item);
+    // RPC 함수로 한 번에 모든 정보 가져오기
+    const { data, error } = await supabase.rpc('fetch_problem_info_by_ids', {
+      p_problem_ids: problemIds,
     });
 
-    // problem_tags를 problem_id별로 그룹화
-    const tagsMap = new Map<string, ProblemTag[]>();
-    (tagsData || []).forEach((tag) => {
-      if (!tagsMap.has(tag.problem_id)) {
-        tagsMap.set(tag.problem_id, []);
-      }
-      tagsMap.get(tag.problem_id)!.push(tag);
-    });
+    if (error) {
+      console.error('Error fetching problem info:', error);
+      throw error;
+    }
 
-    // 각 problem_id에 대해 ProblemInfo 생성
-    return problemIds.map((problemId) => {
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // RPC 결과를 ProblemInfo 형태로 변환
+    return data.map((item: any) => {
+      const problemId = item.problem_id;
+
       // problem_id에서 문제 번호 추출: "경제_고3_2024_03_학평_1_문제" -> 1
       let questionNumber = 0;
       let cleaned = problemId.endsWith('_문제') ? problemId.slice(0, -3) : problemId;
@@ -413,28 +357,30 @@ export const Supabase = {
         questionNumber = parsedNumber;
       }
 
-      const accuracyData = accuracyMap.get(problemId);
-      const tags = tagsMap.get(problemId) || [];
+      const accuracyData = item.accuracy_data || undefined;
+      const tags = item.tags || {};
 
       // 태그 타입별로 분류
       let motherTongTag: SelectedTag | null = null;
       let integratedTag: SelectedTag | null = null;
       const customTags: TagWithId[] = [];
 
-      tags.forEach((tag) => {
-        if (tag.type === PROBLEM_TAG_TYPES.MOTHER) {
+      // tags 객체를 순회하며 type별로 처리
+      Object.keys(tags).forEach((type) => {
+        const tag = tags[type];
+        if (type === PROBLEM_TAG_TYPES.MOTHER) {
           motherTongTag = {
             tagIds: tag.tag_ids,
             tagLabels: tag.tag_labels,
           };
-        } else if (tag.type === '자세한통사_단원_태그') {
+        } else if (type === PROBLEM_TAG_TYPES.DETAIL_TONGSA) {
           integratedTag = {
             tagIds: tag.tag_ids,
             tagLabels: tag.tag_labels,
           };
-        } else if (tag.type === '자세한통사_커스텀_태그') {
+        } else if (type === PROBLEM_TAG_TYPES.CUSTOM_TONGSA) {
           // 커스텀 태그는 배열로 변환
-          tag.tag_ids.forEach((id, index) => {
+          tag.tag_ids.forEach((id: string, index: number) => {
             customTags.push({
               id,
               label: tag.tag_labels[index],
