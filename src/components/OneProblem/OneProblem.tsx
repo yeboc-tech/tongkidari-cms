@@ -78,6 +78,8 @@ function OneProblem({
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
   const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(editedBBox);
+  const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
+  const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
 
   // editedBase64와 editedBBox prop 변경 시 state 업데이트
   useEffect(() => {
@@ -154,7 +156,11 @@ function OneProblem({
       setCurrentBase64(base64);
       setCurrentBBox(bbox);
 
-      alert('BBox와 이미지가 저장되었습니다.');
+      // Snackbar 표시
+      setShowSaveSnackbar(true);
+      setTimeout(() => {
+        setShowSaveSnackbar(false);
+      }, 3000);
     } catch (error) {
       console.error('Failed to save bbox:', error);
       alert('BBox 저장에 실패했습니다.');
@@ -173,6 +179,30 @@ function OneProblem({
       }, 1000);
     } catch (error) {
       console.error('Failed to copy:', error);
+    }
+  };
+
+  // 편집된 이미지 삭제 핸들러
+  const handleDeleteEditedImage = async () => {
+    if (!window.confirm('편집된 이미지를 지우시겠습니까?')) {
+      return;
+    }
+
+    try {
+      await Supabase.EditedContent.delete(problemId);
+
+      // 삭제 후 원본 이미지로 복원
+      setCurrentBase64(undefined);
+      setCurrentBBox(undefined);
+
+      // Snackbar 표시
+      setShowDeleteSnackbar(true);
+      setTimeout(() => {
+        setShowDeleteSnackbar(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to delete edited image:', error);
+      alert('이미지 삭제에 실패했습니다.');
     }
   };
 
@@ -320,7 +350,7 @@ function OneProblem({
       </div>
 
       {/* 문제 이미지 */}
-      <div className="bg-gray-100 rounded-lg overflow-hidden">
+      <div className="bg-gray-100 rounded-lg overflow-hidden relative">
         <img
           src={imageUrl}
           alt={title}
@@ -345,6 +375,16 @@ function OneProblem({
             }
           }}
         />
+        {/* 편집된 이미지 삭제 버튼 */}
+        {currentBase64 && (
+          <button
+            onClick={handleDeleteEditedImage}
+            className="absolute bottom-1 right-1 bg-gray-600/40 hover:bg-gray-700/60 text-white rounded-full w-6 h-6 flex items-center justify-center transition-all shadow-md text-lg leading-none"
+            title="편집된 이미지 삭제"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {/* Loading Indicator */}
@@ -365,6 +405,30 @@ function OneProblem({
           onConfirm={handleBBoxConfirm}
           problemId={problemId}
         />
+      )}
+
+      {/* Save Success Snackbar */}
+      {showSaveSnackbar && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>BBox와 이미지가 저장되었습니다</span>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Success Snackbar */}
+      {showDeleteSnackbar && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>편집된 이미지가 삭제되었습니다</span>
+          </div>
+        </div>
       )}
     </div>
   );

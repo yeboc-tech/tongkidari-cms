@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
+import BBoxEditor from '../BBoxEditor/BBoxEditor';
 import { AccuracyRate } from '../../types/accuracyRate';
 import { getSolutionImageUrl } from '../../constants/apiConfig';
+import { Api, type BBox } from '../../api/Api';
+import { type ProblemMetadata } from '../../api/Api';
+import { Supabase } from '../../api/Supabase';
+import { getProblemPageFilename } from '../../ssot/examMetaUrl';
+import { HOST_URL } from '../../constants/apiConfig';
 
 // ========== Types ==========
 
@@ -36,8 +42,8 @@ export interface OneAnswerProps {
   // 편집된 이미지 (base64)
   editedBase64?: string;
 
-  // 편집된 BBox (해설에서는 사용하지 않지만 인터페이스 통일)
-  editedBBox?: any;
+  // 편집된 BBox
+  editedBBox?: BBox;
 
   // 이벤트 핸들러
   onMotherTongSelect: (tag: SelectedTag | null) => void;
@@ -58,12 +64,26 @@ function OneAnswer({
   customTags,
   tagsLoading,
   editedBase64,
-  editedBBox: _editedBBox,
+  editedBBox,
   onMotherTongSelect: onMotherTongSelect,
   onIntegratedSelect,
   onCustomTagsChange,
 }: OneAnswerProps) {
   const [isCopied, setIsCopied] = useState(false);
+  const [showBBoxEditor, setShowBBoxEditor] = useState(false);
+  const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
+  const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(editedBBox);
+
+  // editedBase64와 editedBBox prop 변경 시 state 업데이트
+  useEffect(() => {
+    setCurrentBase64(editedBase64);
+  }, [editedBase64]);
+
+  useEffect(() => {
+    setCurrentBBox(editedBBox);
+  }, [editedBBox]);
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');
@@ -72,7 +92,71 @@ function OneAnswer({
   const subject = problemId.split('_')[0];
 
   // 해설 이미지 URL 생성 (base64가 있으면 우선 사용)
-  const imageUrl = editedBase64 ? `data:image/png;base64,${editedBase64}` : getSolutionImageUrl(examId, questionNumber);
+  const imageUrl = currentBase64
+    ? `data:image/png;base64,${currentBase64}`
+    : getSolutionImageUrl(examId, questionNumber);
+
+  // 이미지 클릭 핸들러
+  const handleImageClick = async () => {
+    // editedBBox가 있으면 CSV 조회 없이 바로 에디터 열기
+    if (currentBBox) {
+      setShowBBoxEditor(true);
+      return;
+    }
+
+    // editedBBox가 없으면 CSV에서 메타데이터 가져오기
+    setLoadingMetadata(true);
+    try {
+      const metadata = await Api.Meta.fetchProblemMetadata(problemId);
+      if (metadata) {
+        setProblemMetadata(metadata);
+        setShowBBoxEditor(true);
+      } else {
+        alert('문제 메타데이터를 찾을 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to fetch problem metadata:', error);
+      alert('문제 메타데이터를 불러오는데 실패했습니다.');
+    } finally {
+      setLoadingMetadata(false);
+    }
+  };
+
+  // Problem Page 이미지 URL 생성
+  const getProblemPageUrl = (page: number): string => {
+    const filename = getProblemPageFilename(examId, page + 1); // page는 0-indexed이므로 +1
+    return `${HOST_URL}/tongkidari/meta/${filename}`;
+  };
+
+  // BBox 확인 핸들러
+  const handleBBoxConfirm = async (file: File, bbox: BBox) => {
+    try {
+      // File을 base64로 변환
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // data:image/png;base64, 부분 제거
+          const base64String = result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Supabase에 bbox와 base64 저장
+      await Supabase.EditedContent.upsertBBox(problemId, bbox, base64);
+
+      // 저장 후 즉시 이미지와 bbox 업데이트
+      setCurrentBase64(base64);
+      setCurrentBBox(bbox);
+
+      alert('BBox와 이미지가 저장되었습니다.');
+    } catch (error) {
+      console.error('Failed to save bbox:', error);
+      alert('BBox 저장에 실패했습니다.');
+    }
+  };
 
   // 복사 핸들러
   const handleCopyProblemId = async () => {
@@ -92,7 +176,7 @@ function OneAnswer({
   return (
     <div
       className={`border-2 rounded-lg p-4 transition-colors ${
-        editedBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
+        currentBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
       }`}
     >
       {/* 헤더: 제목과 복사 버튼 */}
@@ -185,8 +269,9 @@ function OneAnswer({
         <img
           src={imageUrl}
           alt={title}
-          className="w-full h-auto"
+          className="w-full h-auto cursor-pointer hover:opacity-80 transition-opacity"
           loading="lazy"
+          onClick={handleImageClick}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
@@ -206,6 +291,26 @@ function OneAnswer({
           }}
         />
       </div>
+
+      {/* Loading Indicator */}
+      {loadingMetadata && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg">
+            <p>메타데이터를 불러오는 중...</p>
+          </div>
+        </div>
+      )}
+
+      {/* BBox Editor Modal */}
+      {showBBoxEditor && (currentBBox || problemMetadata) && (
+        <BBoxEditor
+          imageUrl={getProblemPageUrl((currentBBox || problemMetadata!.bbox).page)}
+          bbox={currentBBox || problemMetadata!.bbox}
+          onClose={() => setShowBBoxEditor(false)}
+          onConfirm={handleBBoxConfirm}
+          problemId={problemId}
+        />
+      )}
     </div>
   );
 }
