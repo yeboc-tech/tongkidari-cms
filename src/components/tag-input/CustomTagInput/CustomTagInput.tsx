@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Supabase } from '../../../api/Supabase';
 
 // 한글 초성 추출 함수
 const getChosung = (text: string): string => {
@@ -33,10 +34,14 @@ const matchesChosung = (text: string, query: string): boolean => {
   return textChosung.includes(cleanedQuery);
 };
 
-// 가짜 기존 태그 목록 가져오기 함수
-const fetchExistingTags = async (): Promise<string[]> => {
-  // TODO: 나중에 Supabase에서 가져오기
-  return ["민간 부문의 순환", "기회비용", "편익과 비용"];
+// 기존 커스텀 태그 목록 가져오기 함수
+const fetchExistingTags = async (subject?: string): Promise<string[]> => {
+  try {
+    return await Supabase.ProblemTags.fetchAllCustomTagLabels(subject);
+  } catch (error) {
+    console.error('Error fetching custom tags:', error);
+    return [];
+  }
 };
 
 // 태그 ID 생성 함수
@@ -57,9 +62,10 @@ interface CustomTagInputProps {
   onTagsChange: (tags: TagWithId[]) => void;
   placeholder?: string;
   tags?: TagWithId[];
+  subject?: string; // 과목명 (옵션)
 }
 
-function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검색 가능)', tags }: CustomTagInputProps) {
+function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검색 가능)', tags, subject }: CustomTagInputProps) {
   const [inputText, setInputText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -71,16 +77,12 @@ function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검
   const lastKeyTimeRef = useRef<number>(0);
   const isComposingRef = useRef<boolean>(false);
   const shouldAddOnCompositionEndRef = useRef<boolean>(false);
+  const hasLoadedTagsRef = useRef<boolean>(false); // 태그 로드 여부 추적
 
   // tags prop이 변경되면 내부 상태 동기화
   useEffect(() => {
     setSelectedTags(tags ?? []);
   }, [tags]);
-
-  // 기존 태그 목록 로드
-  useEffect(() => {
-    fetchExistingTags().then(tags => setExistingTags(tags));
-  }, []);
 
   // 검색 로직
   useEffect(() => {
@@ -366,7 +368,19 @@ function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검
               }, 0);
             }
           }}
-          onFocus={() => inputText && suggestions.length > 0 && setIsOpen(true)}
+          onFocus={async () => {
+            // 태그 목록을 아직 로드하지 않았으면 로드
+            if (!hasLoadedTagsRef.current) {
+              hasLoadedTagsRef.current = true;
+              const tags = await fetchExistingTags(subject);
+              setExistingTags(tags);
+            }
+
+            // 입력 중인 텍스트가 있고 제안이 있으면 드롭다운 열기
+            if (inputText && suggestions.length > 0) {
+              setIsOpen(true);
+            }
+          }}
           placeholder={selectedTags.length === 0 ? placeholder : ''}
           className="flex-1 min-w-0 outline-none"
         />

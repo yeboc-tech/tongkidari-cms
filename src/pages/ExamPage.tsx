@@ -157,7 +157,6 @@ function ExamPage() {
               tagLabels: tag.tag_labels,
             });
           } else if (tag.type === PROBLEM_TAG_TYPES.DETAIL_TONGSA) {
-            console.log('a');
             integratedMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
@@ -168,12 +167,8 @@ function ExamPage() {
               label: tag.tag_labels[index],
             }));
             customMap.set(questionNumber, customTags);
-          } else {
-            console.log(tag.type);
           }
         });
-
-        console.log(integratedMap);
 
         setMtTags(mtTagMap);
         setIntegratedTags(integratedMap);

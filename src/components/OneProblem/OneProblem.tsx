@@ -288,7 +288,7 @@ function OneProblem({
             {/* Edit 모드: 태그 입력기 */}
             <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
             <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
-            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} />
+            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} subject={subject} />
           </>
         ) : (
           <>

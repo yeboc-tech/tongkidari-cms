@@ -259,7 +259,7 @@ function OneAnswer({
             <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
 
             {/* 커스텀 태그 */}
-            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} />
+            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} subject={subject} />
           </>
         )}
       </div>

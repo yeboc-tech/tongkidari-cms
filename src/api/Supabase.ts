@@ -145,6 +145,39 @@ export const Supabase = {
         throw error;
       }
     },
+
+    /**
+     * 모든 커스텀 태그 레이블 목록 가져오기 (중복 제거)
+     * @param subject - 과목명 (옵션, 지정 시 해당 과목의 태그만 반환)
+     * @returns 중복 제거된 커스텀 태그 레이블 배열
+     */
+    async fetchAllCustomTagLabels(subject?: string): Promise<string[]> {
+      const { data, error } = await supabase
+        .from('problem_tags')
+        .select('problem_id, tag_labels')
+        .eq('type', PROBLEM_TAG_TYPES.CUSTOM_TONGSA);
+
+      if (error) {
+        console.error('Error fetching custom tag labels:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      // subject가 지정되면 해당 과목으로 시작하는 problem_id만 필터링
+      const filteredData = subject
+        ? data.filter((row) => row.problem_id.startsWith(`${subject}_`))
+        : data;
+
+      // 모든 tag_labels 배열을 평탄화하고 중복 제거
+      const allLabels = filteredData.flatMap((row) => row.tag_labels);
+      const uniqueLabels = Array.from(new Set(allLabels));
+
+      // 알파벳순으로 정렬
+      return uniqueLabels.sort((a, b) => a.localeCompare(b, 'ko'));
+    },
   },
 
   /**
