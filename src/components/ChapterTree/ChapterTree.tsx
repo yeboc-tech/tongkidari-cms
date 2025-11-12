@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Book, Chapter, Topic, Subtopic } from '../../ssot/types';
 
 interface ChapterTreeProps {
@@ -58,17 +58,50 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(getAllIds(data)));
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
+  // onSelectionChange를 ref로 저장하여 의존성 문제 해결
+  const onSelectionChangeRef = useRef(onSelectionChange);
+
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+  }, [onSelectionChange]);
+
   // data가 변경될 때마다 모든 항목을 펼친 상태로 재설정
   useEffect(() => {
     setExpandedItems(new Set(getAllIds(data)));
   }, [data]);
 
-  // checkedItems가 변경될 때 부모 컴포넌트에 알림
+  // 모든 리프 노드의 ID를 메모이제이션 (data가 변경될 때만 재계산)
+  const leafNodeIds = useMemo(() => {
+    const leafIds = new Set<string>();
+
+    data.forEach((book) => {
+      if (book.chapters) {
+        book.chapters.forEach((chapter) => {
+          if (chapter.topics) {
+            chapter.topics.forEach((topic) => {
+              if (topic.subtopics && topic.subtopics.length > 0) {
+                // Topic에 subtopics가 있으면, subtopics만 리프
+                topic.subtopics.forEach((subtopic) => leafIds.add(subtopic.id));
+              } else {
+                // Topic에 subtopics가 없으면, Topic이 리프
+                leafIds.add(topic.id);
+              }
+            });
+          }
+        });
+      }
+    });
+
+    return leafIds;
+  }, [data]);
+
+  // checkedItems가 변경될 때 부모 컴포넌트에 리프 노드만 전달
   useEffect(() => {
-    if (onSelectionChange) {
-      onSelectionChange(Array.from(checkedItems));
+    if (onSelectionChangeRef.current) {
+      const checkedLeafIds = Array.from(checkedItems).filter(id => leafNodeIds.has(id));
+      onSelectionChangeRef.current(checkedLeafIds);
     }
-  }, [checkedItems, onSelectionChange]);
+  }, [checkedItems, leafNodeIds]);
 
   const toggleExpanded = (id: string) => {
     setExpandedItems((prev) => {

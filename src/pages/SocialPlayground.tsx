@@ -49,7 +49,7 @@ function SocialPlayground() {
           : PROBLEM_TAG_TYPES.MOTHER;
 
         // 1. 필터 조건으로 problem_id 목록 검색
-        const problemIds = await Supabase.ProblemTags.searchByFilter({
+        const problemIds = await Supabase.searchByFilter({
           type: tagType,
           tagIds: selectedTagIds,
           years: selectedYears.size > 0 ? Array.from(selectedYears) : undefined,

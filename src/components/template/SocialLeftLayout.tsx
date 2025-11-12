@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import ChapterTree from '../ChapterTree/ChapterTree';
 import { 자세한통합사회_단원_태그 } from '../../ssot/curriculumStructure';
 import { 마더텅_단원_태그 } from '../../ssot/마더텅_단원_태그';
@@ -70,8 +70,8 @@ function SocialLeftLayout({
     setSelectedYears(new Set());
   };
 
-  // 현재 선택된 카테고리에 따라 데이터 결정
-  const getCurrentData = (): Book[] => {
+  // 현재 선택된 카테고리에 따라 데이터 결정 (메모이제이션)
+  const currentData = useMemo((): Book[] => {
     if (categoryType === '통합사회') {
       return 자세한통합사회_단원_태그;
     } else {
@@ -79,7 +79,7 @@ function SocialLeftLayout({
       const subjectData = 마더텅_단원_태그.find((book) => book.id === selectedSubject);
       return subjectData ? [subjectData] : [];
     }
-  };
+  }, [categoryType, selectedSubject]);
 
   // ChapterTree에서 선택된 ID들을 받아 저장
   const handleSelectionChange = useCallback(
@@ -155,8 +155,8 @@ function SocialLeftLayout({
             </div>
           )}
 
-          {getCurrentData().length > 0 ? (
-            <ChapterTree data={getCurrentData()} onSelectionChange={handleSelectionChange} />
+          {currentData.length > 0 ? (
+            <ChapterTree data={currentData} onSelectionChange={handleSelectionChange} />
           ) : (
             <div className="text-center py-8 text-gray-400 text-sm">선택한 과목의 데이터가 준비 중입니다</div>
           )}
