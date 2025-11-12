@@ -5,6 +5,9 @@ import {
   getProblemCsvFilename,
   getProblemPageFilename,
   getProblemDebugFilename,
+  getAnswerCsvFilename,
+  getAnswerPageFilename,
+  getAnswerDebugFilename,
   getAccuracyRateCsvFilename,
   getLabelCsvFilename,
   getHistoryCsvFilename,
@@ -22,6 +25,7 @@ interface ExamMetaLinksProps {
 function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
   const [fileExists, setFileExists] = useState<Map<string, boolean>>(new Map());
   const [checking, setChecking] = useState(true);
+  const [showProblem, setShowProblem] = useState(true);
 
   // URL 생성 헬퍼 함수
   const getResourceUrl = (normalizedFilename: string): string => {
@@ -55,6 +59,18 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
     problemDebug: [1, 2, 3, 4].map((page) => ({
       originalFilename: `${examId}_문제_p${page}_debug.png`,
       normalizedFilename: getProblemDebugFilename(examId, page),
+    })),
+    answerCsv: {
+      originalFilename: `${examId}_해설.csv`,
+      normalizedFilename: getAnswerCsvFilename(examId),
+    },
+    answerPages: [1, 2, 3, 4].map((page) => ({
+      originalFilename: `${examId}_해설_p${page}.png`,
+      normalizedFilename: getAnswerPageFilename(examId, page),
+    })),
+    answerDebug: [1, 2, 3, 4].map((page) => ({
+      originalFilename: `${examId}_해설_p${page}_debug.png`,
+      normalizedFilename: getAnswerDebugFilename(examId, page),
     })),
     rateCsv: {
       originalFilename: `${examId.replace(/\([^)]+\)$/, '')}_accuracy_rate.csv`,
@@ -96,6 +112,9 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
       urlsToCheck.push(getResourceUrl(resources.problemCsv.normalizedFilename));
       resources.problemPages.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
       resources.problemDebug.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
+      urlsToCheck.push(getResourceUrl(resources.answerCsv.normalizedFilename));
+      resources.answerPages.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
+      resources.answerDebug.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
       urlsToCheck.push(getResourceUrl(resources.rateCsv.normalizedFilename));
       urlsToCheck.push(getResourceUrl(resources.labelCsv.normalizedFilename));
       urlsToCheck.push(getResourceUrl(resources.historyCsv.normalizedFilename));
@@ -201,71 +220,127 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
 
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-      <h3 className="text-sm font-semibold text-gray-600 mb-2">Exam Meta Links</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold text-gray-600">Exam Meta Links</h3>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-medium ${showProblem ? 'text-blue-600' : 'text-gray-500'}`}>
+            문제
+          </span>
+          <button
+            onClick={() => setShowProblem(!showProblem)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              showProblem ? 'bg-gray-300' : 'bg-blue-600'
+            }`}
+          >
+            <span
+              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                showProblem ? 'translate-x-1' : 'translate-x-5'
+              }`}
+            />
+          </button>
+          <span className={`text-xs font-medium ${!showProblem ? 'text-blue-600' : 'text-gray-500'}`}>해설</span>
+        </div>
+      </div>
       <div className="space-y-3 text-sm">
-        {/* Problem PDF */}
-        <div>
-          <p className="font-semibold text-gray-700 mb-1">Problem PDF</p>
-          {resources.problemPdf ? (
-            renderPdfLink(resources.problemPdf.url)
-          ) : (
-            <span className="text-gray-400 text-xs">확인된 경로 없음</span>
-          )}
-        </div>
+        {showProblem ? (
+          <>
+            {/* Problem PDF */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Problem PDF</p>
+              {resources.problemPdf ? (
+                renderPdfLink(resources.problemPdf.url)
+              ) : (
+                <span className="text-gray-400 text-xs">확인된 경로 없음</span>
+              )}
+            </div>
 
-        {/* Answer PDF */}
-        <div>
-          <p className="font-semibold text-gray-700 mb-1">Answer PDF</p>
-          {resources.answerPdf ? (
-            renderPdfLink(resources.answerPdf.url)
-          ) : (
-            <span className="text-gray-400 text-xs">확인된 경로 없음</span>
-          )}
-        </div>
+            {/* Problem CSV */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Problem CSV</p>
+              {renderLink(resources.problemCsv.originalFilename, resources.problemCsv.normalizedFilename)}
+            </div>
 
-        {/* Problem CSV */}
-        <div>
-          <p className="font-semibold text-gray-700 mb-1">Problem CSV</p>
-          {renderLink(resources.problemCsv.originalFilename, resources.problemCsv.normalizedFilename)}
-        </div>
-
-        {/* Problem Pages */}
-        <div>
-          <p className="font-semibold text-gray-700 mb-1">Problem Pages</p>
-          <div className="space-y-1">
-            {resources.problemPages.map((resource, index) => (
-              <div key={index}>
-                {renderLink(resource.originalFilename, resource.normalizedFilename)}
+            {/* Problem Pages */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Problem Pages</p>
+              <div className="space-y-1">
+                {resources.problemPages.map((resource, index) => (
+                  <div key={index}>
+                    {renderLink(resource.originalFilename, resource.normalizedFilename)}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Problem Debug */}
-        <div>
-          <p className="font-semibold text-gray-700 mb-1">Problem Debug</p>
-          <div className="space-y-1">
-            {resources.problemDebug.map((resource, index) => (
-              <div key={index}>
-                {renderLink(resource.originalFilename, resource.normalizedFilename)}
+            {/* Problem Debug */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Problem Debug</p>
+              <div className="space-y-1">
+                {resources.problemDebug.map((resource, index) => (
+                  <div key={index}>
+                    {renderLink(resource.originalFilename, resource.normalizedFilename)}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Answer PDF */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Answer PDF</p>
+              {resources.answerPdf ? (
+                renderPdfLink(resources.answerPdf.url)
+              ) : (
+                <span className="text-gray-400 text-xs">확인된 경로 없음</span>
+              )}
+            </div>
 
-        {/* Accuracy Rate CSV */}
+            {/* Answer CSV */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Answer CSV</p>
+              {renderLink(resources.answerCsv.originalFilename, resources.answerCsv.normalizedFilename)}
+            </div>
+
+            {/* Answer Pages */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Answer Pages</p>
+              <div className="space-y-1">
+                {resources.answerPages.map((resource, index) => (
+                  <div key={index}>
+                    {renderLink(resource.originalFilename, resource.normalizedFilename)}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Answer Debug */}
+            <div>
+              <p className="font-semibold text-gray-700 mb-1">Answer Debug</p>
+              <div className="space-y-1">
+                {resources.answerDebug.map((resource, index) => (
+                  <div key={index}>
+                    {renderLink(resource.originalFilename, resource.normalizedFilename)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Accuracy Rate CSV - 항상 표시 */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">Accuracy Rate CSV</p>
           {renderLink(resources.rateCsv.originalFilename, resources.rateCsv.normalizedFilename)}
         </div>
 
-        {/* Computed Label CSV */}
+        {/* Computed Label CSV - 항상 표시 */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">Computed Label CSV</p>
           {renderLink(resources.labelCsv.originalFilename, resources.labelCsv.normalizedFilename)}
         </div>
 
-        {/* History Data  */}
+        {/* History Data - 항상 표시 */}
         <div>
           <p className="font-semibold text-gray-700 mb-1">History </p>
           {renderLink(resources.historyCsv.originalFilename, resources.historyCsv.normalizedFilename)}

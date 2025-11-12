@@ -84,6 +84,46 @@ export const getProblemDebugUrl = (examId: string, page: number): string => {
 };
 
 /**
+ * 해설 페이지 이미지 파일명 생성
+ * @param examId - 시험 ID
+ * @param page - 페이지 번호 (1-4)
+ * @returns 파일명
+ */
+export const getAnswerPageFilename = (examId: string, page: number): string => {
+  return `${examId}_해설_p${page}.png`;
+};
+
+/**
+ * 해설 페이지 이미지 파일의 전체 URL 생성
+ * @param examId - 시험 ID
+ * @param page - 페이지 번호 (1-4)
+ * @returns 해설 페이지 이미지 URL
+ */
+export const getAnswerPageUrl = (examId: string, page: number): string => {
+  return `${META_BASE_URL}/${getAnswerPageFilename(examId, page)}`;
+};
+
+/**
+ * 해설 디버그 이미지 파일명 생성
+ * @param examId - 시험 ID
+ * @param page - 페이지 번호 (1-4)
+ * @returns 파일명
+ */
+export const getAnswerDebugFilename = (examId: string, page: number): string => {
+  return `${examId}_해설_p${page}_debug.png`;
+};
+
+/**
+ * 해설 디버그 이미지 파일의 전체 URL 생성
+ * @param examId - 시험 ID
+ * @param page - 페이지 번호 (1-4)
+ * @returns 해설 디버그 이미지 URL
+ */
+export const getAnswerDebugUrl = (examId: string, page: number): string => {
+  return `${META_BASE_URL}/${getAnswerDebugFilename(examId, page)}`;
+};
+
+/**
  * 정확도 CSV 파일명 생성
  * @param examId - 시험 ID
  * @returns 파일명
