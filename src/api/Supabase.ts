@@ -109,6 +109,69 @@ export const Supabase = {
     },
 
     /**
+     * 태그, 정답률, 연도로 문제 검색
+     * problem_tags와 accuracy_rate를 조합하여 조건에 맞는 문제 검색
+     * @param params - 검색 조건
+     * @returns problem_id 배열
+     */
+    async searchByFilter(params: {
+      type: ProblemTagType;
+      tagIds: string[];
+      years?: string[];
+      accuracyMin?: number;
+      accuracyMax?: number;
+    }): Promise<string[]> {
+      const { type, tagIds, years, accuracyMin, accuracyMax } = params;
+
+      // 1. 태그로 필터링된 problem_ids
+      const tagFilteredIds = await this.searchByTagIds(type, tagIds);
+
+      if (tagFilteredIds.length === 0) {
+        return [];
+      }
+
+      // 2. accuracy_rate 테이블에서 조건에 맞는 데이터 가져오기
+      let query = supabase
+        .from('accuracy_rate')
+        .select('problem_id, accuracy_rate')
+        .in('problem_id', tagFilteredIds);
+
+      if (accuracyMin !== undefined && accuracyMin !== null) {
+        query = query.gte('accuracy_rate', accuracyMin);
+      }
+      if (accuracyMax !== undefined && accuracyMax !== null) {
+        query = query.lte('accuracy_rate', accuracyMax);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error searching by filter:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      // 3. 연도 필터링 (클라이언트에서)
+      let filteredData = data;
+      if (years && years.length > 0) {
+        filteredData = data.filter((row) => {
+          // problem_id에서 연도 추출: "경제_고3_2024_03_학평_1_문제" -> "2024"
+          const parts = row.problem_id.split('_');
+          if (parts.length >= 3) {
+            const year = parts[2]; // 세 번째 요소가 연도
+            return years.includes(year);
+          }
+          return false;
+        });
+      }
+
+      return filteredData.map((row) => row.problem_id);
+    },
+
+    /**
      * 태그 데이터 저장 또는 업데이트
      * @param params - 저장할 태그 정보
      */
