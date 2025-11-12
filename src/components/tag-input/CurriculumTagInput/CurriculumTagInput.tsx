@@ -262,6 +262,9 @@ function CurriculumTagInput({
 
   // 태그 제거
   const handleRemoveTag = () => {
+    if (!window.confirm('태그를 삭제하시겠습니까?')) {
+      return;
+    }
     setSelectedTag(null);
     onSelect(null);
   };

@@ -218,6 +218,9 @@ function CustomTagInput({ onTagsChange, placeholder = '태그 입력 (초성 검
 
   // 태그 제거
   const removeTag = (index: number) => {
+    if (!window.confirm('태그를 삭제하시겠습니까?')) {
+      return;
+    }
     const updatedTags = selectedTags.filter((_, i) => i !== index);
     setSelectedTags(updatedTags);
     onTagsChange(updatedTags);
