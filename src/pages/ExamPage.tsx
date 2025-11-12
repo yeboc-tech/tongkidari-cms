@@ -26,7 +26,7 @@ function ExamPage() {
   const [pdfListMap, setPdfListMap] = useState<PdfListMap>({});
 
   // 태그 입력기 상태 관리 (문제 번호별)
-  const [madertongTags, setMadertongTags] = useState<Map<number, SelectedTag | null>>(new Map());
+  const [madertongTags, setMtTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [integratedTags, setIntegratedTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [customTagsMap, setCustomTagsMap] = useState<Map<number, TagWithId[]>>(new Map());
   const [tagsLoading, setTagsLoading] = useState(true);
@@ -140,7 +140,7 @@ function ExamPage() {
       try {
         const data = await Supabase.ProblemTags.fetch(questionIds);
 
-        const madertongMap = new Map<number, SelectedTag | null>();
+        const mtTagMap = new Map<number, SelectedTag | null>();
         const integratedMap = new Map<number, SelectedTag | null>();
         const customMap = new Map<number, TagWithId[]>();
 
@@ -152,11 +152,12 @@ function ExamPage() {
           const questionNumber = parseInt(match[1], 10);
 
           if (tag.type === PROBLEM_TAG_TYPES.MOTHER) {
-            madertongMap.set(questionNumber, {
+            mtTagMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
             });
           } else if (tag.type === PROBLEM_TAG_TYPES.DETAIL_TONGSA) {
+            console.log('a');
             integratedMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
@@ -167,10 +168,14 @@ function ExamPage() {
               label: tag.tag_labels[index],
             }));
             customMap.set(questionNumber, customTags);
+          } else {
+            console.log(tag.type);
           }
         });
 
-        setMadertongTags(madertongMap);
+        console.log(integratedMap);
+
+        setMtTags(mtTagMap);
         setIntegratedTags(integratedMap);
         setCustomTagsMap(customMap);
       } catch (error) {
@@ -245,7 +250,7 @@ function ExamPage() {
   // 태그 입력기 핸들러 함수들
   const handleMadertongSelect = (questionNumber: number) => async (tag: SelectedTag | null) => {
     // 낙관적 업데이트: UI 먼저 업데이트
-    setMadertongTags((prev) => {
+    setMtTags((prev) => {
       const newMap = new Map(prev);
       newMap.set(questionNumber, tag);
       return newMap;
