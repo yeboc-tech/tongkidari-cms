@@ -15,6 +15,8 @@ interface SocialLeftLayoutProps {
   setSelectedSubject: (subject: SubjectType) => void;
   selectedYears: Set<string>;
   setSelectedYears: (years: Set<string>) => void;
+  selectedDifficulties: Set<string>;
+  setSelectedDifficulties: (difficulties: Set<string>) => void;
   questionCount: number | null;
   setQuestionCount: (count: number | null) => void;
   customCount: string;
@@ -36,6 +38,8 @@ function SocialLeftLayout({
   setSelectedSubject,
   selectedYears,
   setSelectedYears,
+  selectedDifficulties,
+  setSelectedDifficulties,
   questionCount,
   setQuestionCount,
   customCount,
@@ -50,6 +54,12 @@ function SocialLeftLayout({
   onApplyFilter,
 }: SocialLeftLayoutProps) {
   const years = ['2024', '2023', '2022', '2021', '2020', '2019', '2018'];
+  const difficulties = ['상', '중', '하'];
+  const difficultyRanges: Record<string, { min: number; max: number }> = {
+    '상': { min: 0, max: 39 },
+    '중': { min: 40, max: 59 },
+    '하': { min: 60, max: 100 },
+  };
   const questionCounts = [20, 25, 30, 50, 100];
 
   const toggleYear = (year: string) => {
@@ -68,6 +78,62 @@ function SocialLeftLayout({
 
   const clearAllYears = () => {
     setSelectedYears(new Set());
+  };
+
+  // 연속된 난이도 범위인지 체크
+  const isConsecutiveRange = (diffs: Set<string>): boolean => {
+    if (diffs.size === 0) return true;
+    const indices = Array.from(diffs).map((d) => difficulties.indexOf(d)).sort((a, b) => a - b);
+    // 연속된 인덱스인지 확인
+    for (let i = 1; i < indices.length; i++) {
+      if (indices[i] - indices[i - 1] !== 1) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const toggleDifficulty = (difficulty: string) => {
+    const newSet = new Set(selectedDifficulties);
+    if (newSet.has(difficulty)) {
+      newSet.delete(difficulty);
+    } else {
+      newSet.add(difficulty);
+    }
+
+    // 연속된 범위인지 체크
+    if (!isConsecutiveRange(newSet)) {
+      // 연속되지 않으면 선택 불가
+      return;
+    }
+
+    setSelectedDifficulties(newSet);
+
+    // 선택된 난이도에 따라 정답률 범위 자동 설정
+    if (newSet.size > 0) {
+      const selectedDiffs = Array.from(newSet);
+      const mins = selectedDiffs.map((d) => difficultyRanges[d].min);
+      const maxs = selectedDiffs.map((d) => difficultyRanges[d].max);
+      setAccuracyMin(Math.min(...mins).toString());
+      setAccuracyMax(Math.max(...maxs).toString());
+    } else {
+      // 아무것도 선택 안 하면 초기화
+      setAccuracyMin('');
+      setAccuracyMax('');
+    }
+  };
+
+  const selectAllDifficulties = () => {
+    setSelectedDifficulties(new Set(difficulties));
+    // 전체 선택 시 0~100
+    setAccuracyMin('0');
+    setAccuracyMax('100');
+  };
+
+  const clearAllDifficulties = () => {
+    setSelectedDifficulties(new Set());
+    setAccuracyMin('');
+    setAccuracyMax('');
   };
 
   // 현재 선택된 카테고리에 따라 데이터 결정 (메모이제이션)
@@ -115,7 +181,7 @@ function SocialLeftLayout({
                 className={`px-3 py-1 text-xs rounded-full transition-colors ${
                   categoryType === '사회탐구' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                 }`}
-                style={categoryType === '사회탐구' ? { color: '#ff00a1' } : {}}
+                style={categoryType === '사회탐구' ? { color: '#ff4081' } : {}}
               >
                 사회탐구
               </button>
@@ -124,7 +190,7 @@ function SocialLeftLayout({
                 className={`px-3 py-1 text-xs rounded-full transition-colors ${
                   categoryType === '통합사회' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                 }`}
-                style={categoryType === '통합사회' ? { color: '#ff00a1' } : {}}
+                style={categoryType === '통합사회' ? { color: '#ff4081' } : {}}
               >
                 통합사회
               </button>
@@ -139,7 +205,7 @@ function SocialLeftLayout({
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value as SubjectType)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': '#ff00a1' } as React.CSSProperties}
+                style={{ '--tw-ring-color': '#ff4081' } as React.CSSProperties}
               >
                 {SUBJECTS.사회['2015교육과정'].map((subject) => {
                   // 마더텅_단원_태그에 해당 과목이 있는지 확인
@@ -156,7 +222,7 @@ function SocialLeftLayout({
           )}
 
           {currentData.length > 0 ? (
-            <ChapterTree data={currentData} onSelectionChange={handleSelectionChange} />
+            <ChapterTree data={currentData} onSelectionChange={handleSelectionChange} accentColor="#ff4081" />
           ) : (
             <div className="text-center py-8 text-gray-400 text-sm">선택한 과목의 데이터가 준비 중입니다</div>
           )}
@@ -192,13 +258,34 @@ function SocialLeftLayout({
               </div>
 
               <div>
-                <label className="text-xs text-gray-600">난이도</label>
-                <select className="w-full px-2 py-1 text-sm border border-gray-300 rounded mt-1">
-                  <option value="">전체</option>
-                  <option value="easy">쉬움</option>
-                  <option value="medium">보통</option>
-                  <option value="hard">어려움</option>
-                </select>
+                <label className="text-xs text-gray-600 block mb-2">난이도 (정답률)</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <button
+                    onClick={selectedDifficulties.size === difficulties.length ? clearAllDifficulties : selectAllDifficulties}
+                    className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                      selectedDifficulties.size === difficulties.length
+                        ? 'text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    style={selectedDifficulties.size === difficulties.length ? { backgroundColor: '#ff4081' } : {}}
+                  >
+                    전체
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {difficulties.map((difficulty) => (
+                    <button
+                      key={difficulty}
+                      onClick={() => toggleDifficulty(difficulty)}
+                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                        selectedDifficulties.has(difficulty) ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                      style={selectedDifficulties.has(difficulty) ? { backgroundColor: '#ff4081' } : {}}
+                    >
+                      {difficulty}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -211,7 +298,7 @@ function SocialLeftLayout({
                         ? 'text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
-                    style={selectedYears.size === years.length ? { backgroundColor: '#ff00a1' } : {}}
+                    style={selectedYears.size === years.length ? { backgroundColor: '#ff4081' } : {}}
                   >
                     모두
                   </button>
@@ -224,7 +311,7 @@ function SocialLeftLayout({
                       className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                         selectedYears.has(year) ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
-                      style={selectedYears.has(year) ? { backgroundColor: '#ff00a1' } : {}}
+                      style={selectedYears.has(year) ? { backgroundColor: '#ff4081' } : {}}
                     >
                       {year}
                     </button>
@@ -251,7 +338,7 @@ function SocialLeftLayout({
                       ? 'text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
-                  style={questionCount === count && !isCustomInput ? { backgroundColor: '#ff00a1' } : {}}
+                  style={questionCount === count && !isCustomInput ? { backgroundColor: '#ff4081' } : {}}
                 >
                   {count}
                 </button>
@@ -264,7 +351,7 @@ function SocialLeftLayout({
                 className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                   isCustomInput ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
-                style={isCustomInput ? { backgroundColor: '#ff00a1' } : {}}
+                style={isCustomInput ? { backgroundColor: '#ff4081' } : {}}
               >
                 직접입력
               </button>
@@ -277,7 +364,7 @@ function SocialLeftLayout({
                   onChange={(e) => setCustomCount(e.target.value)}
                   placeholder="숫자 입력"
                   className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': '#ff00a1' } as React.CSSProperties}
+                  style={{ '--tw-ring-color': '#ff4081' } as React.CSSProperties}
                   min="1"
                 />
                 <span className="text-xs text-gray-600">문제</span>

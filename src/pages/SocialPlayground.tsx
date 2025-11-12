@@ -24,12 +24,13 @@ function SocialPlayground() {
   const [categoryType, setCategoryType] = useState<CategoryType>('사회탐구');
   const [selectedSubject, setSelectedSubject] = useState<SubjectType>(getFirstAvailableSubject());
   const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
+  const [selectedDifficulties, setSelectedDifficulties] = useState<Set<string>>(new Set(['상', '중', '하']));
   const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [customCount, setCustomCount] = useState<string>('');
   const [isCustomInput, setIsCustomInput] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [accuracyMin, setAccuracyMin] = useState<string>('');
-  const [accuracyMax, setAccuracyMax] = useState<string>('');
+  const [accuracyMin, setAccuracyMin] = useState<string>('0');
+  const [accuracyMax, setAccuracyMax] = useState<string>('100');
   const [searchResults, setSearchResults] = useState<ProblemInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -85,6 +86,8 @@ function SocialPlayground() {
           setSelectedSubject={setSelectedSubject}
           selectedYears={selectedYears}
           setSelectedYears={setSelectedYears}
+          selectedDifficulties={selectedDifficulties}
+          setSelectedDifficulties={setSelectedDifficulties}
           questionCount={questionCount}
           setQuestionCount={setQuestionCount}
           customCount={customCount}

@@ -4,13 +4,15 @@ import type { Book, Chapter, Topic, Subtopic } from '../../ssot/types';
 interface ChapterTreeProps {
   data: Book[];
   onSelectionChange?: (selectedIds: string[]) => void;
+  accentColor?: string;
 }
 
 interface CheckboxProps {
   checkState: 'checked' | 'unchecked' | 'indeterminate';
+  accentColor?: string;
 }
 
-function IndeterminateCheckbox({ checkState }: CheckboxProps) {
+function IndeterminateCheckbox({ checkState, accentColor = '#ff4081' }: CheckboxProps) {
   const checkboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -25,7 +27,7 @@ function IndeterminateCheckbox({ checkState }: CheckboxProps) {
       type="checkbox"
       className="w-4 h-4 mr-2 cursor-pointer"
       style={{
-        accentColor: checkState === 'indeterminate' ? '#9ca3af' : undefined,
+        accentColor: checkState === 'indeterminate' ? '#9ca3af' : accentColor,
       }}
       checked={checkState === 'checked'}
       onChange={() => {}}
@@ -33,7 +35,7 @@ function IndeterminateCheckbox({ checkState }: CheckboxProps) {
   );
 }
 
-function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
+function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: ChapterTreeProps) {
   // 모든 항목을 펼친 상태로 초기화 (subtopics가 있는 Topic도 포함)
   const getAllIds = (data: Book[]): string[] => {
     const ids: string[] = [];
@@ -218,6 +220,7 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
           <input
             type="checkbox"
             className="w-4 h-4 mr-2 cursor-pointer"
+            style={{ accentColor }}
             checked={isChecked}
             onChange={() => {}}
           />
@@ -270,11 +273,12 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
             }}
           >
             {hasChildren ? (
-              <IndeterminateCheckbox checkState={checkState as 'checked' | 'unchecked' | 'indeterminate'} />
+              <IndeterminateCheckbox checkState={checkState as 'checked' | 'unchecked' | 'indeterminate'} accentColor={accentColor} />
             ) : (
               <input
                 type="checkbox"
                 className="w-4 h-4 mr-2 cursor-pointer"
+                style={{ accentColor }}
                 checked={checkState === 'checked'}
                 onChange={() => {}}
               />
@@ -334,7 +338,7 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
               handleCheckboxChange(chapter.id, chapter);
             }}
           >
-            <IndeterminateCheckbox checkState={checkState} />
+            <IndeterminateCheckbox checkState={checkState} accentColor={accentColor} />
           </div>
           <span className="text-sm font-medium cursor-pointer">{chapter.title}</span>
         </div>
@@ -388,7 +392,7 @@ function ChapterTree({ data, onSelectionChange }: ChapterTreeProps) {
               handleCheckboxChange(book.id, book);
             }}
           >
-            <IndeterminateCheckbox checkState={checkState} />
+            <IndeterminateCheckbox checkState={checkState} accentColor={accentColor} />
           </div>
           <span className="text-sm font-semibold cursor-pointer">{book.title}</span>
         </div>
