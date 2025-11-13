@@ -46,7 +46,7 @@ export interface ProblemMetadata {
   image_path: string;
   source_pdf: string;
   page: string;
-  bbox: BBox;
+  bbox: BBox[];
   exam_id: string;
   conversion_error: string;
 }
@@ -332,12 +332,18 @@ export const Api = {
           const id = columns[1];
           if (id !== answerId) continue;
 
-          // bbox 컬럼(11번째)을 JSON 파싱
-          let bbox: BBox = { page: 0, x0: 0, y0: 0, x1: 0, y1: 0 };
+          // bbox 컬럼(11번째)을 JSON 파싱하여 배열로 변환
+          let bbox: BBox[] = [];
           try {
-            bbox = JSON.parse(columns[11]);
+            const parsedBBox = JSON.parse(columns[11]);
+            // 파싱된 값이 있으면 배열로 감싸기, 없으면 빈 배열
+            if (parsedBBox && typeof parsedBBox === 'object') {
+              bbox = [parsedBBox];
+            }
           } catch (e) {
             console.error('Failed to parse bbox:', e, columns[11]);
+            // 파싱 실패 시 빈 배열
+            bbox = [];
           }
 
           return {
@@ -431,12 +437,18 @@ export const Api = {
           const id = columns[1];
           if (id !== problemId) continue;
 
-          // bbox 컬럼(11번째)을 JSON 파싱
-          let bbox: BBox = { page: 0, x0: 0, y0: 0, x1: 0, y1: 0 };
+          // bbox 컬럼(11번째)을 JSON 파싱하여 배열로 변환
+          let bbox: BBox[] = [];
           try {
-            bbox = JSON.parse(columns[11]);
+            const parsedBBox = JSON.parse(columns[11]);
+            // 파싱된 값이 있으면 배열로 감싸기, 없으면 빈 배열
+            if (parsedBBox && typeof parsedBBox === 'object') {
+              bbox = [parsedBBox];
+            }
           } catch (e) {
             console.error('Failed to parse bbox:', e, columns[11]);
+            // 파싱 실패 시 빈 배열
+            bbox = [];
           }
 
           return {

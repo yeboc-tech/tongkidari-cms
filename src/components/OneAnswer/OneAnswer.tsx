@@ -306,8 +306,8 @@ function OneAnswer({
       {/* BBox Editor Modal */}
       {showBBoxEditor && (currentBBox || problemMetadata) && (
         <BBoxEditor
-          imageUrl={getAnswerPageUrl((currentBBox || problemMetadata!.bbox).page)}
-          bbox={currentBBox || problemMetadata!.bbox}
+          imageUrl={getAnswerPageUrl((currentBBox || problemMetadata!.bbox[0]).page)}
+          bbox={currentBBox ? [currentBBox] : problemMetadata!.bbox}
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
           problemId={answerId}

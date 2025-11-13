@@ -3,13 +3,15 @@ import { type BBox } from '../../api/Api';
 
 interface BBoxEditorProps {
   imageUrl: string;
-  bbox: BBox;
+  bbox: BBox[];
   onClose: () => void;
   onConfirm: (file: File, bbox: BBox) => void;
   problemId: string;
 }
 
 function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEditorProps) {
+  // bbox 배열의 첫 번째 아이템 사용 (없으면 기본값)
+  const firstBBox = bbox.length > 0 ? bbox[0] : { page: 0, x0: 0, y0: 0, x1: 0, y1: 0 };
   // pt to px 변환 (200 DPI)
   const PT_TO_PX_SCALE = 200 / 72; // 2.777778
 
@@ -20,11 +22,11 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
 
   // bbox를 px 단위로 변환 (소수점 2자리)
   const bboxInPx: BBox = {
-    page: bbox.page,
-    x0: roundToTwo(bbox.x0 * PT_TO_PX_SCALE),
-    y0: roundToTwo(bbox.y0 * PT_TO_PX_SCALE),
-    x1: roundToTwo(bbox.x1 * PT_TO_PX_SCALE),
-    y1: roundToTwo(bbox.y1 * PT_TO_PX_SCALE),
+    page: firstBBox.page,
+    x0: roundToTwo(firstBBox.x0 * PT_TO_PX_SCALE),
+    y0: roundToTwo(firstBBox.y0 * PT_TO_PX_SCALE),
+    x1: roundToTwo(firstBBox.x1 * PT_TO_PX_SCALE),
+    y1: roundToTwo(firstBBox.y1 * PT_TO_PX_SCALE),
   };
 
   const [currentBBox, setCurrentBBox] = useState<BBox>(bboxInPx);

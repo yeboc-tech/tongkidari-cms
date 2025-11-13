@@ -401,8 +401,8 @@ function OneProblem({
       {/* BBox Editor Modal */}
       {showBBoxEditor && (currentBBox || problemMetadata) && (
         <BBoxEditor
-          imageUrl={getProblemPageUrl((currentBBox || problemMetadata!.bbox).page)}
-          bbox={currentBBox || problemMetadata!.bbox}
+          imageUrl={getProblemPageUrl((currentBBox || problemMetadata!.bbox[0]).page)}
+          bbox={currentBBox ? [currentBBox] : problemMetadata!.bbox}
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
           problemId={problemId}
