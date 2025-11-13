@@ -106,10 +106,10 @@ function OneAnswer({
       return;
     }
 
-    // editedBBox가 없으면 CSV에서 메타데이터 가져오기
+    // editedBBox가 없으면 해설 CSV에서 메타데이터 가져오기
     setLoadingMetadata(true);
     try {
-      const metadata = await Api.Meta.fetchProblemMetadata(answerId);
+      const metadata = await Api.Meta.fetchAnswerMetadata(answerId);
       if (metadata) {
         setProblemMetadata(metadata);
         setShowBBoxEditor(true);
