@@ -114,8 +114,12 @@ function OneProblem({
     try {
       const metadata = await Api.Meta.fetchProblemMetadata(problemId);
       if (metadata) {
-        setProblemMetadata(metadata);
-        setShowBBoxEditor(true);
+        if (metadata.bbox.length === 0) {
+          alert('문제 메타데이터에 BBox 정보가 없습니다.');
+        } else {
+          setProblemMetadata(metadata);
+          setShowBBoxEditor(true);
+        }
       } else {
         alert('문제 메타데이터를 찾을 수 없습니다.');
       }
@@ -399,7 +403,7 @@ function OneProblem({
       )}
 
       {/* BBox Editor Modal */}
-      {showBBoxEditor && (currentBBox || problemMetadata) && (
+      {showBBoxEditor && (currentBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
         <BBoxEditor
           imageUrl={getProblemPageUrl((currentBBox || problemMetadata!.bbox[0]).page)}
           bbox={currentBBox ? [currentBBox] : problemMetadata!.bbox}

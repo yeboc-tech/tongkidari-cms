@@ -111,8 +111,12 @@ function OneAnswer({
     try {
       const metadata = await Api.Meta.fetchAnswerMetadata(answerId);
       if (metadata) {
-        setProblemMetadata(metadata);
-        setShowBBoxEditor(true);
+        if (metadata.bbox.length === 0) {
+          alert('해설 메타데이터에 BBox 정보가 없습니다.');
+        } else {
+          setProblemMetadata(metadata);
+          setShowBBoxEditor(true);
+        }
       } else {
         alert('해설 메타데이터를 찾을 수 없습니다.');
       }
@@ -304,7 +308,7 @@ function OneAnswer({
       )}
 
       {/* BBox Editor Modal */}
-      {showBBoxEditor && (currentBBox || problemMetadata) && (
+      {showBBoxEditor && (currentBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
         <BBoxEditor
           imageUrl={getAnswerPageUrl((currentBBox || problemMetadata!.bbox[0]).page)}
           bbox={currentBBox ? [currentBBox] : problemMetadata!.bbox}
