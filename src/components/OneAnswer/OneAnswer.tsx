@@ -8,7 +8,7 @@ import { getSolutionImageUrl } from '../../constants/apiConfig';
 import { Api, type BBox } from '../../api/Api';
 import { type ProblemMetadata } from '../../api/Api';
 import { Supabase } from '../../api/Supabase';
-import { getProblemPageFilename } from '../../ssot/examMetaUrl';
+import { getAnswerPageFilename } from '../../ssot/examMetaUrl';
 import { HOST_URL } from '../../constants/apiConfig';
 
 // ========== Types ==========
@@ -28,6 +28,7 @@ export interface OneAnswerProps {
   questionNumber: number;
   title: string; // 예: "해설 1"
   problemId: string;
+  answerId: string;
 
   // 정확도 데이터
   accuracyData?: AccuracyRate;
@@ -57,6 +58,7 @@ function OneAnswer({
   questionNumber,
   title,
   problemId,
+  answerId,
   accuracyData,
   accuracyLoading,
   motherTongTag: motherTongTag,
@@ -85,11 +87,11 @@ function OneAnswer({
     setCurrentBBox(editedBBox);
   }, [editedBBox]);
 
-  // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
-  const examId = problemId.replace(/_\d+_문제$/, '');
+  // answerId에서 examId 추출: "경제_고3_2024_03_학평_1_해설" -> "경제_고3_2024_03_학평"
+  const examId = answerId.replace(/_\d+_해설$/, '');
 
-  // problemId에서 subject 추출: "경제_고3_2024_03_학평_1_문제" -> "경제"
-  const subject = problemId.split('_')[0];
+  // answerId에서 subject 추출: "경제_고3_2024_03_학평_1_해설" -> "경제"
+  const subject = answerId.split('_')[0];
 
   // 해설 이미지 URL 생성 (base64가 있으면 우선 사용)
   const imageUrl = currentBase64
@@ -107,24 +109,24 @@ function OneAnswer({
     // editedBBox가 없으면 CSV에서 메타데이터 가져오기
     setLoadingMetadata(true);
     try {
-      const metadata = await Api.Meta.fetchProblemMetadata(problemId);
+      const metadata = await Api.Meta.fetchProblemMetadata(answerId);
       if (metadata) {
         setProblemMetadata(metadata);
         setShowBBoxEditor(true);
       } else {
-        alert('문제 메타데이터를 찾을 수 없습니다.');
+        alert('해설 메타데이터를 찾을 수 없습니다.');
       }
     } catch (error) {
-      console.error('Failed to fetch problem metadata:', error);
-      alert('문제 메타데이터를 불러오는데 실패했습니다.');
+      console.error('Failed to fetch answer metadata:', error);
+      alert('해설 메타데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoadingMetadata(false);
     }
   };
 
-  // Problem Page 이미지 URL 생성
-  const getProblemPageUrl = (page: number): string => {
-    const filename = getProblemPageFilename(examId, page + 1); // page는 0-indexed이므로 +1
+  // Answer Page 이미지 URL 생성
+  const getAnswerPageUrl = (page: number): string => {
+    const filename = getAnswerPageFilename(examId, page + 1); // page는 0-indexed이므로 +1
     return `${HOST_URL}/tongkidari/meta/${filename}`;
   };
 
@@ -144,8 +146,8 @@ function OneAnswer({
         reader.readAsDataURL(file);
       });
 
-      // Supabase에 bbox와 base64 저장
-      await Supabase.EditedContent.upsertBBox(problemId, bbox, base64);
+      // Supabase에 bbox와 base64 저장 (answerId 사용)
+      await Supabase.EditedContent.upsertBBox(answerId, bbox, base64);
 
       // 저장 후 즉시 이미지와 bbox 업데이트
       setCurrentBase64(base64);
@@ -159,9 +161,9 @@ function OneAnswer({
   };
 
   // 복사 핸들러
-  const handleCopyProblemId = async () => {
+  const handleCopyAnswerId = async () => {
     try {
-      await navigator.clipboard.writeText(problemId);
+      await navigator.clipboard.writeText(answerId);
       setIsCopied(true);
 
       // 1초 후 복사 상태 초기화
@@ -183,7 +185,7 @@ function OneAnswer({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         <button
-          onClick={handleCopyProblemId}
+          onClick={handleCopyAnswerId}
           className={`
             relative overflow-hidden px-3 py-1.5 rounded-full text-xs font-medium
             transition-all duration-200 cursor-pointer font-mono
@@ -212,7 +214,7 @@ function OneAnswer({
                     d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                   />
                 </svg>
-                {problemId}
+                {answerId}
               </>
             )}
           </span>
@@ -304,11 +306,11 @@ function OneAnswer({
       {/* BBox Editor Modal */}
       {showBBoxEditor && (currentBBox || problemMetadata) && (
         <BBoxEditor
-          imageUrl={getProblemPageUrl((currentBBox || problemMetadata!.bbox).page)}
+          imageUrl={getAnswerPageUrl((currentBBox || problemMetadata!.bbox).page)}
           bbox={currentBBox || problemMetadata!.bbox}
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
-          problemId={problemId}
+          problemId={answerId}
         />
       )}
     </div>

@@ -32,8 +32,12 @@ function ExamPage() {
   const [tagsLoading, setTagsLoading] = useState(true);
 
   // 편집된 콘텐츠 상태 (문제 ID별 base64와 bbox 맵)
-  const [editedBase64Map, setEditedBase64Map] = useState<Map<string, string>>(new Map());
-  const [editedBBoxMap, setEditedBBoxMap] = useState<Map<string, BBox>>(new Map());
+  const [editedProblemBase64Map, setEditedProblemBase64Map] = useState<Map<string, string>>(new Map());
+  const [editedProblemBBoxMap, setEditedProblemBBoxMap] = useState<Map<string, BBox>>(new Map());
+
+  // 편집된 해설 콘텐츠 상태 (해설 ID별 base64와 bbox 맵)
+  const [editedAnswerBase64Map, setEditedAnswerBase64Map] = useState<Map<string, string>>(new Map());
+  const [editedAnswerBBoxMap, setEditedAnswerBBoxMap] = useState<Map<string, BBox>>(new Map());
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
@@ -53,6 +57,13 @@ function ExamPage() {
     if (!id) return '';
     const examIdWithoutRegion = removeRegion(id);
     return `${examIdWithoutRegion}_${questionNumber}_문제`;
+  };
+
+  // 해설 ID 생성 (exam_id + 문제번호)
+  const getAnswerId = (questionNumber: number): string => {
+    if (!id) return '';
+    const examIdWithoutRegion = removeRegion(id);
+    return `${examIdWithoutRegion}_${questionNumber}_해설`;
   };
 
   // 태그 저장 함수
@@ -183,11 +194,11 @@ function ExamPage() {
     fetchTags();
   }, [id]);
 
-  // 편집된 콘텐츠 조회
+  // 편집된 문제 콘텐츠 조회
   useEffect(() => {
     if (!id) return;
 
-    const fetchEditedContents = async () => {
+    const fetchEditedProblemContents = async () => {
       const examIdWithoutRegion = removeRegion(id);
 
       // 1-20번 문제의 id 목록 생성
@@ -207,14 +218,48 @@ function ExamPage() {
           }
         });
 
-        setEditedBase64Map(base64Map);
-        setEditedBBoxMap(bboxMap);
+        setEditedProblemBase64Map(base64Map);
+        setEditedProblemBBoxMap(bboxMap);
       } catch (error) {
-        console.error('Error fetching edited contents:', error);
+        console.error('Error fetching edited problem contents:', error);
       }
     };
 
-    fetchEditedContents();
+    fetchEditedProblemContents();
+  }, [id]);
+
+  // 편집된 해설 콘텐츠 조회
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchEditedAnswerContents = async () => {
+      const examIdWithoutRegion = removeRegion(id);
+
+      // 1-20번 해설의 id 목록 생성
+      const answerIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_해설`);
+
+      try {
+        const editedContents = await Supabase.EditedContent.fetchByResourceIds(answerIds);
+        const base64Map = new Map<string, string>();
+        const bboxMap = new Map<string, BBox>();
+
+        editedContents.forEach((ec) => {
+          if (ec.base64) {
+            base64Map.set(ec.resource_id, ec.base64);
+          }
+          if (ec.json?.bbox) {
+            bboxMap.set(ec.resource_id, ec.json.bbox);
+          }
+        });
+
+        setEditedAnswerBase64Map(base64Map);
+        setEditedAnswerBBoxMap(bboxMap);
+      } catch (error) {
+        console.error('Error fetching edited answer contents:', error);
+      }
+    };
+
+    fetchEditedAnswerContents();
   }, [id]);
 
   // problem_number 쿼리 파라미터로 특정 문제로 스크롤
@@ -380,20 +425,34 @@ function ExamPage() {
             const questionNumber = index + 1;
             const accuracyData = accuracyRates.get(questionNumber);
             const problemId = getProblemId(questionNumber);
+            const answerId = getAnswerId(questionNumber);
+
+            // 공통 props (편집 관련 제외)
             const commonProps = {
               questionNumber,
               problemId,
+              answerId,
               accuracyData,
               accuracyLoading: loading,
               motherTongTag: madertongTags.get(questionNumber) || null,
               integratedTag: integratedTags.get(questionNumber) || null,
               customTags: customTagsMap.get(questionNumber) || [],
               tagsLoading,
-              editedBase64: editedBase64Map.get(problemId),
-              editedBBox: editedBBoxMap.get(problemId),
               onMotherTongSelect: handleMadertongSelect(questionNumber),
               onIntegratedSelect: handleIntegratedSelect(questionNumber),
               onCustomTagsChange: handleCustomTagsChange(questionNumber),
+            };
+
+            // OneProblem에만 전달되는 편집 관련 props
+            const problemEditProps = {
+              editedBase64: editedProblemBase64Map.get(problemId),
+              editedBBox: editedProblemBBoxMap.get(problemId),
+            };
+
+            // OneAnswer에만 전달되는 편집 관련 props
+            const answerEditProps = {
+              editedBase64: editedAnswerBase64Map.get(answerId),
+              editedBBox: editedAnswerBBoxMap.get(answerId),
             };
 
             return (
@@ -406,9 +465,9 @@ function ExamPage() {
                 }}
               >
                 {showSolution ? (
-                  <OneAnswer {...commonProps} title={`해설 ${questionNumber}`} />
+                  <OneAnswer {...commonProps} {...answerEditProps} title={`해설 ${questionNumber}`} />
                 ) : (
-                  <OneProblem {...commonProps} title={`문제 ${questionNumber}`} />
+                  <OneProblem {...commonProps} {...problemEditProps} title={`문제 ${questionNumber}`} />
                 )}
               </div>
             );
