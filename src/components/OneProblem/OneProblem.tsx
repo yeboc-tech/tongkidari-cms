@@ -114,12 +114,12 @@ function OneProblem({
     try {
       const metadata = await Api.Meta.fetchProblemMetadata(problemId);
       if (metadata) {
+        // bbox가 비어있으면 1번 페이지 기본값 설정
         if (metadata.bbox.length === 0) {
-          alert('문제 메타데이터에 BBox 정보가 없습니다.');
-        } else {
-          setProblemMetadata(metadata);
-          setShowBBoxEditor(true);
+          metadata.bbox = [{ page: 0, x0: 50, y0: 50, x1: 100, y1: 100 }];
         }
+        setProblemMetadata(metadata);
+        setShowBBoxEditor(true);
       } else {
         alert('문제 메타데이터를 찾을 수 없습니다.');
       }
