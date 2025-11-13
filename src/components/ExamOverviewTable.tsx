@@ -159,10 +159,10 @@ function ExamOverviewTable({
 
                     const problemIsForbidden = cellData.problem === 'forbidden';
 
-                    // 해설 카운트는 현재 사용하지 않음
-                    // const answerText =
-                    //   cellData.answer === 'forbidden' ? 'x' : cellData.answer !== null ? String(cellData.answer) : '-';
-                    // const answerIsForbidden = cellData.answer === 'forbidden';
+                    // 해설 카운트
+                    const answerText =
+                      cellData.answer === 'forbidden' ? 'x' : cellData.answer !== null ? String(cellData.answer) : '-';
+                    const answerIsForbidden = cellData.answer === 'forbidden';
 
                     return (
                       <td
@@ -173,7 +173,9 @@ function ExamOverviewTable({
                         }`}
                       >
                         <div className="flex flex-col items-center gap-1">
-                          <span className={problemIsForbidden ? 'text-red-500' : ''}>{problemText}</span>
+                          <span className={problemIsForbidden || answerIsForbidden ? 'text-red-500' : ''}>
+                            {problemText}/{answerText}
+                          </span>
                           <div className="flex gap-1">
                             {showProblemPdf && cellData.hasProblemPdf && (
                               <div className="w-1.5 h-1.5 bg-green-500 rounded-full" title="문제 PDF 있음" />
@@ -189,8 +191,7 @@ function ExamOverviewTable({
                   <td className="px-4 py-3 border-2 border-gray-400 text-center font-bold text-gray-900">
                     {(() => {
                       const total = calculateYearTotal(row.data);
-                      return total.problem;
-                      // return `${total.problem}/${total.answer}`;
+                      return `${total.problem}/${total.answer}`;
                     })()}
                   </td>
                 </>
@@ -211,8 +212,7 @@ function ExamOverviewTable({
               ) : (
                 (() => {
                   const grandTotal = calculateGrandTotal();
-                  return grandTotal.problem;
-                  // return `${grandTotal.problem}/${grandTotal.answer}`;
+                  return `${grandTotal.problem}/${grandTotal.answer}`;
                 })()
               )}
             </td>

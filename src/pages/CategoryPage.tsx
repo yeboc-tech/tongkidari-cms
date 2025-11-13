@@ -182,15 +182,15 @@ function CategoryPage() {
             // 문제 카운트 가져오기
             const problemCount = await Api.Meta.fetchQuestionCount(examId);
 
-            // 해설 카운트는 현재 사용하지 않음
-            // const answerCount = await Api.Meta.fetchAnswerCount(examId);
+            // 해설 카운트 가져오기
+            const answerCount = await Api.Meta.fetchAnswerCount(examId);
 
             // PDF 존재 여부 확인 (pdfListMap에서 조회)
             const pdfInfo = pdfListMap[examId];
             const hasProblemPdf = pdfInfo ? pdfInfo.problemPdf !== null : false;
             const hasAnswerPdf = pdfInfo ? pdfInfo.answerPdf !== null : false;
 
-            return { problem: problemCount, answer: null, hasProblemPdf, hasAnswerPdf };
+            return { problem: problemCount, answer: answerCount, hasProblemPdf, hasAnswerPdf };
           });
 
           const columnData = await Promise.all(columnDataPromises);
