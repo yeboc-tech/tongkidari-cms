@@ -173,9 +173,15 @@ function ExamOverviewTable({
                         }`}
                       >
                         <div className="flex flex-col items-center gap-1">
-                          <span className={problemIsForbidden || answerIsForbidden ? 'text-red-500' : ''}>
-                            {problemText}/{answerText}
-                          </span>
+                          <div>
+                            <span className={problemIsForbidden ? 'text-red-500' : 'text-black'}>
+                              {problemText}
+                            </span>
+                            <span className="text-gray-400">/</span>
+                            <span className={answerIsForbidden ? 'text-red-500' : 'text-black'}>
+                              {answerText}
+                            </span>
+                          </div>
                           <div className="flex gap-1">
                             {showProblemPdf && cellData.hasProblemPdf && (
                               <div className="w-1.5 h-1.5 bg-green-500 rounded-full" title="문제 PDF 있음" />
