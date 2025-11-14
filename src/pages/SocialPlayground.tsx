@@ -27,11 +27,8 @@ function SocialPlayground() {
   const [selectedYears, setSelectedYears] = useState<Set<string>>(
     new Set(['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015', '2014', '2013'])
   );
-  const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set(['고3']));
+  const selectedGrades = new Set(['고3']);
   const [selectedDifficulties, setSelectedDifficulties] = useState<Set<string>>(new Set(['상', '중', '하']));
-  const [questionCount, setQuestionCount] = useState<number | null>(null);
-  const [customCount, setCustomCount] = useState<string>('');
-  const [isCustomInput, setIsCustomInput] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [accuracyMin, setAccuracyMin] = useState<string>('0');
   const [accuracyMax, setAccuracyMax] = useState<string>('100');
@@ -132,15 +129,8 @@ function SocialPlayground() {
           selectedYears={selectedYears}
           setSelectedYears={setSelectedYears}
           selectedGrades={selectedGrades}
-          setSelectedGrades={setSelectedGrades}
           selectedDifficulties={selectedDifficulties}
           setSelectedDifficulties={setSelectedDifficulties}
-          questionCount={questionCount}
-          setQuestionCount={setQuestionCount}
-          customCount={customCount}
-          setCustomCount={setCustomCount}
-          isCustomInput={isCustomInput}
-          setIsCustomInput={setIsCustomInput}
           accuracyMin={accuracyMin}
           setAccuracyMin={setAccuracyMin}
           accuracyMax={accuracyMax}
@@ -289,7 +279,6 @@ function SocialPlayground() {
                   <OneAnswer
                     questionNumber={searchResults[currentViewIndex].questionNumber}
                     title={`답안 ${searchResults[currentViewIndex].questionNumber}`}
-                    problemId={searchResults[currentViewIndex].problemId}
                     answerId={searchResults[currentViewIndex].problemId.replace('_문제', '_해설')}
                     editedBase64={searchResults[currentViewIndex].answerEditedBase64}
                     editedBBox={searchResults[currentViewIndex].answerEditedBBox}

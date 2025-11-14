@@ -27,7 +27,6 @@ export interface OneAnswerProps {
   // 기본 정보
   questionNumber: number;
   title: string; // 예: "해설 1"
-  problemId: string;
   answerId: string;
 
   // 모드
@@ -60,7 +59,6 @@ export interface OneAnswerProps {
 function OneAnswer({
   questionNumber,
   title,
-  problemId,
   answerId,
   mode = 'edit',
   accuracyData,

@@ -16,15 +16,8 @@ interface SocialLeftLayoutProps {
   selectedYears: Set<string>;
   setSelectedYears: (years: Set<string>) => void;
   selectedGrades: Set<string>;
-  setSelectedGrades: (grades: Set<string>) => void;
   selectedDifficulties: Set<string>;
   setSelectedDifficulties: (difficulties: Set<string>) => void;
-  questionCount: number | null;
-  setQuestionCount: (count: number | null) => void;
-  customCount: string;
-  setCustomCount: (count: string) => void;
-  isCustomInput: boolean;
-  setIsCustomInput: (isCustom: boolean) => void;
   accuracyMin: string;
   setAccuracyMin: (value: string) => void;
   accuracyMax: string;
@@ -41,15 +34,8 @@ function SocialLeftLayout({
   selectedYears,
   setSelectedYears,
   selectedGrades,
-  setSelectedGrades,
   selectedDifficulties,
   setSelectedDifficulties,
-  questionCount,
-  setQuestionCount,
-  customCount,
-  setCustomCount,
-  isCustomInput,
-  setIsCustomInput,
   accuracyMin,
   setAccuracyMin,
   accuracyMax,
@@ -65,7 +51,6 @@ function SocialLeftLayout({
     '중': { min: 40, max: 59 },
     '하': { min: 60, max: 100 },
   };
-  const questionCounts = [20, 25, 30, 50, 100];
 
   const toggleYear = (year: string) => {
     const newSet = new Set(selectedYears);
@@ -83,16 +68,6 @@ function SocialLeftLayout({
 
   const clearAllYears = () => {
     setSelectedYears(new Set());
-  };
-
-  const toggleGrade = (grade: string) => {
-    const newSet = new Set(selectedGrades);
-    if (newSet.has(grade)) {
-      newSet.delete(grade);
-    } else {
-      newSet.add(grade);
-    }
-    setSelectedGrades(newSet);
   };
 
   // 연속된 난이도 범위인지 체크

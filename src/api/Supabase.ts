@@ -50,6 +50,10 @@ export interface ProblemInfo {
   motherTongTag: SelectedTag | null;
   integratedTag: SelectedTag | null;
   customTags: TagWithId[];
+  editedBase64?: string;
+  editedBBox?: BBox;
+  answerEditedBase64?: string;
+  answerEditedBBox?: BBox;
 }
 
 // ========== API ==========
