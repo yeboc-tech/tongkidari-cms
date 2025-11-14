@@ -316,12 +316,14 @@ export const Supabase = {
     type: ProblemTagType;
     tagIds: string[] | null;
     years?: string[];
+    grades?: string[];
     accuracyMin?: number;
     accuracyMax?: number;
   }): Promise<string[]> {
     const { type, tagIds, years, accuracyMin, accuracyMax } = params;
 
     // RPC 함수를 사용하여 데이터베이스에서 직접 join과 필터링 수행
+    // TODO: grades 파라미터는 아직 SQL 함수에 추가되지 않음
     const { data, error } = await supabase.rpc('search_problems_by_filter', {
       p_type: type,
       p_tag_ids: tagIds && tagIds.length > 0 ? tagIds : null,

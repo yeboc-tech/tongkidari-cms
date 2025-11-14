@@ -15,6 +15,8 @@ interface SocialLeftLayoutProps {
   setSelectedSubject: (subject: SubjectType) => void;
   selectedYears: Set<string>;
   setSelectedYears: (years: Set<string>) => void;
+  selectedGrades: Set<string>;
+  setSelectedGrades: (grades: Set<string>) => void;
   selectedDifficulties: Set<string>;
   setSelectedDifficulties: (difficulties: Set<string>) => void;
   questionCount: number | null;
@@ -40,6 +42,8 @@ function SocialLeftLayout({
   setSelectedSubject,
   selectedYears,
   setSelectedYears,
+  selectedGrades,
+  setSelectedGrades,
   selectedDifficulties,
   setSelectedDifficulties,
   questionCount,
@@ -58,6 +62,7 @@ function SocialLeftLayout({
   onApplyFilter,
 }: SocialLeftLayoutProps) {
   const years = ['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015', '2014', '2013'];
+  const grades = ['고3', '고2', '고1'];
   const difficulties = ['상', '중', '하'];
   const difficultyRanges: Record<string, { min: number; max: number }> = {
     '상': { min: 0, max: 39 },
@@ -82,6 +87,16 @@ function SocialLeftLayout({
 
   const clearAllYears = () => {
     setSelectedYears(new Set());
+  };
+
+  const toggleGrade = (grade: string) => {
+    const newSet = new Set(selectedGrades);
+    if (newSet.has(grade)) {
+      newSet.delete(grade);
+    } else {
+      newSet.add(grade);
+    }
+    setSelectedGrades(newSet);
   };
 
   // 연속된 난이도 범위인지 체크
@@ -310,6 +325,24 @@ function SocialLeftLayout({
                       style={selectedDifficulties.has(difficulty) ? { backgroundColor: '#ff4081' } : {}}
                     >
                       {difficulty}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-600 block mb-2">학년</label>
+                <div className="flex flex-wrap gap-2">
+                  {grades.map((grade) => (
+                    <button
+                      key={grade}
+                      onClick={() => toggleGrade(grade)}
+                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                        selectedGrades.has(grade) ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                      style={selectedGrades.has(grade) ? { backgroundColor: '#ff4081' } : {}}
+                    >
+                      {grade}
                     </button>
                   ))}
                 </div>

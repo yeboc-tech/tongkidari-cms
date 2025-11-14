@@ -24,6 +24,7 @@ function SocialPlayground() {
   const [categoryType, setCategoryType] = useState<CategoryType>('사회탐구');
   const [selectedSubject, setSelectedSubject] = useState<SubjectType>(getFirstAvailableSubject());
   const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
+  const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set());
   const [selectedDifficulties, setSelectedDifficulties] = useState<Set<string>>(new Set(['상', '중', '하']));
   const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [customCount, setCustomCount] = useState<string>('');
@@ -57,6 +58,7 @@ function SocialPlayground() {
           type: tagType,
           tagIds: includeAllTags ? null : selectedTagIds,
           years: selectedYears.size > 0 ? Array.from(selectedYears) : undefined,
+          grades: selectedGrades.size > 0 ? Array.from(selectedGrades) : undefined,
           accuracyMin: accuracyMin ? parseFloat(accuracyMin) : undefined,
           accuracyMax: accuracyMax ? parseFloat(accuracyMax) : undefined,
         });
@@ -89,6 +91,8 @@ function SocialPlayground() {
           setSelectedSubject={setSelectedSubject}
           selectedYears={selectedYears}
           setSelectedYears={setSelectedYears}
+          selectedGrades={selectedGrades}
+          setSelectedGrades={setSelectedGrades}
           selectedDifficulties={selectedDifficulties}
           setSelectedDifficulties={setSelectedDifficulties}
           questionCount={questionCount}
