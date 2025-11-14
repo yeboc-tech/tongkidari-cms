@@ -45,8 +45,8 @@ export interface OneAnswerProps {
   // 편집된 이미지 (base64)
   editedBase64?: string;
 
-  // 편집된 BBox (단일 또는 배열)
-  editedBBox?: BBox | BBox[];
+  // 편집된 BBox 배열
+  editedBBox?: BBox[];
 
   // 이벤트 핸들러
   onMotherTongSelect?: (tag: SelectedTag | null) => void;
@@ -78,9 +78,6 @@ function OneAnswer({
   const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
-  const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(
-    Array.isArray(editedBBox) ? editedBBox[0] : editedBBox
-  );
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -91,7 +88,6 @@ function OneAnswer({
   // props 변경 시 state 업데이트
   useEffect(() => {
     setCurrentBase64(editedBase64);
-    setCurrentBBox(Array.isArray(editedBBox) ? editedBBox[0] : editedBBox);
     setImageError(false);
   }, [answerId, editedBase64, editedBBox]);
 
@@ -114,7 +110,7 @@ function OneAnswer({
     }
 
     // editedBBox가 있으면 CSV 조회 없이 바로 에디터 열기
-    if (currentBBox) {
+    if (editedBBox && editedBBox.length > 0) {
       setShowBBoxEditor(true);
       return;
     }
@@ -166,9 +162,8 @@ function OneAnswer({
       // Supabase에 bboxes 배열과 base64 저장 (answerId 사용)
       await Supabase.EditedContent.upsertBBox(answerId, bboxes, base64);
 
-      // 저장 후 즉시 이미지와 첫 번째 bbox 업데이트 (표시용)
+      // 저장 후 즉시 이미지 업데이트
       setCurrentBase64(base64);
-      setCurrentBBox(bboxes.length > 0 ? bboxes[0] : undefined);
 
       alert('BBox와 이미지가 저장되었습니다.');
     } catch (error) {
@@ -203,7 +198,6 @@ function OneAnswer({
 
       // 삭제 후 원본 이미지로 복원
       setCurrentBase64(undefined);
-      setCurrentBBox(undefined);
 
       // Snackbar 표시
       setShowDeleteSnackbar(true);
@@ -496,10 +490,10 @@ function OneAnswer({
       )}
 
       {/* BBox Editor Modal - edit 모드에서만 표시 */}
-      {mode === 'edit' && showBBoxEditor && (currentBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
+      {mode === 'edit' && showBBoxEditor && (editedBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
         <BBoxEditor
-          imageUrl={getAnswerPageUrl((currentBBox || problemMetadata!.bbox[0]).page)}
-          bbox={currentBBox ? [currentBBox] : problemMetadata!.bbox}
+          imageUrl={getAnswerPageUrl((editedBBox?.[0] || problemMetadata!.bbox[0]).page)}
+          bbox={editedBBox || problemMetadata!.bbox}
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
           problemId={answerId}

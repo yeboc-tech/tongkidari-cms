@@ -33,11 +33,11 @@ function ExamPage() {
 
   // 편집된 콘텐츠 상태 (문제 ID별 base64와 bbox 맵)
   const [editedProblemBase64Map, setEditedProblemBase64Map] = useState<Map<string, string>>(new Map());
-  const [editedProblemBBoxMap, setEditedProblemBBoxMap] = useState<Map<string, BBox>>(new Map());
+  const [editedProblemBBoxMap, setEditedProblemBBoxMap] = useState<Map<string, BBox[]>>(new Map());
 
   // 편집된 해설 콘텐츠 상태 (해설 ID별 base64와 bbox 맵)
   const [editedAnswerBase64Map, setEditedAnswerBase64Map] = useState<Map<string, string>>(new Map());
-  const [editedAnswerBBoxMap, setEditedAnswerBBoxMap] = useState<Map<string, BBox>>(new Map());
+  const [editedAnswerBBoxMap, setEditedAnswerBBoxMap] = useState<Map<string, BBox[]>>(new Map());
 
   // exam_id 파싱
   const examInfo = id ? ExamId.parse(id) : null;
@@ -214,9 +214,9 @@ function ExamPage() {
         const editedContents = await Supabase.EditedContent.fetchByIds(allResourceIds);
 
         const problemBase64Map = new Map<string, string>();
-        const problemBBoxMap = new Map<string, BBox>();
+        const problemBBoxMap = new Map<string, BBox[]>();
         const answerBase64Map = new Map<string, string>();
-        const answerBBoxMap = new Map<string, BBox>();
+        const answerBBoxMap = new Map<string, BBox[]>();
 
         editedContents.forEach((ec) => {
           const isProblem = ec.resource_id.endsWith('_문제');
