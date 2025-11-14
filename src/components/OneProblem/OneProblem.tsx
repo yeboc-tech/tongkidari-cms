@@ -86,17 +86,38 @@ function OneProblem({
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
 
+  // problemId로 편집된 콘텐츠 로드
+  useEffect(() => {
+    const loadEditedContent = async () => {
+      try {
+        const editedContent = await Supabase.EditedContent.fetch(problemId);
+        if (editedContent) {
+          setCurrentBase64(editedContent.base64);
+          if (editedContent.json?.bbox) {
+            setCurrentBBox(editedContent.json.bbox);
+          }
+          setImageError(false);
+        }
+      } catch (error) {
+        console.error('Failed to load edited content:', error);
+      }
+    };
+
+    loadEditedContent();
+  }, [problemId]);
+
   // editedBase64와 editedBBox prop 변경 시 state 업데이트
   useEffect(() => {
-    setCurrentBase64(editedBase64);
-    // 새로운 base64가 설정되면 에러 상태 리셋
     if (editedBase64) {
+      setCurrentBase64(editedBase64);
       setImageError(false);
     }
   }, [editedBase64]);
 
   useEffect(() => {
-    setCurrentBBox(editedBBox);
+    if (editedBBox) {
+      setCurrentBBox(editedBBox);
+    }
   }, [editedBBox]);
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
