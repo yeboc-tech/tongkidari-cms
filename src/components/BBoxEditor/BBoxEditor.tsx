@@ -217,17 +217,17 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     setIsResizing(direction);
   };
 
-  // 더블 클릭으로 bbox 영역들을 크롭하여 세로로 합친 후 미리보기 표시
+  // 더블 클릭으로 bbox 영역들을 크롭하여 세로로 합친 후 저장
   const handleDoubleClick = async () => {
     if (!imageRef.current || !imageSize || currentBBoxes.length === 0) return;
 
     try {
-      // bbox 배열 순서 그대로 사용 (y0 정렬하지 않음)
+      // bbox 배열 순서 그대로 사용
       const sortedBBoxes = currentBBoxes;
 
       // 이미지 로드
       const img = new Image();
-      img.crossOrigin = 'anonymous'; // CORS 처리
+      img.crossOrigin = 'anonymous';
       img.src = currentImageUrl;
 
       await new Promise((resolve, reject) => {
@@ -235,7 +235,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
         img.onerror = reject;
       });
 
-      // 각 bbox의 크기 계산
+      // 각 bbox의 크기 계산 (PX 단위)
       const croppedImages = sortedBBoxes.map(bbox => ({
         bbox,
         width: bbox.x1 - bbox.x0,
@@ -266,26 +266,28 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       for (const item of croppedImages) {
         const { bbox, width, height } = item;
 
-        // 임시 캔버스에 크롭된 이미지 그리기
+        // 임시 캔버스에 크롭된 이미지 그리기 (PX 단위로 크롭)
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
         if (!tempCtx) continue;
 
         tempCanvas.width = width;
         tempCanvas.height = height;
+        // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+        // sx, sy는 원본 이미지에서 크롭할 시작 위치 (PX 단위)
         tempCtx.drawImage(img, bbox.x0, bbox.y0, width, height, 0, 0, width, height);
 
         // 메인 캔버스에 복사 (중앙 정렬)
         const offsetX = (maxWidth - width) / 2;
         ctx.drawImage(tempCanvas, offsetX, currentY);
 
-        // 합쳐진 이미지에서의 새로운 bbox 좌표 계산 (pt 단위)
+        // 합쳐진 이미지에서의 새로운 bbox 좌표 계산 (PX 단위 그대로)
         newBBoxes.push({
           page: 0, // 합쳐진 이미지는 단일 페이지
-          x0: roundToTwo(offsetX / PT_TO_PX_SCALE),
-          y0: roundToTwo(currentY / PT_TO_PX_SCALE),
-          x1: roundToTwo((offsetX + width) / PT_TO_PX_SCALE),
-          y1: roundToTwo((currentY + height) / PT_TO_PX_SCALE),
+          x0: roundToTwo(offsetX),
+          y0: roundToTwo(currentY),
+          x1: roundToTwo(offsetX + width),
+          y1: roundToTwo(currentY + height),
         });
 
         currentY += height + GAP;
@@ -295,7 +297,6 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       canvas.toBlob((blob) => {
         if (!blob) return;
 
-        // Blob을 File로 변환
         const file = new File([blob], `${problemId}_cropped.png`, {
           type: 'image/png',
         });
@@ -316,7 +317,17 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
   // 확인 다이얼로그에서 확인 버튼 클릭
   const handleConfirmSave = () => {
     if (croppedFile && croppedBBoxes) {
-      onConfirm(croppedFile, croppedBBoxes);
+      // PX → PT 변환
+      const PX_TO_PT_SCALE = 72 / 200;
+      const bboxesInPT: BBox[] = croppedBBoxes.map(bbox => ({
+        page: bbox.page,
+        x0: roundToTwo(bbox.x0 * PX_TO_PT_SCALE),
+        y0: roundToTwo(bbox.y0 * PX_TO_PT_SCALE),
+        x1: roundToTwo(bbox.x1 * PX_TO_PT_SCALE),
+        y1: roundToTwo(bbox.y1 * PX_TO_PT_SCALE),
+      }));
+
+      onConfirm(croppedFile, bboxesInPT);
       onClose();
     }
   };
@@ -478,15 +489,22 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
                 {selectedBboxIndex !== null && ` | 선택: ${selectedBboxIndex + 1}번째`}
               </p>
             </div>
-            {selectedBboxIndex !== null && (
-              <p className="text-xs">
-                Selected BBox: {'{'}page: {currentBBoxes[selectedBboxIndex].page},
-                x0: {roundToTwo(currentBBoxes[selectedBboxIndex].x0)},
-                y0: {roundToTwo(currentBBoxes[selectedBboxIndex].y0)},
-                x1: {roundToTwo(currentBBoxes[selectedBboxIndex].x1)},
-                y1: {roundToTwo(currentBBoxes[selectedBboxIndex].y1)}{'}'}
-              </p>
-            )}
+
+            {/* 모든 BBox 정보 표시 */}
+            <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2 mb-2">
+              {currentBBoxes.map((bbox, index) => (
+                <p
+                  key={index}
+                  className={`text-xs font-mono mb-1 ${selectedBboxIndex === index ? 'text-blue-600 font-bold' : 'text-gray-700'}`}
+                >
+                  [{index + 1}] (PX) {'{'}page: {bbox.page}, x0: {roundToTwo(bbox.x0)}, y0: {roundToTwo(bbox.y0)}, x1: {roundToTwo(bbox.x1)}, y1: {roundToTwo(bbox.y1)}{'}'}
+                </p>
+              ))}
+            </div>
+
+            <p className="text-xs text-gray-500">
+              💡 더블 클릭으로 저장 | 파란색: 선택된 BBox
+            </p>
           </div>
         </div>
       </div>
@@ -505,12 +523,27 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
             {/* BBox 정보들 */}
             {croppedBBoxes && (
               <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded max-h-40 overflow-y-auto">
-                <p className="font-semibold mb-2">BBoxes (pt): {croppedBBoxes.length}개</p>
-                {croppedBBoxes.map((bbox, index) => (
-                  <p key={index} className="text-xs mb-1">
-                    [{index + 1}] {'{'}page: {bbox.page}, x0: {bbox.x0}, y0: {bbox.y0}, x1: {bbox.x1}, y1: {bbox.y1}{'}'}
-                  </p>
-                ))}
+                <p className="font-semibold mb-2">BBoxes: {croppedBBoxes.length}개</p>
+                {croppedBBoxes.map((bbox, index) => {
+                  const PX_TO_PT_SCALE = 72 / 200;
+                  const bboxPT = {
+                    page: bbox.page,
+                    x0: roundToTwo(bbox.x0 * PX_TO_PT_SCALE),
+                    y0: roundToTwo(bbox.y0 * PX_TO_PT_SCALE),
+                    x1: roundToTwo(bbox.x1 * PX_TO_PT_SCALE),
+                    y1: roundToTwo(bbox.y1 * PX_TO_PT_SCALE),
+                  };
+                  return (
+                    <div key={index} className="text-xs mb-2">
+                      <p className="font-mono">
+                        [{index + 1}] PX: {'{'}page: {bbox.page}, x0: {bbox.x0}, y0: {bbox.y0}, x1: {bbox.x1}, y1: {bbox.y1}{'}'}
+                      </p>
+                      <p className="font-mono text-blue-600 ml-5">
+                        PT: {'{'}page: {bboxPT.page}, x0: {bboxPT.x0}, y0: {bboxPT.y0}, x1: {bboxPT.x1}, y1: {bboxPT.y1}{'}'}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
