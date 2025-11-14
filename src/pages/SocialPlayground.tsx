@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import SocialLeftLayout from '../components/template/SocialLeftLayout';
 import { Supabase, type ProblemInfo } from '../api/Supabase';
@@ -45,6 +45,24 @@ function SocialPlayground() {
   const handleSelectionChange = useCallback((selectedIds: string[]) => {
     setSelectedTagIds(selectedIds);
   }, []);
+
+  // 키보드 방향키로 문제 이동
+  useEffect(() => {
+    if (!showFullViewDialog) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        // 이전 문제
+        setCurrentViewIndex((prev) => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        // 다음 문제
+        setCurrentViewIndex((prev) => Math.min(searchResults.length - 1, prev + 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showFullViewDialog, searchResults.length]);
 
   // 필터 적용 버튼 클릭 시 검색 수행
   const handleApplyFilter = async () => {
