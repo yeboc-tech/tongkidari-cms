@@ -86,43 +86,12 @@ function OneProblem({
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
 
-  // problemId로 편집된 콘텐츠 로드
+  // props 변경 시 state 업데이트
   useEffect(() => {
-    // problemId가 변경되면 기존 state 리셋
-    setCurrentBase64(undefined);
-    setCurrentBBox(undefined);
+    setCurrentBase64(editedBase64);
+    setCurrentBBox(editedBBox);
     setImageError(false);
-
-    const loadEditedContent = async () => {
-      try {
-        const editedContent = await Supabase.EditedContent.fetchById(problemId);
-        if (editedContent) {
-          setCurrentBase64(editedContent.base64);
-          if (editedContent.json?.bbox) {
-            setCurrentBBox(editedContent.json.bbox);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load edited content:', error);
-      }
-    };
-
-    loadEditedContent();
-  }, [problemId]);
-
-  // editedBase64와 editedBBox prop 변경 시 state 업데이트
-  useEffect(() => {
-    if (editedBase64) {
-      setCurrentBase64(editedBase64);
-      setImageError(false);
-    }
-  }, [editedBase64]);
-
-  useEffect(() => {
-    if (editedBBox) {
-      setCurrentBBox(editedBBox);
-    }
-  }, [editedBBox]);
+  }, [problemId, editedBase64, editedBBox]);
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');

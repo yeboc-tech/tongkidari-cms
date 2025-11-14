@@ -89,7 +89,26 @@ function SocialPlayground() {
         // 2. problem_id로 모든 정보 가져오기 (accuracy_rate + problem_tags)
         const problemInfos = await Supabase.fetchProblemInfoByIds(problemIds);
 
-        setSearchResults(problemInfos);
+        // 3. 편집된 콘텐츠를 한 번에 조회 (문제 + 답안)
+        const allResourceIds = problemInfos.flatMap(info => [
+          info.problemId,
+          info.problemId.replace('_문제', '_해설')
+        ]);
+        const editedContents = await Supabase.EditedContent.fetchByIds(allResourceIds);
+
+        // 4. Map으로 변환하여 빠른 조회
+        const editedMap = new Map(editedContents.map(ec => [ec.resource_id, ec]));
+
+        // 5. problemInfos에 편집된 콘텐츠 추가
+        const enrichedInfos = problemInfos.map(info => ({
+          ...info,
+          editedBase64: editedMap.get(info.problemId)?.base64,
+          editedBBox: editedMap.get(info.problemId)?.json?.bbox,
+          answerEditedBase64: editedMap.get(info.problemId.replace('_문제', '_해설'))?.base64,
+          answerEditedBBox: editedMap.get(info.problemId.replace('_문제', '_해설'))?.json?.bbox,
+        }));
+
+        setSearchResults(enrichedInfos);
       } else {
         setSearchResults([]);
       }
@@ -181,6 +200,8 @@ function SocialPlayground() {
                     integratedTag={problemInfo.integratedTag}
                     customTags={problemInfo.customTags}
                     tagsLoading={false}
+                    editedBase64={problemInfo.editedBase64}
+                    editedBBox={problemInfo.editedBBox}
                     mode="view"
                     onMotherTongSelect={() => {}}
                     onIntegratedSelect={() => {}}
@@ -257,6 +278,8 @@ function SocialPlayground() {
                     integratedTag={searchResults[currentViewIndex].integratedTag}
                     customTags={searchResults[currentViewIndex].customTags}
                     tagsLoading={false}
+                    editedBase64={searchResults[currentViewIndex].editedBase64}
+                    editedBBox={searchResults[currentViewIndex].editedBBox}
                     mode="view"
                     onMotherTongSelect={() => {}}
                     onIntegratedSelect={() => {}}
@@ -272,6 +295,8 @@ function SocialPlayground() {
                     title={`답안 ${searchResults[currentViewIndex].questionNumber}`}
                     problemId={searchResults[currentViewIndex].problemId}
                     answerId={searchResults[currentViewIndex].problemId.replace('_문제', '_해설')}
+                    editedBase64={searchResults[currentViewIndex].answerEditedBase64}
+                    editedBBox={searchResults[currentViewIndex].answerEditedBBox}
                     mode="view"
                   />
                 </div>
