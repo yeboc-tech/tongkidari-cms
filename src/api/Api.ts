@@ -335,7 +335,7 @@ export const Api = {
           // bbox 컬럼(11번째)을 JSON 파싱하여 배열로 변환
           let bbox: BBox[] = [];
           try {
-            const parsedBBoxArray = JSON.parse(columns[11]);
+            const parsedBBoxArray = JSON.parse(columns[12]);
 
             // parsedBBoxArray가 배열인지 확인
             if (Array.isArray(parsedBBoxArray)) {
@@ -352,25 +352,6 @@ export const Api = {
             console.error('Failed to parse bbox:', e, columns[11]);
             // 파싱 실패 시 빈 배열
             bbox = [];
-          }
-
-          if (columns[6] === '16') {
-            console.log({
-              doc_type: columns[0],
-              id: columns[1],
-              subject: columns[2],
-              year: columns[3],
-              month: columns[4],
-              target: columns[5],
-              problem_number: columns[6],
-              has_image: columns[7],
-              image_path: columns[8],
-              source_pdf: columns[9],
-              page: columns[10],
-              bbox,
-              exam_id: columns[12],
-              conversion_error: columns[13] || '',
-            });
           }
 
           return {
