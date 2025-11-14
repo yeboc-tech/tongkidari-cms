@@ -81,6 +81,7 @@ function OneAnswer({
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
   const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(editedBBox);
+  const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -189,6 +190,30 @@ function OneAnswer({
       }, 1000);
     } catch (error) {
       console.error('Failed to copy:', error);
+    }
+  };
+
+  // 편집된 이미지 삭제 핸들러
+  const handleDeleteEditedImage = async () => {
+    if (!window.confirm('편집된 이미지를 지우시겠습니까?')) {
+      return;
+    }
+
+    try {
+      await Supabase.EditedContent.delete(answerId);
+
+      // 삭제 후 원본 이미지로 복원
+      setCurrentBase64(undefined);
+      setCurrentBBox(undefined);
+
+      // Snackbar 표시
+      setShowDeleteSnackbar(true);
+      setTimeout(() => {
+        setShowDeleteSnackbar(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to delete edited image:', error);
+      alert('이미지 삭제에 실패했습니다.');
     }
   };
 
@@ -405,6 +430,17 @@ function OneAnswer({
           }}
         />
 
+        {/* 편집된 이미지 삭제 버튼 */}
+        {currentBase64 && (
+          <button
+            onClick={handleDeleteEditedImage}
+            className="absolute bottom-1 right-1 bg-gray-600/40 hover:bg-gray-700/60 text-white rounded-full w-6 h-6 flex items-center justify-center transition-all shadow-md text-lg leading-none"
+            title="편집된 이미지 삭제"
+          >
+            ×
+          </button>
+        )}
+
         {/* Drag Overlay - edit 모드에서만 표시 */}
         {mode === 'edit' && isDragging && (
           <div className="absolute inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed rounded-lg flex items-center justify-center z-40">
@@ -469,6 +505,18 @@ function OneAnswer({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Success Snackbar */}
+      {showDeleteSnackbar && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>편집된 이미지가 삭제되었습니다</span>
           </div>
         </div>
       )}
