@@ -229,6 +229,30 @@ export const Supabase = {
     },
 
     /**
+     * base64 이미지만 저장 (json은 빈 객체로)
+     * @param resourceId - 리소스 ID
+     * @param base64 - 이미지의 base64 문자열
+     */
+    async upsertBase64Only(resourceId: string, base64: string): Promise<void> {
+      const { error } = await supabase.from('edited_contents').upsert(
+        {
+          resource_id: resourceId,
+          json: {},
+          base64,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'resource_id',
+        },
+      );
+
+      if (error) {
+        console.error('Error upserting base64 content:', error);
+        throw error;
+      }
+    },
+
+    /**
      * 편집된 콘텐츠 조회
      * @param resourceId - 리소스 ID
      * @returns 편집된 콘텐츠 또는 null

@@ -77,6 +77,10 @@ function OneAnswer({
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
   const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(editedBBox);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedFile, setDraggedFile] = useState<File | null>(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
 
   // editedBase64와 editedBBox prop 변경 시 state 업데이트
   useEffect(() => {
@@ -179,11 +183,102 @@ function OneAnswer({
     }
   };
 
+  // 드래그 앤 드롭 핸들러
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.currentTarget;
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (!target.contains(relatedTarget)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setDraggedFile(file);
+        const previewUrl = URL.createObjectURL(file);
+        setUploadPreviewUrl(previewUrl);
+        setShowUploadDialog(true);
+      } else {
+        alert('이미지 파일만 업로드할 수 있습니다.');
+      }
+    }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!draggedFile) return;
+
+    try {
+      // File을 base64로 변환
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          const base64String = result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(draggedFile);
+      });
+
+      // Supabase에 base64만 저장
+      await Supabase.EditedContent.upsertBase64Only(answerId, base64);
+
+      // 업로드 후 이미지 업데이트
+      setCurrentBase64(base64);
+
+      // 다이얼로그 닫기 및 정리
+      setShowUploadDialog(false);
+      if (uploadPreviewUrl) {
+        URL.revokeObjectURL(uploadPreviewUrl);
+      }
+      setUploadPreviewUrl(null);
+      setDraggedFile(null);
+
+      alert('이미지가 업로드되었습니다.');
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      alert('이미지 업로드에 실패했습니다.');
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setShowUploadDialog(false);
+    if (uploadPreviewUrl) {
+      URL.revokeObjectURL(uploadPreviewUrl);
+    }
+    setUploadPreviewUrl(null);
+    setDraggedFile(null);
+  };
+
   return (
     <div
-      className={`border-2 rounded-lg p-4 transition-colors ${
+      className={`border-2 rounded-lg p-4 transition-colors relative ${
         currentBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
       }`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       {/* 헤더: 제목과 복사 버튼 */}
       <div className="flex items-center justify-between mb-3">
@@ -317,6 +412,52 @@ function OneAnswer({
           problemId={answerId}
           getPageUrl={getAnswerPageUrl}
         />
+      )}
+
+      {/* Drag Overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed rounded-lg flex items-center justify-center z-40">
+          <div className="bg-white px-6 py-4 rounded-lg shadow-lg">
+            <svg className="w-12 h-12 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <p className="text-lg font-semibold text-gray-700">이미지를 여기에 놓으세요</p>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Confirmation Dialog */}
+      {showUploadDialog && uploadPreviewUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-4">이미지 업로드 확인</h3>
+              <div className="mb-4 bg-gray-100 rounded-lg overflow-hidden">
+                <img src={uploadPreviewUrl} alt="Upload preview" className="w-full h-auto" />
+              </div>
+              <p className="text-gray-700 mb-6">해당 이미지로 업로드하시겠습니까?</p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={handleCancelUpload}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleConfirmUpload}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  업로드
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
