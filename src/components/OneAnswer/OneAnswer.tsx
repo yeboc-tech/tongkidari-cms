@@ -315,6 +315,7 @@ function OneAnswer({
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
           problemId={answerId}
+          getPageUrl={getAnswerPageUrl}
         />
       )}
     </div>

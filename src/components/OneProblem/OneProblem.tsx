@@ -410,6 +410,7 @@ function OneProblem({
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
           problemId={problemId}
+          getPageUrl={getProblemPageUrl}
         />
       )}
 

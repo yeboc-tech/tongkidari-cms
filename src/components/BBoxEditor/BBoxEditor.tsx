@@ -7,9 +7,10 @@ interface BBoxEditorProps {
   onClose: () => void;
   onConfirm: (file: File, bbox: BBox) => void;
   problemId: string;
+  getPageUrl: (page: number) => string;
 }
 
-function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEditorProps) {
+function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, problemId, getPageUrl }: BBoxEditorProps) {
   // bbox 배열의 첫 번째 아이템 사용 (없으면 기본값)
   const firstBBox = bbox.length > 0 ? bbox[0] : { page: 0, x0: 0, y0: 0, x1: 0, y1: 0 };
   // pt to px 변환 (200 DPI)
@@ -30,6 +31,8 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
   };
 
   const [currentBBox, setCurrentBBox] = useState<BBox>(bboxInPx);
+  const [currentPage, setCurrentPage] = useState(firstBBox.page);
+  const [currentImageUrl, setCurrentImageUrl] = useState(initialImageUrl);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -42,6 +45,23 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 페이지 변경 핸들러
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      setCurrentImageUrl(getPageUrl(newPage));
+      setCurrentBBox({ ...currentBBox, page: newPage });
+    }
+  };
+
+  const handleNextPage = () => {
+    const newPage = currentPage + 1;
+    setCurrentPage(newPage);
+    setCurrentImageUrl(getPageUrl(newPage));
+    setCurrentBBox({ ...currentBBox, page: newPage });
+  };
+
   useEffect(() => {
     // 이미지 로드 후 크기 가져오기
     const img = new Image();
@@ -49,10 +69,10 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
       setImageSize({ width: img.width, height: img.height });
     };
     img.onerror = () => {
-      setLoadError('이미지를 불러올 수 없습니다: ' + imageUrl);
+      setLoadError('이미지를 불러올 수 없습니다: ' + currentImageUrl);
     };
-    img.src = imageUrl;
-  }, [imageUrl]);
+    img.src = currentImageUrl;
+  }, [currentImageUrl]);
 
   // 이미지 로드 후 bbox 위치로 스크롤
   useEffect(() => {
@@ -193,7 +213,7 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
       // 이미지 로드
       const img = new Image();
       img.crossOrigin = 'anonymous'; // CORS 처리
-      img.src = imageUrl;
+      img.src = currentImageUrl;
 
       await new Promise((resolve, reject) => {
         img.onload = resolve;
@@ -275,7 +295,7 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-4 rounded-lg">
           <p>Loading image...</p>
-          <p className="text-xs text-gray-500 mt-2">{imageUrl}</p>
+          <p className="text-xs text-gray-500 mt-2">{currentImageUrl}</p>
         </div>
       </div>
     );
@@ -285,7 +305,7 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
     <>
       {/* BBox Editor */}
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="relative bg-white rounded-lg p-6 max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">BBox Editor - {problemId}</h2>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold">
@@ -303,7 +323,7 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
           <div className="relative inline-block">
             <img
               ref={imageRef}
-              src={imageUrl}
+              src={currentImageUrl}
               alt="Problem"
               className="max-w-full"
               draggable={false}
@@ -366,11 +386,31 @@ function BBoxEditor({ imageUrl, bbox, onClose, onConfirm, problemId }: BBoxEdito
           </div>
         </div>
 
-          <div className="mt-4 text-sm text-gray-600">
+          {/* Page Navigation Buttons */}
+          <button
+            onClick={handlePrevPage}
+            disabled={currentPage === 0}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-colors text-xl font-bold"
+            title="이전 페이지"
+          >
+            ←
+          </button>
+          <button
+            onClick={handleNextPage}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-colors text-xl font-bold"
+            title="다음 페이지"
+          >
+            →
+          </button>
+
+          <div className="mt-4 text-sm text-gray-600 flex justify-between items-center">
             <p>
               Current BBox: {'{'}page: {currentBBox.page}, x0: {roundToTwo(currentBBox.x0)}, y0:{' '}
               {roundToTwo(currentBBox.y0)}, x1: {roundToTwo(currentBBox.x1)}, y1: {roundToTwo(currentBBox.y1)}
               {'}'}
+            </p>
+            <p className="font-semibold">
+              페이지: {currentPage + 1}
             </p>
           </div>
         </div>
