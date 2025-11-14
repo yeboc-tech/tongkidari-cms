@@ -29,8 +29,6 @@ interface SocialLeftLayoutProps {
   setAccuracyMin: (value: string) => void;
   accuracyMax: string;
   setAccuracyMax: (value: string) => void;
-  includeAllTags: boolean;
-  setIncludeAllTags: (includeAll: boolean) => void;
   onSelectionChange: (selectedIds: string[]) => void;
   onApplyFilter: () => void;
 }
@@ -56,8 +54,6 @@ function SocialLeftLayout({
   setAccuracyMin,
   accuracyMax,
   setAccuracyMax,
-  includeAllTags,
-  setIncludeAllTags,
   onSelectionChange,
   onApplyFilter,
 }: SocialLeftLayoutProps) {
@@ -240,29 +236,8 @@ function SocialLeftLayout({
             </div>
           )}
 
-          {/* 전체태그포함 체크박스 */}
-          <div className="mb-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeAllTags}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setIncludeAllTags(checked);
-                  if (checked) {
-                    // 전체태그 포함 시 빈 배열 전달
-                    onSelectionChange([]);
-                  }
-                }}
-                className="w-4 h-4 rounded border-gray-300 focus:ring-2"
-                style={{ accentColor: '#ff4081' }}
-              />
-              <span className="text-sm text-gray-700">전체태그포함</span>
-            </label>
-          </div>
-
           {currentData.length > 0 ? (
-            <div className={includeAllTags ? 'opacity-50 pointer-events-none' : ''}>
+            <div>
               <ChapterTree data={currentData} onSelectionChange={handleSelectionChange} accentColor="#ff4081" />
             </div>
           ) : (
