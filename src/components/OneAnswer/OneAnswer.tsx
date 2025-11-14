@@ -30,15 +30,18 @@ export interface OneAnswerProps {
   problemId: string;
   answerId: string;
 
+  // 모드
+  mode?: 'edit' | 'view';
+
   // 정확도 데이터
   accuracyData?: AccuracyRate;
-  accuracyLoading: boolean;
+  accuracyLoading?: boolean;
 
   // 태그 데이터
-  motherTongTag: SelectedTag | null;
-  integratedTag: SelectedTag | null;
-  customTags: TagWithId[];
-  tagsLoading: boolean;
+  motherTongTag?: SelectedTag | null;
+  integratedTag?: SelectedTag | null;
+  customTags?: TagWithId[];
+  tagsLoading?: boolean;
 
   // 편집된 이미지 (base64)
   editedBase64?: string;
@@ -47,9 +50,9 @@ export interface OneAnswerProps {
   editedBBox?: BBox;
 
   // 이벤트 핸들러
-  onMotherTongSelect: (tag: SelectedTag | null) => void;
-  onIntegratedSelect: (tag: SelectedTag | null) => void;
-  onCustomTagsChange: (tags: TagWithId[]) => void;
+  onMotherTongSelect?: (tag: SelectedTag | null) => void;
+  onIntegratedSelect?: (tag: SelectedTag | null) => void;
+  onCustomTagsChange?: (tags: TagWithId[]) => void;
 }
 
 // ========== Component ==========
@@ -59,17 +62,18 @@ function OneAnswer({
   title,
   problemId,
   answerId,
+  mode = 'edit',
   accuracyData,
-  accuracyLoading,
-  motherTongTag: motherTongTag,
-  integratedTag,
-  customTags,
-  tagsLoading,
+  accuracyLoading = false,
+  motherTongTag = null,
+  integratedTag = null,
+  customTags = [],
+  tagsLoading = false,
   editedBase64,
   editedBBox,
-  onMotherTongSelect: onMotherTongSelect,
-  onIntegratedSelect,
-  onCustomTagsChange,
+  onMotherTongSelect = () => {},
+  onIntegratedSelect = () => {},
+  onCustomTagsChange = () => {},
 }: OneAnswerProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [showBBoxEditor, setShowBBoxEditor] = useState(false);
@@ -104,6 +108,11 @@ function OneAnswer({
 
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {
+    // view 모드에서는 이미지 클릭 불가
+    if (mode === 'view') {
+      return;
+    }
+
     // editedBBox가 있으면 CSV 조회 없이 바로 에디터 열기
     if (currentBBox) {
       setShowBBoxEditor(true);
@@ -317,8 +326,8 @@ function OneAnswer({
         </button>
       </div>
 
-      {/* 정확도 정보 */}
-      {accuracyData && (
+      {/* 정확도 정보 - edit 모드에서만 표시 */}
+      {mode === 'edit' && accuracyData && (
         <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
           <div className="bg-blue-50 px-2 py-1 rounded">
             <span className="text-gray-600">정답률</span>
@@ -339,42 +348,44 @@ function OneAnswer({
         </div>
       )}
 
-      {accuracyLoading && !accuracyData && (
+      {mode === 'edit' && accuracyLoading && !accuracyData && (
         <div className="mb-3 text-xs text-gray-500">정확도 정보를 불러오는 중...</div>
       )}
 
-      {/* 태그 입력기 섹션 */}
-      <div className="mb-4 space-y-3">
-        {tagsLoading ? (
-          <div className="text-xs text-gray-500 text-center py-2">태그 정보를 불러오는 중...</div>
-        ) : (
-          <>
-            {/* 마더텅 단원 태그 */}
-            <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
+      {/* 태그 입력기 섹션 - edit 모드에서만 표시 */}
+      {mode === 'edit' && (
+        <div className="mb-4 space-y-3">
+          {tagsLoading ? (
+            <div className="text-xs text-gray-500 text-center py-2">태그 정보를 불러오는 중...</div>
+          ) : (
+            <>
+              {/* 마더텅 단원 태그 */}
+              <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
 
-            {/* 자세한통사 단원 태그 */}
-            <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
+              {/* 자세한통사 단원 태그 */}
+              <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
 
-            {/* 커스텀 태그 */}
-            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} subject={subject} />
-          </>
-        )}
-      </div>
+              {/* 커스텀 태그 */}
+              <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} subject={subject} />
+            </>
+          )}
+        </div>
+      )}
 
       {/* 해설 이미지 */}
       <div
         className="bg-gray-100 rounded-lg overflow-hidden relative"
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        onDragEnter={mode === 'edit' ? handleDragEnter : undefined}
+        onDragLeave={mode === 'edit' ? handleDragLeave : undefined}
+        onDragOver={mode === 'edit' ? handleDragOver : undefined}
+        onDrop={mode === 'edit' ? handleDrop : undefined}
       >
         <img
           src={imageUrl}
           alt={title}
-          className="w-full h-auto cursor-pointer hover:opacity-80 transition-opacity"
+          className={`w-full h-auto transition-opacity ${mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''}`}
           loading="lazy"
-          onClick={handleImageClick}
+          onClick={mode === 'edit' ? handleImageClick : undefined}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
@@ -394,8 +405,8 @@ function OneAnswer({
           }}
         />
 
-        {/* Drag Overlay */}
-        {isDragging && (
+        {/* Drag Overlay - edit 모드에서만 표시 */}
+        {mode === 'edit' && isDragging && (
           <div className="absolute inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed rounded-lg flex items-center justify-center z-40">
             <div className="bg-white px-6 py-4 rounded-lg shadow-lg">
               <svg className="w-12 h-12 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,8 +423,8 @@ function OneAnswer({
         )}
       </div>
 
-      {/* Loading Indicator */}
-      {loadingMetadata && (
+      {/* Loading Indicator - edit 모드에서만 표시 */}
+      {mode === 'edit' && loadingMetadata && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg">
             <p>메타데이터를 불러오는 중...</p>
@@ -421,8 +432,8 @@ function OneAnswer({
         </div>
       )}
 
-      {/* BBox Editor Modal */}
-      {showBBoxEditor && (currentBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
+      {/* BBox Editor Modal - edit 모드에서만 표시 */}
+      {mode === 'edit' && showBBoxEditor && (currentBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
         <BBoxEditor
           imageUrl={getAnswerPageUrl((currentBBox || problemMetadata!.bbox[0]).page)}
           bbox={currentBBox ? [currentBBox] : problemMetadata!.bbox}
@@ -433,8 +444,8 @@ function OneAnswer({
         />
       )}
 
-      {/* Upload Confirmation Dialog */}
-      {showUploadDialog && uploadPreviewUrl && (
+      {/* Upload Confirmation Dialog - edit 모드에서만 표시 */}
+      {mode === 'edit' && showUploadDialog && uploadPreviewUrl && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
             <div className="p-6">

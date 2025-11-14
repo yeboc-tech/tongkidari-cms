@@ -4,6 +4,7 @@ import SocialLeftLayout from '../components/template/SocialLeftLayout';
 import { Supabase, type ProblemInfo } from '../api/Supabase';
 import { PROBLEM_TAG_TYPES } from '../ssot/PROBLEM_TAG_TYPES';
 import OneProblem from '../components/OneProblem';
+import OneAnswer from '../components/OneAnswer';
 import { SUBJECTS } from '../ssot/subjects';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 
@@ -23,8 +24,10 @@ function SocialPlayground() {
 
   const [categoryType, setCategoryType] = useState<CategoryType>('사회탐구');
   const [selectedSubject, setSelectedSubject] = useState<SubjectType>(getFirstAvailableSubject());
-  const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
-  const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set());
+  const [selectedYears, setSelectedYears] = useState<Set<string>>(
+    new Set(['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015', '2014', '2013'])
+  );
+  const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set(['고3']));
   const [selectedDifficulties, setSelectedDifficulties] = useState<Set<string>>(new Set(['상', '중', '하']));
   const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [customCount, setCustomCount] = useState<string>('');
@@ -35,6 +38,8 @@ function SocialPlayground() {
   const [includeAllTags, setIncludeAllTags] = useState(false);
   const [searchResults, setSearchResults] = useState<ProblemInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showFullViewDialog, setShowFullViewDialog] = useState(false);
+  const [currentViewIndex, setCurrentViewIndex] = useState(0);
 
   // ChapterTree에서 선택된 ID들을 받아 저장
   const handleSelectionChange = useCallback((selectedIds: string[]) => {
@@ -116,7 +121,21 @@ function SocialPlayground() {
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">문제 목록</h2>
-              <span className="text-sm text-gray-500">총 {searchResults.length}개</span>
+              <div className="flex items-center gap-2">
+                {searchResults.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setCurrentViewIndex(0);
+                      setShowFullViewDialog(true);
+                    }}
+                    className="px-3 py-1 text-xs rounded border-2 transition-all hover:bg-pink-50"
+                    style={{ borderColor: '#ff00a1', color: '#ff00a1' }}
+                  >
+                    해설보기
+                  </button>
+                )}
+                <span className="text-sm text-gray-500">{searchResults.length}문제</span>
+              </div>
             </div>
           </div>
 
@@ -160,6 +179,89 @@ function SocialPlayground() {
           </div>
         </div>
       </div>
+
+      {/* 해설보기 다이얼로그 */}
+      {showFullViewDialog && searchResults.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-[95vw] h-[95vh] flex flex-col">
+            {/* 헤더 */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                해설보기 ({currentViewIndex + 1} / {searchResults.length})
+              </h2>
+              <button
+                onClick={() => setShowFullViewDialog(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* 네비게이션 */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-center gap-4">
+              <button
+                onClick={() => setCurrentViewIndex((prev) => Math.max(0, prev - 1))}
+                disabled={currentViewIndex === 0}
+                className="px-4 py-2 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: currentViewIndex === 0 ? '#e0e0e0' : '#ff00a1', color: 'white' }}
+              >
+                이전
+              </button>
+              <span className="text-sm text-gray-600">
+                {currentViewIndex + 1} / {searchResults.length}
+              </span>
+              <button
+                onClick={() => setCurrentViewIndex((prev) => Math.min(searchResults.length - 1, prev + 1))}
+                disabled={currentViewIndex === searchResults.length - 1}
+                className="px-4 py-2 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: currentViewIndex === searchResults.length - 1 ? '#e0e0e0' : '#ff00a1',
+                  color: 'white',
+                }}
+              >
+                다음
+              </button>
+            </div>
+
+            {/* 문제/답안 영역 */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 gap-6">
+                {/* 왼쪽: 문제 */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">문제</h3>
+                  <OneProblem
+                    questionNumber={searchResults[currentViewIndex].questionNumber}
+                    title={`문제 ${searchResults[currentViewIndex].questionNumber}`}
+                    problemId={searchResults[currentViewIndex].problemId}
+                    accuracyData={searchResults[currentViewIndex].accuracyData}
+                    accuracyLoading={false}
+                    motherTongTag={searchResults[currentViewIndex].motherTongTag}
+                    integratedTag={searchResults[currentViewIndex].integratedTag}
+                    customTags={searchResults[currentViewIndex].customTags}
+                    tagsLoading={false}
+                    mode="view"
+                    onMotherTongSelect={() => {}}
+                    onIntegratedSelect={() => {}}
+                    onCustomTagsChange={() => {}}
+                  />
+                </div>
+
+                {/* 오른쪽: 답안 */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">답안</h3>
+                  <OneAnswer
+                    questionNumber={searchResults[currentViewIndex].questionNumber}
+                    title={`답안 ${searchResults[currentViewIndex].questionNumber}`}
+                    problemId={searchResults[currentViewIndex].problemId}
+                    answerId={searchResults[currentViewIndex].problemId.replace('_문제', '_해설')}
+                    mode="view"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

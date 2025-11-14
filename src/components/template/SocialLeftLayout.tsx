@@ -336,11 +336,11 @@ function SocialLeftLayout({
                   {grades.map((grade) => (
                     <button
                       key={grade}
-                      onClick={() => toggleGrade(grade)}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        selectedGrades.has(grade) ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      disabled
+                      className={`px-3 py-1 text-xs rounded-lg cursor-not-allowed ${
+                        selectedGrades.has(grade) ? 'text-white' : 'bg-gray-100 text-gray-400'
                       }`}
-                      style={selectedGrades.has(grade) ? { backgroundColor: '#ff4081' } : {}}
+                      style={selectedGrades.has(grade) ? { backgroundColor: '#ff4081', opacity: 0.6 } : {}}
                     >
                       {grade}
                     </button>
@@ -382,7 +382,7 @@ function SocialLeftLayout({
           </div>
 
           {/* 문제수 */}
-          <div className="p-4 border-t border-gray-200">
+          {/* <div className="p-4 border-t border-gray-200">
             <label className="text-xs text-gray-600 block mb-2">문제수</label>
             <div className="flex flex-wrap gap-2">
               {questionCounts.map((count) => (
@@ -430,7 +430,7 @@ function SocialLeftLayout({
                 <span className="text-xs text-gray-600">문제</span>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
