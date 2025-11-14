@@ -222,7 +222,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     if (!imageRef.current || !imageSize || currentBBoxes.length === 0) return;
 
     try {
-      // bbox 배열 순서 그대로 사용
+      // 현재 수정된 bbox 배열 사용
       const sortedBBoxes = currentBBoxes;
 
       // 이미지 로드
@@ -261,7 +261,6 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
 
       // 각 bbox 영역을 크롭하여 세로로 합치기
       let currentY = 0;
-      const newBBoxes: BBox[] = [];
 
       for (const item of croppedImages) {
         const { bbox, width, height } = item;
@@ -281,15 +280,6 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
         const offsetX = (maxWidth - width) / 2;
         ctx.drawImage(tempCanvas, offsetX, currentY);
 
-        // 합쳐진 이미지에서의 새로운 bbox 좌표 계산 (PX 단위 그대로)
-        newBBoxes.push({
-          page: 0, // 합쳐진 이미지는 단일 페이지
-          x0: roundToTwo(offsetX),
-          y0: roundToTwo(currentY),
-          x1: roundToTwo(offsetX + width),
-          y1: roundToTwo(currentY + height),
-        });
-
         currentY += height + GAP;
       }
 
@@ -305,7 +295,8 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
         const previewUrl = URL.createObjectURL(blob);
         setCroppedImageUrl(previewUrl);
         setCroppedFile(file);
-        setCroppedBBoxes(newBBoxes);
+        // 원본 페이지에서의 bbox 위치를 그대로 사용 (PX 단위)
+        setCroppedBBoxes(currentBBoxes);
         setShowConfirmDialog(true);
       }, 'image/png');
     } catch (error) {
