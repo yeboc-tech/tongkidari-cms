@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter(
     FROM problem_tags pt
     INNER JOIN accuracy_rate ar ON pt.problem_id = ar.problem_id
     WHERE pt.type = p_type
-      AND pt.tag_ids && p_tag_ids  -- overlaps 연산자
+      AND (p_tag_ids IS NULL OR pt.tag_ids && p_tag_ids)  -- NULL이면 전체 조회
       AND (p_years IS NULL OR split_part(pt.problem_id, '_', 3) = ANY(p_years))
       AND (p_accuracy_min IS NULL OR ar.accuracy_rate >= p_accuracy_min)
       AND (p_accuracy_max IS NULL OR ar.accuracy_rate <= p_accuracy_max);

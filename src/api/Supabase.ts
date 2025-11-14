@@ -314,7 +314,7 @@ export const Supabase = {
    */
   async searchByFilter(params: {
     type: ProblemTagType;
-    tagIds: string[];
+    tagIds: string[] | null;
     years?: string[];
     accuracyMin?: number;
     accuracyMax?: number;
@@ -324,7 +324,7 @@ export const Supabase = {
     // RPC 함수를 사용하여 데이터베이스에서 직접 join과 필터링 수행
     const { data, error } = await supabase.rpc('search_problems_by_filter', {
       p_type: type,
-      p_tag_ids: tagIds,
+      p_tag_ids: tagIds && tagIds.length > 0 ? tagIds : null,
       p_years: years && years.length > 0 ? years : null,
       p_accuracy_min: accuracyMin ?? null,
       p_accuracy_max: accuracyMax ?? null,

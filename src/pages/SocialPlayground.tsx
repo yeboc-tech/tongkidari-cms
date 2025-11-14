@@ -31,6 +31,7 @@ function SocialPlayground() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [accuracyMin, setAccuracyMin] = useState<string>('0');
   const [accuracyMax, setAccuracyMax] = useState<string>('100');
+  const [includeAllTags, setIncludeAllTags] = useState(false);
   const [searchResults, setSearchResults] = useState<ProblemInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -43,16 +44,18 @@ function SocialPlayground() {
   const handleApplyFilter = async () => {
     setIsLoading(true);
     try {
-      if (selectedTagIds.length > 0) {
+      // 전체태그포함이 체크되었거나 selectedTagIds가 있을 때만 검색
+      if (includeAllTags || selectedTagIds.length > 0) {
         // categoryType에 따라 적절한 태그 타입 선택
         const tagType = categoryType === '통합사회'
           ? PROBLEM_TAG_TYPES.DETAIL_TONGSA
           : PROBLEM_TAG_TYPES.MOTHER;
 
         // 1. 필터 조건으로 problem_id 목록 검색
+        // 전체태그포함이면 null, 아니면 선택된 태그 ID 전달
         const problemIds = await Supabase.searchByFilter({
           type: tagType,
-          tagIds: selectedTagIds,
+          tagIds: includeAllTags ? null : selectedTagIds,
           years: selectedYears.size > 0 ? Array.from(selectedYears) : undefined,
           accuracyMin: accuracyMin ? parseFloat(accuracyMin) : undefined,
           accuracyMax: accuracyMax ? parseFloat(accuracyMax) : undefined,
@@ -98,6 +101,8 @@ function SocialPlayground() {
           setAccuracyMin={setAccuracyMin}
           accuracyMax={accuracyMax}
           setAccuracyMax={setAccuracyMax}
+          includeAllTags={includeAllTags}
+          setIncludeAllTags={setIncludeAllTags}
           onSelectionChange={handleSelectionChange}
           onApplyFilter={handleApplyFilter}
         />
