@@ -98,9 +98,9 @@ function SocialPlayground() {
         const enrichedInfos = problemInfos.map(info => ({
           ...info,
           editedBase64: editedMap.get(info.problemId)?.base64,
-          editedBBox: editedMap.get(info.problemId)?.json?.bbox,
+          editedBBox: editedMap.get(info.problemId)?.json,
           answerEditedBase64: editedMap.get(info.problemId.replace('_문제', '_해설'))?.base64,
-          answerEditedBBox: editedMap.get(info.problemId.replace('_문제', '_해설'))?.json?.bbox,
+          answerEditedBBox: editedMap.get(info.problemId.replace('_문제', '_해설'))?.json,
         }));
 
         // 6. tag_ids의 마지막 태그로 정렬

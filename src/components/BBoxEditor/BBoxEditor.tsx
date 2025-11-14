@@ -222,8 +222,8 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     if (!imageRef.current || !imageSize || currentBBoxes.length === 0) return;
 
     try {
-      // bbox를 y0 기준으로 정렬 (위에서 아래로)
-      const sortedBBoxes = [...currentBBoxes].sort((a, b) => a.y0 - b.y0);
+      // bbox 배열 순서 그대로 사용 (y0 정렬하지 않음)
+      const sortedBBoxes = currentBBoxes;
 
       // 이미지 로드
       const img = new Image();
@@ -243,7 +243,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       }));
 
       // 전체 캔버스 크기 계산
-      const GAP = 8; // 이미지 간 간격
+      const GAP = 2; // 이미지 간 간격
       const maxWidth = Math.max(...croppedImages.map(item => item.width));
       const totalHeight = croppedImages.reduce((sum, item) => sum + item.height, 0) + GAP * (croppedImages.length - 1);
 
@@ -254,6 +254,10 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
 
       canvas.width = maxWidth;
       canvas.height = totalHeight;
+
+      // 배경을 흰색으로 채우기
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, maxWidth, totalHeight);
 
       // 각 bbox 영역을 크롭하여 세로로 합치기
       let currentY = 0;

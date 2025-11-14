@@ -45,8 +45,8 @@ export interface OneAnswerProps {
   // 편집된 이미지 (base64)
   editedBase64?: string;
 
-  // 편집된 BBox
-  editedBBox?: BBox;
+  // 편집된 BBox (단일 또는 배열)
+  editedBBox?: BBox | BBox[];
 
   // 이벤트 핸들러
   onMotherTongSelect?: (tag: SelectedTag | null) => void;
@@ -78,7 +78,9 @@ function OneAnswer({
   const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
-  const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(editedBBox);
+  const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(
+    Array.isArray(editedBBox) ? editedBBox[0] : editedBBox
+  );
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -89,7 +91,7 @@ function OneAnswer({
   // props 변경 시 state 업데이트
   useEffect(() => {
     setCurrentBase64(editedBase64);
-    setCurrentBBox(editedBBox);
+    setCurrentBBox(Array.isArray(editedBBox) ? editedBBox[0] : editedBBox);
     setImageError(false);
   }, [answerId, editedBase64, editedBBox]);
 

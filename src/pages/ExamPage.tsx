@@ -229,11 +229,11 @@ function ExamPage() {
             }
           }
 
-          if (ec.json?.bbox) {
+          if (ec.json) {
             if (isProblem) {
-              problemBBoxMap.set(ec.resource_id, ec.json.bbox);
+              problemBBoxMap.set(ec.resource_id, ec.json);
             } else {
-              answerBBoxMap.set(ec.resource_id, ec.json.bbox);
+              answerBBoxMap.set(ec.resource_id, ec.json);
             }
           }
         });

@@ -51,9 +51,9 @@ export interface ProblemInfo {
   integratedTag: SelectedTag | null;
   customTags: TagWithId[];
   editedBase64?: string;
-  editedBBox?: BBox;
+  editedBBox?: BBox | BBox[];
   answerEditedBase64?: string;
-  answerEditedBBox?: BBox;
+  answerEditedBBox?: BBox | BBox[];
 }
 
 // ========== API ==========
@@ -217,7 +217,7 @@ export const Supabase = {
       const { error } = await supabase.from('edited_contents').upsert(
         {
           resource_id: resourceId,
-          json: { bbox },
+          json: bbox,
           base64,
           updated_at: new Date().toISOString(),
         },
