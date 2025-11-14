@@ -82,18 +82,44 @@ function OneAnswer({
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
   const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
 
+  // answerId로 편집된 콘텐츠 로드
+  useEffect(() => {
+    const loadEditedContent = async () => {
+      try {
+        const editedContent = await Supabase.EditedContent.fetch(answerId);
+        if (editedContent) {
+          setCurrentBase64(editedContent.base64);
+          if (editedContent.json?.bbox) {
+            setCurrentBBox(editedContent.json.bbox);
+          }
+          setImageError(false);
+        }
+      } catch (error) {
+        console.error('Failed to load edited content:', error);
+      }
+    };
+
+    loadEditedContent();
+  }, [answerId]);
+
   // editedBase64와 editedBBox prop 변경 시 state 업데이트
   useEffect(() => {
-    setCurrentBase64(editedBase64);
+    if (editedBase64) {
+      setCurrentBase64(editedBase64);
+      setImageError(false);
+    }
   }, [editedBase64]);
 
   useEffect(() => {
-    setCurrentBBox(editedBBox);
+    if (editedBBox) {
+      setCurrentBBox(editedBBox);
+    }
   }, [editedBBox]);
 
   // answerId에서 examId 추출: "경제_고3_2024_03_학평_1_해설" -> "경제_고3_2024_03_학평"
@@ -405,30 +431,35 @@ function OneAnswer({
         onDragOver={mode === 'edit' ? handleDragOver : undefined}
         onDrop={mode === 'edit' ? handleDrop : undefined}
       >
-        <img
-          src={imageUrl}
-          alt={title}
-          className={`w-full h-auto transition-opacity ${mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''}`}
-          loading="lazy"
-          onClick={mode === 'edit' ? handleImageClick : undefined}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent) {
-              parent.innerHTML = `
-                <div class="flex items-center justify-center h-48 text-gray-500">
-                  <div class="text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p class="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
-                  </div>
-                </div>
-              `;
-            }
-          }}
-        />
+        {!currentBase64 && imageError ? (
+          <div className="flex items-center justify-center h-48 text-gray-500">
+            <div className="text-center">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <p className="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
+            </div>
+          </div>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={title}
+            className={`w-full h-auto transition-opacity ${mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''}`}
+            loading="lazy"
+            onClick={mode === 'edit' ? handleImageClick : undefined}
+            onError={() => {
+              // base64가 없을 때만 에러 상태 설정
+              if (!currentBase64) {
+                setImageError(true);
+              }
+            }}
+          />
+        )}
 
         {/* 편집된 이미지 삭제 버튼 */}
         {currentBase64 && (

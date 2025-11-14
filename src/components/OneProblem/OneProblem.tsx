@@ -80,6 +80,7 @@ function OneProblem({
   const [currentBBox, setCurrentBBox] = useState<BBox | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -88,6 +89,10 @@ function OneProblem({
   // editedBase64와 editedBBox prop 변경 시 state 업데이트
   useEffect(() => {
     setCurrentBase64(editedBase64);
+    // 새로운 base64가 설정되면 에러 상태 리셋
+    if (editedBase64) {
+      setImageError(false);
+    }
   }, [editedBase64]);
 
   useEffect(() => {
@@ -391,7 +396,12 @@ function OneProblem({
             {/* Edit 모드: 태그 입력기 */}
             <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
             <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
-            <CustomTagInput onTagsChange={onCustomTagsChange} placeholder="커스텀 태그" tags={customTags} subject={subject} />
+            <CustomTagInput
+              onTagsChange={onCustomTagsChange}
+              placeholder="커스텀 태그"
+              tags={customTags}
+              subject={subject}
+            />
           </>
         ) : (
           <>
@@ -460,32 +470,35 @@ function OneProblem({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        <img
-          src={imageUrl}
-          alt={title}
-          className={`w-full h-auto transition-opacity ${
-            mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''
-          }`}
-          loading="lazy"
-          onClick={mode === 'edit' ? handleImageClick : undefined}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent) {
-              parent.innerHTML = `
-                <div class="flex items-center justify-center h-48 text-gray-500">
-                  <div class="text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p class="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
-                  </div>
-                </div>
-              `;
-            }
-          }}
-        />
+        {!currentBase64 && imageError ? (
+          <div className="flex items-center justify-center h-48 text-gray-500">
+            <div className="text-center">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <p className="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
+            </div>
+          </div>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={title}
+            className={`w-full h-auto transition-opacity ${mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''}`}
+            loading="lazy"
+            onClick={mode === 'edit' ? handleImageClick : undefined}
+            onError={() => {
+              // base64가 없을 때만 에러 상태 설정
+              if (!currentBase64) {
+                setImageError(true);
+              }
+            }}
+          />
+        )}
         {/* 편집된 이미지 삭제 버튼 */}
         {currentBase64 && (
           <button
@@ -501,7 +514,12 @@ function OneProblem({
         {isDragging && mode === 'edit' && (
           <div className="absolute inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed rounded-lg flex items-center justify-center z-40">
             <div className="bg-white px-6 py-4 rounded-lg shadow-lg">
-              <svg className="w-12 h-12 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-12 h-12 mx-auto mb-2 text-blue-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
