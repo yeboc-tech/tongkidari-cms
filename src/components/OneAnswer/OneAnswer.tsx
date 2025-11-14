@@ -145,8 +145,8 @@ function OneAnswer({
     return `${HOST_URL}/tongkidari/meta/${filename}`;
   };
 
-  // BBox 확인 핸들러
-  const handleBBoxConfirm = async (file: File, bbox: BBox) => {
+  // BBox 확인 핸들러 (bbox 배열 받음)
+  const handleBBoxConfirm = async (file: File, bboxes: BBox[]) => {
     try {
       // File을 base64로 변환
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -161,12 +161,12 @@ function OneAnswer({
         reader.readAsDataURL(file);
       });
 
-      // Supabase에 bbox와 base64 저장 (answerId 사용)
-      await Supabase.EditedContent.upsertBBox(answerId, bbox, base64);
+      // Supabase에 bboxes 배열과 base64 저장 (answerId 사용)
+      await Supabase.EditedContent.upsertBBox(answerId, bboxes, base64);
 
-      // 저장 후 즉시 이미지와 bbox 업데이트
+      // 저장 후 즉시 이미지와 첫 번째 bbox 업데이트 (표시용)
       setCurrentBase64(base64);
-      setCurrentBBox(bbox);
+      setCurrentBBox(bboxes.length > 0 ? bboxes[0] : undefined);
 
       alert('BBox와 이미지가 저장되었습니다.');
     } catch (error) {

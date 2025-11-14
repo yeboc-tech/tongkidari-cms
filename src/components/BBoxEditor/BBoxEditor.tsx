@@ -5,14 +5,12 @@ interface BBoxEditorProps {
   imageUrl: string;
   bbox: BBox[];
   onClose: () => void;
-  onConfirm: (file: File, bbox: BBox) => void;
+  onConfirm: (file: File, bboxes: BBox[]) => void;
   problemId: string;
   getPageUrl: (page: number) => string;
 }
 
 function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, problemId, getPageUrl }: BBoxEditorProps) {
-  // bbox 배열의 첫 번째 아이템 사용 (없으면 기본값)
-  const firstBBox = bbox.length > 0 ? bbox[0] : { page: 0, x0: 0, y0: 0, x1: 0, y1: 0 };
   // pt to px 변환 (200 DPI)
   const PT_TO_PX_SCALE = 200 / 72; // 2.777778
 
@@ -21,17 +19,20 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     return Math.round(num * 100) / 100;
   };
 
-  // bbox를 px 단위로 변환 (소수점 2자리)
-  const bboxInPx: BBox = {
-    page: firstBBox.page,
-    x0: roundToTwo(firstBBox.x0 * PT_TO_PX_SCALE),
-    y0: roundToTwo(firstBBox.y0 * PT_TO_PX_SCALE),
-    x1: roundToTwo(firstBBox.x1 * PT_TO_PX_SCALE),
-    y1: roundToTwo(firstBBox.y1 * PT_TO_PX_SCALE),
-  };
+  // 모든 bbox를 px 단위로 변환
+  const initialBBoxes: BBox[] = bbox.length > 0
+    ? bbox.map(b => ({
+        page: b.page,
+        x0: roundToTwo(b.x0 * PT_TO_PX_SCALE),
+        y0: roundToTwo(b.y0 * PT_TO_PX_SCALE),
+        x1: roundToTwo(b.x1 * PT_TO_PX_SCALE),
+        y1: roundToTwo(b.y1 * PT_TO_PX_SCALE),
+      }))
+    : [{ page: 0, x0: 0, y0: 0, x1: 0, y1: 0 }];
 
-  const [currentBBox, setCurrentBBox] = useState<BBox>(bboxInPx);
-  const [currentPage, setCurrentPage] = useState(firstBBox.page);
+  const [currentBBoxes, setCurrentBBoxes] = useState<BBox[]>(initialBBoxes);
+  const [selectedBboxIndex, setSelectedBboxIndex] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(initialBBoxes[0].page);
   const [currentImageUrl, setCurrentImageUrl] = useState(initialImageUrl);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<string | null>(null);
@@ -41,7 +42,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [croppedFile, setCroppedFile] = useState<File | null>(null);
-  const [croppedBBox, setCroppedBBox] = useState<BBox | null>(null);
+  const [croppedBBoxes, setCroppedBBoxes] = useState<BBox[] | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +52,12 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
       setCurrentImageUrl(getPageUrl(newPage));
-      setCurrentBBox({ ...currentBBox, page: newPage });
+      // 선택된 bbox가 있으면 페이지 업데이트
+      if (selectedBboxIndex !== null) {
+        const updated = [...currentBBoxes];
+        updated[selectedBboxIndex] = { ...updated[selectedBboxIndex], page: newPage };
+        setCurrentBBoxes(updated);
+      }
     }
   };
 
@@ -59,7 +65,12 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     const newPage = currentPage + 1;
     setCurrentPage(newPage);
     setCurrentImageUrl(getPageUrl(newPage));
-    setCurrentBBox({ ...currentBBox, page: newPage });
+    // 선택된 bbox가 있으면 페이지 업데이트
+    if (selectedBboxIndex !== null) {
+      const updated = [...currentBBoxes];
+      updated[selectedBboxIndex] = { ...updated[selectedBboxIndex], page: newPage };
+      setCurrentBBoxes(updated);
+    }
   };
 
   useEffect(() => {
@@ -74,9 +85,9 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     img.src = currentImageUrl;
   }, [currentImageUrl]);
 
-  // 이미지 로드 후 bbox 위치로 스크롤
+  // 이미지 로드 후 bbox 위치로 스크롤 (첫 번째 또는 선택된 bbox)
   useEffect(() => {
-    if (!imageSize || !containerRef.current || !imageRef.current) return;
+    if (!imageSize || !containerRef.current || !imageRef.current || currentBBoxes.length === 0) return;
 
     // DOM 렌더링 완료 후 스크롤 실행
     setTimeout(() => {
@@ -84,9 +95,12 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       const img = imageRef.current;
       if (!container || !img) return;
 
+      // 스크롤할 bbox 선택 (선택된 것이 있으면 선택된 것, 없으면 첫 번째)
+      const targetBBox = selectedBboxIndex !== null ? currentBBoxes[selectedBboxIndex] : currentBBoxes[0];
+
       // bbox 중앙 위치 계산 (이미지 좌표계)
-      const bboxCenterX = (currentBBox.x0 + currentBBox.x1) / 2;
-      const bboxCenterY = (currentBBox.y0 + currentBBox.y1) / 2;
+      const bboxCenterX = (targetBBox.x0 + targetBBox.x1) / 2;
+      const bboxCenterY = (targetBBox.y0 + targetBBox.y1) / 2;
 
       // 표시된 이미지 크기
       const displayedWidth = img.offsetWidth;
@@ -103,7 +117,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       container.scrollTop = Math.max(0, scrollY);
       container.scrollLeft = Math.max(0, scrollX);
     }, 100);
-  }, [imageSize, currentBBox]);
+  }, [imageSize, currentBBoxes, selectedBboxIndex]);
 
   useEffect(() => {
     // ESC 키로 모달 닫기
@@ -119,7 +133,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     };
   }, [onClose]);
 
-  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>, bboxIndex: number) => {
     if (!imageRef.current || !imageSize) return;
 
     const rect = imageRef.current.getBoundingClientRect();
@@ -129,20 +143,23 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
+    const bbox = currentBBoxes[bboxIndex];
+
     // bbox 내부 클릭인지 확인
     if (
-      x >= currentBBox.x0 &&
-      x <= currentBBox.x1 &&
-      y >= currentBBox.y0 &&
-      y <= currentBBox.y1
+      x >= bbox.x0 &&
+      x <= bbox.x1 &&
+      y >= bbox.y0 &&
+      y <= bbox.y1
     ) {
+      setSelectedBboxIndex(bboxIndex);
       setIsDragging(true);
       setDragStart({ x, y });
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageRef.current || !imageSize || (!isDragging && !isResizing)) return;
+    if (!imageRef.current || !imageSize || (!isDragging && !isResizing) || selectedBboxIndex === null) return;
 
     const rect = imageRef.current.getBoundingClientRect();
     const scaleX = imageSize.width / rect.width;
@@ -151,17 +168,21 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
+    const updated = [...currentBBoxes];
+    const currentBBox = updated[selectedBboxIndex];
+
     if (isDragging && dragStart) {
       const dx = x - dragStart.x;
       const dy = y - dragStart.y;
 
-      setCurrentBBox({
+      updated[selectedBboxIndex] = {
         ...currentBBox,
         x0: roundToTwo(currentBBox.x0 + dx),
         x1: roundToTwo(currentBBox.x1 + dx),
         y0: roundToTwo(currentBBox.y0 + dy),
         y1: roundToTwo(currentBBox.y1 + dy),
-      });
+      };
+      setCurrentBBoxes(updated);
       setDragStart({ x, y });
     } else if (isResizing) {
       const newBBox = { ...currentBBox };
@@ -179,7 +200,8 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
         newBBox.y1 = roundToTwo(Math.max(y, currentBBox.y0 + 10));
       }
 
-      setCurrentBBox(newBBox);
+      updated[selectedBboxIndex] = newBBox;
+      setCurrentBBoxes(updated);
     }
   };
 
@@ -189,26 +211,19 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     setDragStart(null);
   };
 
-  const handleResizeStart = (e: React.MouseEvent, direction: string) => {
+  const handleResizeStart = (e: React.MouseEvent, direction: string, bboxIndex: number) => {
     e.stopPropagation();
+    setSelectedBboxIndex(bboxIndex);
     setIsResizing(direction);
   };
 
-  // 더블 클릭으로 bbox 영역 크롭하여 미리보기 표시
+  // 더블 클릭으로 bbox 영역들을 크롭하여 세로로 합친 후 미리보기 표시
   const handleDoubleClick = async () => {
-    if (!imageRef.current || !imageSize) return;
+    if (!imageRef.current || !imageSize || currentBBoxes.length === 0) return;
 
     try {
-      // Canvas 생성
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // 크롭할 영역 크기 설정
-      const width = currentBBox.x1 - currentBBox.x0;
-      const height = currentBBox.y1 - currentBBox.y0;
-      canvas.width = width;
-      canvas.height = height;
+      // bbox를 y0 기준으로 정렬 (위에서 아래로)
+      const sortedBBoxes = [...currentBBoxes].sort((a, b) => a.y0 - b.y0);
 
       // 이미지 로드
       const img = new Image();
@@ -220,8 +235,57 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
         img.onerror = reject;
       });
 
-      // bbox 영역만 크롭하여 그리기
-      ctx.drawImage(img, currentBBox.x0, currentBBox.y0, width, height, 0, 0, width, height);
+      // 각 bbox의 크기 계산
+      const croppedImages = sortedBBoxes.map(bbox => ({
+        bbox,
+        width: bbox.x1 - bbox.x0,
+        height: bbox.y1 - bbox.y0,
+      }));
+
+      // 전체 캔버스 크기 계산
+      const GAP = 8; // 이미지 간 간격
+      const maxWidth = Math.max(...croppedImages.map(item => item.width));
+      const totalHeight = croppedImages.reduce((sum, item) => sum + item.height, 0) + GAP * (croppedImages.length - 1);
+
+      // 합친 이미지를 그릴 캔버스 생성
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = maxWidth;
+      canvas.height = totalHeight;
+
+      // 각 bbox 영역을 크롭하여 세로로 합치기
+      let currentY = 0;
+      const newBBoxes: BBox[] = [];
+
+      for (const item of croppedImages) {
+        const { bbox, width, height } = item;
+
+        // 임시 캔버스에 크롭된 이미지 그리기
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        if (!tempCtx) continue;
+
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        tempCtx.drawImage(img, bbox.x0, bbox.y0, width, height, 0, 0, width, height);
+
+        // 메인 캔버스에 복사 (중앙 정렬)
+        const offsetX = (maxWidth - width) / 2;
+        ctx.drawImage(tempCanvas, offsetX, currentY);
+
+        // 합쳐진 이미지에서의 새로운 bbox 좌표 계산 (pt 단위)
+        newBBoxes.push({
+          page: 0, // 합쳐진 이미지는 단일 페이지
+          x0: roundToTwo(offsetX / PT_TO_PX_SCALE),
+          y0: roundToTwo(currentY / PT_TO_PX_SCALE),
+          x1: roundToTwo((offsetX + width) / PT_TO_PX_SCALE),
+          y1: roundToTwo((currentY + height) / PT_TO_PX_SCALE),
+        });
+
+        currentY += height + GAP;
+      }
 
       // Canvas를 Blob으로 변환
       canvas.toBlob((blob) => {
@@ -232,20 +296,11 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
           type: 'image/png',
         });
 
-        // pt 단위로 변환 (소수점 2자리)
-        const bboxInPt: BBox = {
-          page: currentBBox.page,
-          x0: roundToTwo(currentBBox.x0 / PT_TO_PX_SCALE),
-          y0: roundToTwo(currentBBox.y0 / PT_TO_PX_SCALE),
-          x1: roundToTwo(currentBBox.x1 / PT_TO_PX_SCALE),
-          y1: roundToTwo(currentBBox.y1 / PT_TO_PX_SCALE),
-        };
-
         // 미리보기 URL 생성 및 확인 다이얼로그 표시
         const previewUrl = URL.createObjectURL(blob);
         setCroppedImageUrl(previewUrl);
         setCroppedFile(file);
-        setCroppedBBox(bboxInPt);
+        setCroppedBBoxes(newBBoxes);
         setShowConfirmDialog(true);
       }, 'image/png');
     } catch (error) {
@@ -256,8 +311,8 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
 
   // 확인 다이얼로그에서 확인 버튼 클릭
   const handleConfirmSave = () => {
-    if (croppedFile && croppedBBox) {
-      onConfirm(croppedFile, croppedBBox);
+    if (croppedFile && croppedBBoxes) {
+      onConfirm(croppedFile, croppedBBoxes);
       onClose();
     }
   };
@@ -269,7 +324,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     }
     setCroppedImageUrl(null);
     setCroppedFile(null);
-    setCroppedBBox(null);
+    setCroppedBBoxes(null);
     setShowConfirmDialog(false);
   };
 
@@ -329,7 +384,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
               draggable={false}
             />
 
-            {/* BBox Overlay */}
+            {/* BBox Overlays - 모든 bbox 표시 */}
             <svg
               className="absolute inset-0 pointer-events-none"
               style={{
@@ -337,52 +392,61 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
                 height: '100%',
               }}
             >
-              <rect
-                x={`${(currentBBox.x0 / imageSize.width) * 100}%`}
-                y={`${(currentBBox.y0 / imageSize.height) * 100}%`}
-                width={`${((currentBBox.x1 - currentBBox.x0) / imageSize.width) * 100}%`}
-                height={`${((currentBBox.y1 - currentBBox.y0) / imageSize.height) * 100}%`}
-                fill="none"
-                stroke="red"
-                strokeWidth="2"
-                strokeDasharray="5,5"
-              />
+              {currentBBoxes.map((bbox, index) => (
+                <rect
+                  key={index}
+                  x={`${(bbox.x0 / imageSize.width) * 100}%`}
+                  y={`${(bbox.y0 / imageSize.height) * 100}%`}
+                  width={`${((bbox.x1 - bbox.x0) / imageSize.width) * 100}%`}
+                  height={`${((bbox.y1 - bbox.y0) / imageSize.height) * 100}%`}
+                  fill="none"
+                  stroke={selectedBboxIndex === index ? 'blue' : 'red'}
+                  strokeWidth={selectedBboxIndex === index ? '3' : '2'}
+                  strokeDasharray="5,5"
+                />
+              ))}
             </svg>
 
-            {/* Draggable Area */}
-            <div
-              className="absolute cursor-move"
-              style={{
-                left: `${(currentBBox.x0 / imageSize.width) * 100}%`,
-                top: `${(currentBBox.y0 / imageSize.height) * 100}%`,
-                width: `${((currentBBox.x1 - currentBBox.x0) / imageSize.width) * 100}%`,
-                height: `${((currentBBox.y1 - currentBBox.y0) / imageSize.height) * 100}%`,
-              }}
-              onMouseDown={handleImageClick}
-              onDoubleClick={handleDoubleClick}
-            />
+            {/* Draggable Areas - 각 bbox마다 */}
+            {currentBBoxes.map((bbox, index) => (
+              <div
+                key={`drag-${index}`}
+                className="absolute cursor-move"
+                style={{
+                  left: `${(bbox.x0 / imageSize.width) * 100}%`,
+                  top: `${(bbox.y0 / imageSize.height) * 100}%`,
+                  width: `${((bbox.x1 - bbox.x0) / imageSize.width) * 100}%`,
+                  height: `${((bbox.y1 - bbox.y0) / imageSize.height) * 100}%`,
+                }}
+                onMouseDown={(e) => handleImageClick(e, index)}
+                onDoubleClick={handleDoubleClick}
+              />
+            ))}
 
-            {/* Resize Handles */}
-            {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((direction) => {
-              const isTop = direction.startsWith('top');
-              const isLeft = direction.endsWith('left');
+            {/* Resize Handles - 각 bbox마다 */}
+            {currentBBoxes.map((bbox, bboxIndex) =>
+              ['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((direction) => {
+                const isTop = direction.startsWith('top');
+                const isLeft = direction.endsWith('left');
 
-              return (
-                <div
-                  key={direction}
-                  className="absolute w-3 h-3 bg-red-500 cursor-nwse-resize"
-                  style={{
-                    left: isLeft
-                      ? `calc(${(currentBBox.x0 / imageSize.width) * 100}% - 6px)`
-                      : `calc(${(currentBBox.x1 / imageSize.width) * 100}% - 6px)`,
-                    top: isTop
-                      ? `calc(${(currentBBox.y0 / imageSize.height) * 100}% - 6px)`
-                      : `calc(${(currentBBox.y1 / imageSize.height) * 100}% - 6px)`,
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, direction)}
-                />
-              );
-            })}
+                return (
+                  <div
+                    key={`${bboxIndex}-${direction}`}
+                    className="absolute w-3 h-3 cursor-nwse-resize"
+                    style={{
+                      backgroundColor: selectedBboxIndex === bboxIndex ? 'blue' : 'red',
+                      left: isLeft
+                        ? `calc(${(bbox.x0 / imageSize.width) * 100}% - 6px)`
+                        : `calc(${(bbox.x1 / imageSize.width) * 100}% - 6px)`,
+                      top: isTop
+                        ? `calc(${(bbox.y0 / imageSize.height) * 100}% - 6px)`
+                        : `calc(${(bbox.y1 / imageSize.height) * 100}% - 6px)`,
+                    }}
+                    onMouseDown={(e) => handleResizeStart(e, direction, bboxIndex)}
+                  />
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -403,15 +467,22 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
             →
           </button>
 
-          <div className="mt-4 text-sm text-gray-600 flex justify-between items-center">
-            <p>
-              Current BBox: {'{'}page: {currentBBox.page}, x0: {roundToTwo(currentBBox.x0)}, y0:{' '}
-              {roundToTwo(currentBBox.y0)}, x1: {roundToTwo(currentBBox.x1)}, y1: {roundToTwo(currentBBox.y1)}
-              {'}'}
-            </p>
-            <p className="font-semibold">
-              페이지: {currentPage + 1}
-            </p>
+          <div className="mt-4 text-sm text-gray-600">
+            <div className="flex justify-between items-center mb-2">
+              <p className="font-semibold">
+                BBox 개수: {currentBBoxes.length} | 페이지: {currentPage + 1}
+                {selectedBboxIndex !== null && ` | 선택: ${selectedBboxIndex + 1}번째`}
+              </p>
+            </div>
+            {selectedBboxIndex !== null && (
+              <p className="text-xs">
+                Selected BBox: {'{'}page: {currentBBoxes[selectedBboxIndex].page},
+                x0: {roundToTwo(currentBBoxes[selectedBboxIndex].x0)},
+                y0: {roundToTwo(currentBBoxes[selectedBboxIndex].y0)},
+                x1: {roundToTwo(currentBBoxes[selectedBboxIndex].x1)},
+                y1: {roundToTwo(currentBBoxes[selectedBboxIndex].y1)}{'}'}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -427,14 +498,15 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
               <img src={croppedImageUrl} alt="Cropped preview" className="max-w-full max-h-[60vh] object-contain" />
             </div>
 
-            {/* BBox 정보 */}
-            {croppedBBox && (
-              <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                <p>
-                  BBox (pt): {'{'}page: {croppedBBox.page}, x0: {croppedBBox.x0}, y0: {croppedBBox.y0}, x1:{' '}
-                  {croppedBBox.x1}, y1: {croppedBBox.y1}
-                  {'}'}
-                </p>
+            {/* BBox 정보들 */}
+            {croppedBBoxes && (
+              <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded max-h-40 overflow-y-auto">
+                <p className="font-semibold mb-2">BBoxes (pt): {croppedBBoxes.length}개</p>
+                {croppedBBoxes.map((bbox, index) => (
+                  <p key={index} className="text-xs mb-1">
+                    [{index + 1}] {'{'}page: {bbox.page}, x0: {bbox.x0}, y0: {bbox.y0}, x1: {bbox.x1}, y1: {bbox.y1}{'}'}
+                  </p>
+                ))}
               </div>
             )}
 

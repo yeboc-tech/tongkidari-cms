@@ -210,10 +210,10 @@ export const Supabase = {
     /**
      * 편집된 콘텐츠 저장 또는 업데이트
      * @param resourceId - 리소스 ID (문제 ID)
-     * @param bbox - BBox 데이터
+     * @param bbox - BBox 데이터 (단일 또는 배열)
      * @param base64 - 크롭된 이미지의 base64 문자열
      */
-    async upsertBBox(resourceId: string, bbox: BBox, base64: string): Promise<void> {
+    async upsertBBox(resourceId: string, bbox: BBox | BBox[], base64: string): Promise<void> {
       const { error } = await supabase.from('edited_contents').upsert(
         {
           resource_id: resourceId,
