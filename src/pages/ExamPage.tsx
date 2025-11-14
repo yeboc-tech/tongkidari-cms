@@ -194,72 +194,60 @@ function ExamPage() {
     fetchTags();
   }, [id]);
 
-  // 편집된 문제 콘텐츠 조회
+  // 편집된 문제 + 해설 콘텐츠 한 번에 조회
   useEffect(() => {
     if (!id) return;
 
-    const fetchEditedProblemContents = async () => {
+    const fetchEditedContents = async () => {
       const examIdWithoutRegion = removeRegion(id);
 
-      // 1-20번 문제의 id 목록 생성
-      const questionIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`);
+      // 1-20번 문제 + 해설의 id 목록 생성 (총 40개)
+      const allResourceIds = Array.from({ length: 20 }, (_, i) => {
+        const num = i + 1;
+        return [
+          `${examIdWithoutRegion}_${num}_문제`,
+          `${examIdWithoutRegion}_${num}_해설`,
+        ];
+      }).flat();
 
       try {
-        const editedContents = await Supabase.EditedContent.fetchByIds(questionIds);
-        const base64Map = new Map<string, string>();
-        const bboxMap = new Map<string, BBox>();
+        const editedContents = await Supabase.EditedContent.fetchByIds(allResourceIds);
+
+        const problemBase64Map = new Map<string, string>();
+        const problemBBoxMap = new Map<string, BBox>();
+        const answerBase64Map = new Map<string, string>();
+        const answerBBoxMap = new Map<string, BBox>();
 
         editedContents.forEach((ec) => {
+          const isProblem = ec.resource_id.endsWith('_문제');
+
           if (ec.base64) {
-            base64Map.set(ec.resource_id, ec.base64);
+            if (isProblem) {
+              problemBase64Map.set(ec.resource_id, ec.base64);
+            } else {
+              answerBase64Map.set(ec.resource_id, ec.base64);
+            }
           }
+
           if (ec.json?.bbox) {
-            bboxMap.set(ec.resource_id, ec.json.bbox);
+            if (isProblem) {
+              problemBBoxMap.set(ec.resource_id, ec.json.bbox);
+            } else {
+              answerBBoxMap.set(ec.resource_id, ec.json.bbox);
+            }
           }
         });
 
-        setEditedProblemBase64Map(base64Map);
-        setEditedProblemBBoxMap(bboxMap);
+        setEditedProblemBase64Map(problemBase64Map);
+        setEditedProblemBBoxMap(problemBBoxMap);
+        setEditedAnswerBase64Map(answerBase64Map);
+        setEditedAnswerBBoxMap(answerBBoxMap);
       } catch (error) {
-        console.error('Error fetching edited problem contents:', error);
+        console.error('Error fetching edited contents:', error);
       }
     };
 
-    fetchEditedProblemContents();
-  }, [id]);
-
-  // 편집된 해설 콘텐츠 조회
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchEditedAnswerContents = async () => {
-      const examIdWithoutRegion = removeRegion(id);
-
-      // 1-20번 해설의 id 목록 생성
-      const answerIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_해설`);
-
-      try {
-        const editedContents = await Supabase.EditedContent.fetchByIds(answerIds);
-        const base64Map = new Map<string, string>();
-        const bboxMap = new Map<string, BBox>();
-
-        editedContents.forEach((ec) => {
-          if (ec.base64) {
-            base64Map.set(ec.resource_id, ec.base64);
-          }
-          if (ec.json?.bbox) {
-            bboxMap.set(ec.resource_id, ec.json.bbox);
-          }
-        });
-
-        setEditedAnswerBase64Map(base64Map);
-        setEditedAnswerBBoxMap(bboxMap);
-      } catch (error) {
-        console.error('Error fetching edited answer contents:', error);
-      }
-    };
-
-    fetchEditedAnswerContents();
+    fetchEditedContents();
   }, [id]);
 
   // problem_number 쿼리 파라미터로 특정 문제로 스크롤

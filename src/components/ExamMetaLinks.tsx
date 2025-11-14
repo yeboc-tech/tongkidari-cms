@@ -184,9 +184,10 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
       urlsToCheck.push(getResourceUrl(resources.answerCsv.normalizedFilename));
       resources.answerPages.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
       resources.answerDebug.forEach((r) => urlsToCheck.push(getResourceUrl(r.normalizedFilename)));
-      urlsToCheck.push(getResourceUrl(resources.rateCsv.normalizedFilename));
-      urlsToCheck.push(getResourceUrl(resources.labelCsv.normalizedFilename));
-      urlsToCheck.push(getResourceUrl(resources.historyCsv.normalizedFilename));
+      // 비활성화된 리소스 체크
+      // urlsToCheck.push(getResourceUrl(resources.rateCsv.normalizedFilename));
+      // urlsToCheck.push(getResourceUrl(resources.labelCsv.normalizedFilename));
+      // urlsToCheck.push(getResourceUrl(resources.historyCsv.normalizedFilename));
 
       // 모든 파일 확인
       const results = await Promise.all(
@@ -397,23 +398,23 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
           </>
         )}
 
-        {/* Accuracy Rate CSV - 항상 표시 */}
-        <div>
+        {/* Accuracy Rate CSV - 비활성화 */}
+        {/* <div>
           <p className="font-semibold text-gray-700 mb-1">Accuracy Rate CSV</p>
           {renderLink(resources.rateCsv.originalFilename, resources.rateCsv.normalizedFilename)}
-        </div>
+        </div> */}
 
-        {/* Computed Label CSV - 항상 표시 */}
-        <div>
+        {/* Computed Label CSV - 비활성화 */}
+        {/* <div>
           <p className="font-semibold text-gray-700 mb-1">Computed Label CSV</p>
           {renderLink(resources.labelCsv.originalFilename, resources.labelCsv.normalizedFilename)}
-        </div>
+        </div> */}
 
-        {/* History Data - 항상 표시 */}
-        <div>
+        {/* History Data - 비활성화 */}
+        {/* <div>
           <p className="font-semibold text-gray-700 mb-1">History </p>
           {renderLink(resources.historyCsv.originalFilename, resources.historyCsv.normalizedFilename)}
-        </div>
+        </div> */}
       </div>
     </div>
   );
