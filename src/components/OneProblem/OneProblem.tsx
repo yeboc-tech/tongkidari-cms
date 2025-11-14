@@ -95,7 +95,7 @@ function OneProblem({
 
     const loadEditedContent = async () => {
       try {
-        const editedContent = await Supabase.EditedContent.fetch(problemId);
+        const editedContent = await Supabase.EditedContent.fetchById(problemId);
         if (editedContent) {
           setCurrentBase64(editedContent.base64);
           if (editedContent.json?.bbox) {

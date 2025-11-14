@@ -253,11 +253,11 @@ export const Supabase = {
     },
 
     /**
-     * 편집된 콘텐츠 조회
+     * 편집된 콘텐츠 조회 (단일)
      * @param resourceId - 리소스 ID
      * @returns 편집된 콘텐츠 또는 null
      */
-    async fetch(resourceId: string): Promise<EditedContent | null> {
+    async fetchById(resourceId: string): Promise<EditedContent | null> {
       const { data, error } = await supabase.from('edited_contents').select('*').eq('resource_id', resourceId).single();
 
       if (error) {
@@ -286,19 +286,21 @@ export const Supabase = {
     },
 
     /**
-     * 여러 리소스의 편집된 콘텐츠 조회
+     * 여러 리소스의 편집된 콘텐츠 조회 (RPC 사용)
      * @param resourceIds - 리소스 ID 배열
      * @returns 편집된 콘텐츠 배열
      */
-    async fetchByResourceIds(resourceIds: string[]): Promise<EditedContent[]> {
+    async fetchByIds(resourceIds: string[]): Promise<EditedContent[]> {
       if (resourceIds.length === 0) {
         return [];
       }
 
-      const { data, error } = await supabase.from('edited_contents').select('*').in('resource_id', resourceIds);
+      const { data, error } = await supabase.rpc('fetch_edited_contents_by_ids', {
+        p_resource_ids: resourceIds,
+      });
 
       if (error) {
-        console.error('Error fetching edited contents:', error);
+        console.error('Error fetching edited contents by ids:', error);
         throw error;
       }
 

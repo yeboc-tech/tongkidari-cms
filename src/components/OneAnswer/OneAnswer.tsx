@@ -97,7 +97,7 @@ function OneAnswer({
 
     const loadEditedContent = async () => {
       try {
-        const editedContent = await Supabase.EditedContent.fetch(answerId);
+        const editedContent = await Supabase.EditedContent.fetchById(answerId);
         if (editedContent) {
           setCurrentBase64(editedContent.base64);
           if (editedContent.json?.bbox) {

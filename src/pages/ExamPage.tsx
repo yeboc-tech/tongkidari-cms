@@ -205,7 +205,7 @@ function ExamPage() {
       const questionIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_문제`);
 
       try {
-        const editedContents = await Supabase.EditedContent.fetchByResourceIds(questionIds);
+        const editedContents = await Supabase.EditedContent.fetchByIds(questionIds);
         const base64Map = new Map<string, string>();
         const bboxMap = new Map<string, BBox>();
 
@@ -239,7 +239,7 @@ function ExamPage() {
       const answerIds = Array.from({ length: 20 }, (_, i) => `${examIdWithoutRegion}_${i + 1}_해설`);
 
       try {
-        const editedContents = await Supabase.EditedContent.fetchByResourceIds(answerIds);
+        const editedContents = await Supabase.EditedContent.fetchByIds(answerIds);
         const base64Map = new Map<string, string>();
         const bboxMap = new Map<string, BBox>();
 
