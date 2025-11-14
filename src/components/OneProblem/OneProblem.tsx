@@ -77,6 +77,7 @@ function OneProblem({
   const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
+  const [currentBBox, setCurrentBBox] = useState<BBox[] | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -88,6 +89,7 @@ function OneProblem({
   // props 변경 시 state 업데이트
   useEffect(() => {
     setCurrentBase64(editedBase64);
+    setCurrentBBox(editedBBox);
     setImageError(false);
   }, [problemId, editedBase64, editedBBox]);
 
@@ -104,13 +106,13 @@ function OneProblem({
 
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {
-    // editedBBox가 있으면 CSV 조회 없이 바로 에디터 열기
-    if (editedBBox && editedBBox.length > 0) {
+    // currentBBox가 있으면 CSV 조회 없이 바로 에디터 열기
+    if (currentBBox && currentBBox.length > 0) {
       setShowBBoxEditor(true);
       return;
     }
 
-    // editedBBox가 없으면 CSV에서 메타데이터 가져오기
+    // currentBBox가 없으면 CSV에서 메타데이터 가져오기
     setLoadingMetadata(true);
     try {
       const metadata = await Api.Meta.fetchProblemMetadata(problemId);
@@ -157,8 +159,9 @@ function OneProblem({
       // Supabase에 bboxes 배열과 base64 저장
       await Supabase.EditedContent.upsertBBox(problemId, bboxes, base64);
 
-      // 저장 후 즉시 이미지 업데이트
+      // 저장 후 즉시 이미지 및 bbox 업데이트
       setCurrentBase64(base64);
+      setCurrentBBox(bboxes);
 
       // Snackbar 표시
       setShowSaveSnackbar(true);
@@ -195,8 +198,9 @@ function OneProblem({
     try {
       await Supabase.EditedContent.delete(problemId);
 
-      // 삭제 후 원본 이미지로 복원
+      // 삭제 후 원본 이미지 및 bbox로 복원
       setCurrentBase64(undefined);
+      setCurrentBBox(undefined);
 
       // Snackbar 표시
       setShowDeleteSnackbar(true);
@@ -556,10 +560,10 @@ function OneProblem({
       )}
 
       {/* BBox Editor Modal */}
-      {showBBoxEditor && (editedBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
+      {showBBoxEditor && (currentBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
         <BBoxEditor
-          imageUrl={getProblemPageUrl((editedBBox?.[0] || problemMetadata!.bbox[0]).page)}
-          bbox={editedBBox || problemMetadata!.bbox}
+          imageUrl={getProblemPageUrl((currentBBox?.[0] || problemMetadata!.bbox[0]).page)}
+          bbox={currentBBox || problemMetadata!.bbox}
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
           problemId={problemId}

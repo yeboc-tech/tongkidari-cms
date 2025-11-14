@@ -9,6 +9,7 @@ import { AccuracyRate } from '../types/accuracyRate';
 import { useAuth } from '../hooks/useAuth';
 import OneProblem, { type SelectedTag, type TagWithId } from '../components/OneProblem/OneProblem';
 import OneAnswer from '../components/OneAnswer/OneAnswer';
+import FixedButton from '../components/FixedButton/FixedButton';
 import { getRegionByExamInfo } from '../ssot/EXAM_REGION';
 import { type Grade } from '../constants/tableConfig';
 import { PROBLEM_TAG_TYPES, type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
@@ -387,26 +388,8 @@ function ExamPage() {
       </div>
 
       <div className="bg-white p-8 rounded-lg shadow">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">{showSolution ? '해설 목록' : '문제 목록'}</h2>
-          <div className="flex items-center gap-3">
-            <span className={`text-sm font-medium ${!showSolution ? 'text-blue-600' : 'text-gray-500'}`}>
-              문제 보기
-            </span>
-            <button
-              onClick={() => setShowSolution(!showSolution)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                showSolution ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  showSolution ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className={`text-sm font-medium ${showSolution ? 'text-blue-600' : 'text-gray-500'}`}>해설 보기</span>
-          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Array.from({ length: 20 }, (_, index) => {
@@ -462,6 +445,14 @@ function ExamPage() {
           })}
         </div>
       </div>
+
+      {/* Fixed Toggle Button */}
+      <FixedButton
+        isToggled={showSolution}
+        onToggle={() => setShowSolution(!showSolution)}
+        leftLabel="문제"
+        rightLabel="해설"
+      />
     </div>
   );
 }

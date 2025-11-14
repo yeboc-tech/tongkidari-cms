@@ -78,7 +78,9 @@ function OneAnswer({
   const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
+  const [currentBBox, setCurrentBBox] = useState<BBox[] | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
+  const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
@@ -88,6 +90,7 @@ function OneAnswer({
   // props 변경 시 state 업데이트
   useEffect(() => {
     setCurrentBase64(editedBase64);
+    setCurrentBBox(editedBBox);
     setImageError(false);
   }, [answerId, editedBase64, editedBBox]);
 
@@ -109,8 +112,8 @@ function OneAnswer({
       return;
     }
 
-    // editedBBox가 있으면 CSV 조회 없이 바로 에디터 열기
-    if (editedBBox && editedBBox.length > 0) {
+    // currentBBox가 있으면 CSV 조회 없이 바로 에디터 열기
+    if (currentBBox && currentBBox.length > 0) {
       setShowBBoxEditor(true);
       return;
     }
@@ -162,10 +165,15 @@ function OneAnswer({
       // Supabase에 bboxes 배열과 base64 저장 (answerId 사용)
       await Supabase.EditedContent.upsertBBox(answerId, bboxes, base64);
 
-      // 저장 후 즉시 이미지 업데이트
+      // 저장 후 즉시 이미지 및 bbox 업데이트
       setCurrentBase64(base64);
+      setCurrentBBox(bboxes);
 
-      alert('BBox와 이미지가 저장되었습니다.');
+      // Snackbar 표시
+      setShowSaveSnackbar(true);
+      setTimeout(() => {
+        setShowSaveSnackbar(false);
+      }, 3000);
     } catch (error) {
       console.error('Failed to save bbox:', error);
       alert('BBox 저장에 실패했습니다.');
@@ -196,8 +204,9 @@ function OneAnswer({
     try {
       await Supabase.EditedContent.delete(answerId);
 
-      // 삭제 후 원본 이미지로 복원
+      // 삭제 후 원본 이미지 및 bbox로 복원
       setCurrentBase64(undefined);
+      setCurrentBBox(undefined);
 
       // Snackbar 표시
       setShowDeleteSnackbar(true);
@@ -490,10 +499,10 @@ function OneAnswer({
       )}
 
       {/* BBox Editor Modal - edit 모드에서만 표시 */}
-      {mode === 'edit' && showBBoxEditor && (editedBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
+      {mode === 'edit' && showBBoxEditor && (currentBBox || (problemMetadata && problemMetadata.bbox.length > 0)) && (
         <BBoxEditor
-          imageUrl={getAnswerPageUrl((editedBBox?.[0] || problemMetadata!.bbox[0]).page)}
-          bbox={editedBBox || problemMetadata!.bbox}
+          imageUrl={getAnswerPageUrl((currentBBox?.[0] || problemMetadata!.bbox[0]).page)}
+          bbox={currentBBox || problemMetadata!.bbox}
           onClose={() => setShowBBoxEditor(false)}
           onConfirm={handleBBoxConfirm}
           problemId={answerId}
@@ -526,6 +535,18 @@ function OneAnswer({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Success Snackbar */}
+      {showSaveSnackbar && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>BBox와 이미지가 저장되었습니다</span>
           </div>
         </div>
       )}
