@@ -90,6 +90,11 @@ function OneAnswer({
 
   // answerId로 편집된 콘텐츠 로드
   useEffect(() => {
+    // answerId가 변경되면 기존 state 리셋
+    setCurrentBase64(undefined);
+    setCurrentBBox(undefined);
+    setImageError(false);
+
     const loadEditedContent = async () => {
       try {
         const editedContent = await Supabase.EditedContent.fetch(answerId);
@@ -98,7 +103,6 @@ function OneAnswer({
           if (editedContent.json?.bbox) {
             setCurrentBBox(editedContent.json.bbox);
           }
-          setImageError(false);
         }
       } catch (error) {
         console.error('Failed to load edited content:', error);

@@ -88,6 +88,11 @@ function OneProblem({
 
   // problemId로 편집된 콘텐츠 로드
   useEffect(() => {
+    // problemId가 변경되면 기존 state 리셋
+    setCurrentBase64(undefined);
+    setCurrentBBox(undefined);
+    setImageError(false);
+
     const loadEditedContent = async () => {
       try {
         const editedContent = await Supabase.EditedContent.fetch(problemId);
@@ -96,7 +101,6 @@ function OneProblem({
           if (editedContent.json?.bbox) {
             setCurrentBBox(editedContent.json.bbox);
           }
-          setImageError(false);
         }
       } catch (error) {
         console.error('Failed to load edited content:', error);
