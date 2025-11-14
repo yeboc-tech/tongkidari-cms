@@ -103,7 +103,39 @@ function SocialPlayground() {
           answerEditedBBox: editedMap.get(info.problemId.replace('_문제', '_해설'))?.json?.bbox,
         }));
 
-        setSearchResults(enrichedInfos);
+        // 6. tag_ids의 마지막 태그로 정렬
+        const sortedInfos = enrichedInfos.sort((a, b) => {
+          // categoryType에 따라 적절한 태그 선택
+          const tagA = categoryType === '통합사회' ? a.integratedTag : a.motherTongTag;
+          const tagB = categoryType === '통합사회' ? b.integratedTag : b.motherTongTag;
+
+          // 태그가 없는 경우 처리
+          if (!tagA?.tagIds.length && !tagB?.tagIds.length) return 0;
+          if (!tagA?.tagIds.length) return 1; // a를 뒤로
+          if (!tagB?.tagIds.length) return -1; // b를 뒤로
+
+          // 마지막 tagId 가져오기
+          const lastTagA = tagA.tagIds[tagA.tagIds.length - 1];
+          const lastTagB = tagB.tagIds[tagB.tagIds.length - 1];
+
+          // '-'로 split하여 숫자 배열로 변환
+          const partsA = lastTagA.split('-').map(p => parseInt(p, 10));
+          const partsB = lastTagB.split('-').map(p => parseInt(p, 10));
+
+          // 각 파트를 순서대로 비교
+          const maxLength = Math.max(partsA.length, partsB.length);
+          for (let i = 0; i < maxLength; i++) {
+            const numA = partsA[i] || 0;
+            const numB = partsB[i] || 0;
+            if (numA !== numB) {
+              return numA - numB;
+            }
+          }
+
+          return 0;
+        });
+
+        setSearchResults(sortedInfos);
       } else {
         setSearchResults([]);
       }
