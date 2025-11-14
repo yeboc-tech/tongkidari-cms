@@ -272,13 +272,9 @@ function OneAnswer({
 
   return (
     <div
-      className={`border-2 rounded-lg p-4 transition-colors relative ${
+      className={`border-2 rounded-lg p-4 transition-colors ${
         currentBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
       }`}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
     >
       {/* 헤더: 제목과 복사 버튼 */}
       <div className="flex items-center justify-between mb-3">
@@ -366,7 +362,13 @@ function OneAnswer({
       </div>
 
       {/* 해설 이미지 */}
-      <div className="bg-gray-100 rounded-lg overflow-hidden">
+      <div
+        className="bg-gray-100 rounded-lg overflow-hidden relative"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <img
           src={imageUrl}
           alt={title}
@@ -391,6 +393,23 @@ function OneAnswer({
             }
           }}
         />
+
+        {/* Drag Overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed rounded-lg flex items-center justify-center z-40">
+            <div className="bg-white px-6 py-4 rounded-lg shadow-lg">
+              <svg className="w-12 h-12 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              <p className="text-lg font-semibold text-gray-700">이미지를 여기에 놓으세요</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading Indicator */}
@@ -412,23 +431,6 @@ function OneAnswer({
           problemId={answerId}
           getPageUrl={getAnswerPageUrl}
         />
-      )}
-
-      {/* Drag Overlay */}
-      {isDragging && (
-        <div className="absolute inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed rounded-lg flex items-center justify-center z-40">
-          <div className="bg-white px-6 py-4 rounded-lg shadow-lg">
-            <svg className="w-12 h-12 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
-            <p className="text-lg font-semibold text-gray-700">이미지를 여기에 놓으세요</p>
-          </div>
-        </div>
       )}
 
       {/* Upload Confirmation Dialog */}
