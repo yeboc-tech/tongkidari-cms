@@ -26,6 +26,7 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
   const [fileExists, setFileExists] = useState<Map<string, boolean>>(new Map());
   const [checking, setChecking] = useState(true);
   const [showProblem, setShowProblem] = useState(true);
+  const [maxAnswerPage, setMaxAnswerPage] = useState(1); // 기본값 1
 
   // URL 생성 헬퍼 함수
   const getResourceUrl = (normalizedFilename: string): string => {
@@ -39,6 +40,74 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
   const getPdfResourceUrl = (filename: string): string => {
     return `${CDN_BASE_URL}pdfs/${filename}`;
   };
+
+  // Answer CSV에서 최대 페이지 번호 가져오기
+  useEffect(() => {
+    const parseCSVLine = (line: string): string[] => {
+      const columns: string[] = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          columns.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      columns.push(current);
+      return columns;
+    };
+
+    const fetchMaxAnswerPage = async () => {
+      try {
+        const answerCsvFilename = getAnswerCsvFilename(examId);
+        const url = getResourceUrl(answerCsvFilename);
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          setMaxAnswerPage(1); // 실패 시 기본값
+          return;
+        }
+
+        const csvText = await response.text();
+        const lines = csvText.split('\n').slice(1); // 헤더 제외
+
+        let maxPage = 0;
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          const columns = parseCSVLine(line);
+          if (columns.length < 12) continue;
+
+          const pageStr = columns[11].trim();
+          const pageNum = parseInt(pageStr, 10);
+
+          if (!isNaN(pageNum) && pageNum > maxPage) {
+            maxPage = pageNum;
+          }
+        }
+
+        // page는 0-indexed이므로 +1, 최소 1
+        setMaxAnswerPage(maxPage >= 0 ? maxPage + 1 : 1);
+      } catch (error) {
+        console.error('Failed to fetch max answer page:', error);
+        setMaxAnswerPage(1); // 에러 시 기본값
+      }
+    };
+
+    fetchMaxAnswerPage();
+  }, [examId]);
 
   // 리소스 목록 생성
   const resources = {
@@ -64,11 +133,11 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
       originalFilename: `${examId}_해설.csv`,
       normalizedFilename: getAnswerCsvFilename(examId),
     },
-    answerPages: [1, 2, 3, 4].map((page) => ({
+    answerPages: Array.from({ length: maxAnswerPage }, (_, i) => i + 1).map((page) => ({
       originalFilename: `${examId}_해설_p${page}.png`,
       normalizedFilename: getAnswerPageFilename(examId, page),
     })),
-    answerDebug: [1, 2, 3, 4].map((page) => ({
+    answerDebug: Array.from({ length: maxAnswerPage }, (_, i) => i + 1).map((page) => ({
       originalFilename: `${examId}_해설_p${page}_debug.png`,
       normalizedFilename: getAnswerDebugFilename(examId, page),
     })),
@@ -138,7 +207,7 @@ function ExamMetaLinks({ examId, pdfInfo }: ExamMetaLinksProps) {
     };
 
     checkAllFiles();
-  }, [examId, pdfInfo]);
+  }, [examId, pdfInfo, maxAnswerPage]);
 
   // PDF 링크 렌더링 함수
   const renderPdfLink = (url: string) => {
