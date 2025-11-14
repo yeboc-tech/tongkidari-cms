@@ -330,6 +330,27 @@ function OneAnswer({
     setDraggedFile(null);
   };
 
+  // 클립보드 붙여넣기 핸들러
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (mode !== 'edit') return;
+
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          setDraggedFile(file);
+          const previewUrl = URL.createObjectURL(file);
+          setUploadPreviewUrl(previewUrl);
+          setShowUploadDialog(true);
+        }
+        break;
+      }
+    }
+  };
+
   return (
     <div
       className={`border-2 rounded-lg p-4 transition-colors ${
@@ -426,10 +447,12 @@ function OneAnswer({
       {/* 해설 이미지 */}
       <div
         className="bg-gray-100 rounded-lg overflow-hidden relative"
+        tabIndex={mode === 'edit' ? 0 : undefined}
         onDragEnter={mode === 'edit' ? handleDragEnter : undefined}
         onDragLeave={mode === 'edit' ? handleDragLeave : undefined}
         onDragOver={mode === 'edit' ? handleDragOver : undefined}
         onDrop={mode === 'edit' ? handleDrop : undefined}
+        onPaste={mode === 'edit' ? handlePaste : undefined}
       >
         {!currentBase64 && imageError ? (
           <div className="flex items-center justify-center h-48 text-gray-500">
