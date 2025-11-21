@@ -127,7 +127,13 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     // ESC 키로 모달 닫기
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        // 확인 다이얼로그가 열려있으면 다이얼로그만 닫기
+        if (showConfirmDialog) {
+          handleCancelSave();
+        } else {
+          // 확인 다이얼로그가 없으면 BBoxEditor 닫기
+          onClose();
+        }
       }
     };
 
@@ -135,7 +141,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, showConfirmDialog]);
 
   const handleSelect = (bboxIndex: number) => {
     setSelectedBboxIndex(bboxIndex);
