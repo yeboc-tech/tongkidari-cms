@@ -8,21 +8,27 @@ interface BBoxSvgOverlayProps {
 }
 
 function BBoxSvgOverlay({ bbox, index, isSelected, imageSize }: BBoxSvgOverlayProps) {
+  // x0 > x1 또는 y0 > y1인 경우를 처리 (음수 width/height 방지)
+  const x = Math.min(bbox.x0, bbox.x1);
+  const y = Math.min(bbox.y0, bbox.y1);
+  const width = Math.abs(bbox.x1 - bbox.x0);
+  const height = Math.abs(bbox.y1 - bbox.y0);
+
   return (
     <g>
       <rect
-        x={`${(bbox.x0 / imageSize.width) * 100}%`}
-        y={`${(bbox.y0 / imageSize.height) * 100}%`}
-        width={`${((bbox.x1 - bbox.x0) / imageSize.width) * 100}%`}
-        height={`${((bbox.y1 - bbox.y0) / imageSize.height) * 100}%`}
+        x={`${(x / imageSize.width) * 100}%`}
+        y={`${(y / imageSize.height) * 100}%`}
+        width={`${(width / imageSize.width) * 100}%`}
+        height={`${(height / imageSize.height) * 100}%`}
         fill="none"
         stroke={isSelected ? 'red' : 'blue'}
         strokeWidth={isSelected ? '1.5' : '1'}
         strokeDasharray="5,5"
       />
       <text
-        x={`${(bbox.x0 / imageSize.width) * 100}%`}
-        y={`${(bbox.y0 / imageSize.height) * 100}%`}
+        x={`${(x / imageSize.width) * 100}%`}
+        y={`${(y / imageSize.height) * 100}%`}
         fill={isSelected ? 'red' : 'blue'}
         fontSize="14"
         fontWeight="bold"

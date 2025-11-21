@@ -184,19 +184,19 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       setCurrentBBoxes(updated);
       setDragStart({ x, y });
     } else if (isResizing) {
-      const newBBox = { ...currentBBox };
+      let newBBox = { ...currentBBox };
 
       if (isResizing.includes('left')) {
-        newBBox.x0 = roundToTwo(Math.min(x, currentBBox.x1 - 10));
+        newBBox.x0 = roundToTwo(x);
       }
       if (isResizing.includes('right')) {
-        newBBox.x1 = roundToTwo(Math.max(x, currentBBox.x0 + 10));
+        newBBox.x1 = roundToTwo(x);
       }
       if (isResizing.includes('top')) {
-        newBBox.y0 = roundToTwo(Math.min(y, currentBBox.y1 - 10));
+        newBBox.y0 = roundToTwo(y);
       }
       if (isResizing.includes('bottom')) {
-        newBBox.y1 = roundToTwo(Math.max(y, currentBBox.y0 + 10));
+        newBBox.y1 = roundToTwo(y);
       }
 
       updated[selectedBboxIndex] = newBBox;
@@ -205,6 +205,27 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
   };
 
   const handleMouseUp = () => {
+    // 리사이즈 완료 후 좌표 정규화 (x0 > x1 또는 y0 > y1인 경우 스왑)
+    if (isResizing && selectedBboxIndex !== null) {
+      const updated = [...currentBBoxes];
+      const bbox = updated[selectedBboxIndex];
+
+      let needsUpdate = false;
+
+      if (bbox.x0 > bbox.x1) {
+        [bbox.x0, bbox.x1] = [bbox.x1, bbox.x0];
+        needsUpdate = true;
+      }
+      if (bbox.y0 > bbox.y1) {
+        [bbox.y0, bbox.y1] = [bbox.y1, bbox.y0];
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        setCurrentBBoxes(updated);
+      }
+    }
+
     setIsDragging(false);
     setIsResizing(null);
     setDragStart(null);
@@ -410,14 +431,20 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
           {/* Wrapper  */}
           <div
             ref={containerRef}
-            className="relative overflow-auto flex-1"
+            className="relative flex-1 flex items-center justify-center bg-gray-100"
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
             {/* Image Container */}
-            <div className="relative inline-block">
-              <img ref={imageRef} src={currentImageUrl} alt="Problem" className="max-w-full" draggable={false} />
+            <div className="relative max-w-full max-h-full">
+              <img
+                ref={imageRef}
+                src={currentImageUrl}
+                alt="Problem"
+                className="max-w-full max-h-full object-contain"
+                draggable={false}
+              />
 
               {/* BBox SVG 레이어 - 시각적 표시 */}
               <svg
