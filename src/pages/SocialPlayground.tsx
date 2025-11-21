@@ -71,10 +71,21 @@ function SocialPlayground() {
           ? PROBLEM_TAG_TYPES.DETAIL_TONGSA
           : PROBLEM_TAG_TYPES.MOTHER;
 
+        // selectedTagIds에서 prefix 제거
+        const tagIdsWithoutPrefix = selectedTagIds.map(id => {
+          if (categoryType === '통합사회') {
+            // "자세한통사단원_" prefix 제거
+            return id.replace(/^자세한통사단원_/, '');
+          } else {
+            // "사회탐구_" prefix 제거
+            return id.replace(/^사회탐구_/, '');
+          }
+        });
+
         // 1. 필터 조건으로 problem_id 목록 검색
         const problemIds = await Supabase.searchByFilter({
           type: tagType,
-          tagIds: selectedTagIds,
+          tagIds: tagIdsWithoutPrefix,
           years: selectedYears.size > 0 ? Array.from(selectedYears) : undefined,
           grades: selectedGrades.size > 0 ? Array.from(selectedGrades) : undefined,
           accuracyMin: accuracyMin ? parseFloat(accuracyMin) : undefined,
