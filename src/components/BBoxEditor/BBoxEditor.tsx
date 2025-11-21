@@ -431,20 +431,14 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
           {/* Wrapper  */}
           <div
             ref={containerRef}
-            className="relative flex-1 flex items-center justify-center bg-gray-100"
+            className="relative overflow-auto flex-1"
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
             {/* Image Container */}
-            <div className="relative max-w-full max-h-full">
-              <img
-                ref={imageRef}
-                src={currentImageUrl}
-                alt="Problem"
-                className="max-w-full max-h-full object-contain"
-                draggable={false}
-              />
+            <div className="relative inline-block">
+              <img ref={imageRef} src={currentImageUrl} alt="Problem" className="max-w-full" draggable={false} />
 
               {/* BBox SVG 레이어 - 시각적 표시 */}
               <svg
