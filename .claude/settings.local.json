@@ -6,7 +6,8 @@
       "Bash(npm run build:*)",
       "Bash(node test-decompose.js:*)",
       "Bash(cat:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

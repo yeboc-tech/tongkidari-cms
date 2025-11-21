@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { type BBox } from '../../api/Api';
+import BBoxInfoFooter from './components/BBoxInfoFooter';
 
 interface BBoxEditorProps {
   imageUrl: string;
@@ -217,6 +218,43 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     setIsResizing(direction);
   };
 
+  // BBox 추가 핸들러
+  const handleAddBBox = () => {
+    if (!imageSize) return;
+
+    // 새 BBox를 이미지 중앙에 작은 크기로 생성
+    const centerX = imageSize.width / 2;
+    const centerY = imageSize.height / 2;
+    const defaultWidth = 200;
+    const defaultHeight = 100;
+
+    const newBBox: BBox = {
+      page: currentPage,
+      x0: roundToTwo(centerX - defaultWidth / 2),
+      y0: roundToTwo(centerY - defaultHeight / 2),
+      x1: roundToTwo(centerX + defaultWidth / 2),
+      y1: roundToTwo(centerY + defaultHeight / 2),
+    };
+
+    const updatedBBoxes = [...currentBBoxes, newBBox];
+    setCurrentBBoxes(updatedBBoxes);
+    // 새로 추가된 BBox를 선택
+    setSelectedBboxIndex(updatedBBoxes.length - 1);
+  };
+
+  // BBox 삭제 핸들러
+  const handleRemoveBBox = (index: number) => {
+    const updatedBBoxes = currentBBoxes.filter((_, i) => i !== index);
+    setCurrentBBoxes(updatedBBoxes);
+
+    // 선택된 인덱스 조정
+    if (selectedBboxIndex === index) {
+      setSelectedBboxIndex(null);
+    } else if (selectedBboxIndex !== null && selectedBboxIndex > index) {
+      setSelectedBboxIndex(selectedBboxIndex - 1);
+    }
+  };
+
   // 더블 클릭으로 bbox 영역들을 크롭하여 세로로 합친 후 저장
   const handleDoubleClick = async () => {
     if (!imageRef.current || !imageSize || currentBBoxes.length === 0) return;
@@ -398,19 +436,34 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
                 height: '100%',
               }}
             >
-              {currentBBoxes.map((bbox, index) => (
-                <rect
-                  key={index}
-                  x={`${(bbox.x0 / imageSize.width) * 100}%`}
-                  y={`${(bbox.y0 / imageSize.height) * 100}%`}
-                  width={`${((bbox.x1 - bbox.x0) / imageSize.width) * 100}%`}
-                  height={`${((bbox.y1 - bbox.y0) / imageSize.height) * 100}%`}
-                  fill="none"
-                  stroke={selectedBboxIndex === index ? 'blue' : 'red'}
-                  strokeWidth={selectedBboxIndex === index ? '3' : '2'}
-                  strokeDasharray="5,5"
-                />
-              ))}
+              {currentBBoxes.map((bbox, index) => {
+                const isSelected = selectedBboxIndex === index;
+                return (
+                  <g key={index}>
+                    <rect
+                      x={`${(bbox.x0 / imageSize.width) * 100}%`}
+                      y={`${(bbox.y0 / imageSize.height) * 100}%`}
+                      width={`${((bbox.x1 - bbox.x0) / imageSize.width) * 100}%`}
+                      height={`${((bbox.y1 - bbox.y0) / imageSize.height) * 100}%`}
+                      fill="none"
+                      stroke={isSelected ? 'red' : 'blue'}
+                      strokeWidth={isSelected ? '1.5' : '1'}
+                      strokeDasharray="5,5"
+                    />
+                    <text
+                      x={`${(bbox.x0 / imageSize.width) * 100}%`}
+                      y={`${(bbox.y0 / imageSize.height) * 100}%`}
+                      fill={isSelected ? 'red' : 'blue'}
+                      fontSize="14"
+                      fontWeight="bold"
+                      dx="-2"
+                      dy="-4"
+                    >
+                      {index + 1}
+                    </text>
+                  </g>
+                );
+              })}
             </svg>
 
             {/* Draggable Areas - 각 bbox마다 */}
@@ -438,15 +491,15 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
                 return (
                   <div
                     key={`${bboxIndex}-${direction}`}
-                    className="absolute w-3 h-3 cursor-nwse-resize"
+                    className="absolute w-1.5 h-1.5 cursor-nwse-resize"
                     style={{
-                      backgroundColor: selectedBboxIndex === bboxIndex ? 'blue' : 'red',
+                      backgroundColor: selectedBboxIndex === bboxIndex ? 'red' : 'blue',
                       left: isLeft
-                        ? `calc(${(bbox.x0 / imageSize.width) * 100}% - 6px)`
-                        : `calc(${(bbox.x1 / imageSize.width) * 100}% - 6px)`,
+                        ? `calc(${(bbox.x0 / imageSize.width) * 100}% - 3px)`
+                        : `calc(${(bbox.x1 / imageSize.width) * 100}% - 3px)`,
                       top: isTop
-                        ? `calc(${(bbox.y0 / imageSize.height) * 100}% - 6px)`
-                        : `calc(${(bbox.y1 / imageSize.height) * 100}% - 6px)`,
+                        ? `calc(${(bbox.y0 / imageSize.height) * 100}% - 3px)`
+                        : `calc(${(bbox.y1 / imageSize.height) * 100}% - 3px)`,
                     }}
                     onMouseDown={(e) => handleResizeStart(e, direction, bboxIndex)}
                   />
@@ -473,30 +526,13 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
             →
           </button>
 
-          <div className="mt-4 text-sm text-gray-600">
-            <div className="flex justify-between items-center mb-2">
-              <p className="font-semibold">
-                BBox 개수: {currentBBoxes.length} | 페이지: {currentPage + 1}
-                {selectedBboxIndex !== null && ` | 선택: ${selectedBboxIndex + 1}번째`}
-              </p>
-            </div>
-
-            {/* 모든 BBox 정보 표시 */}
-            <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2 mb-2">
-              {currentBBoxes.map((bbox, index) => (
-                <p
-                  key={index}
-                  className={`text-xs font-mono mb-1 ${selectedBboxIndex === index ? 'text-blue-600 font-bold' : 'text-gray-700'}`}
-                >
-                  [{index + 1}] (PX) {'{'}page: {bbox.page}, x0: {roundToTwo(bbox.x0)}, y0: {roundToTwo(bbox.y0)}, x1: {roundToTwo(bbox.x1)}, y1: {roundToTwo(bbox.y1)}{'}'}
-                </p>
-              ))}
-            </div>
-
-            <p className="text-xs text-gray-500">
-              💡 더블 클릭으로 저장 | 파란색: 선택된 BBox
-            </p>
-          </div>
+          <BBoxInfoFooter
+            bboxes={currentBBoxes}
+            currentPage={currentPage}
+            selectedBboxIndex={selectedBboxIndex}
+            onAddBBox={handleAddBBox}
+            onRemoveBBox={handleRemoveBBox}
+          />
         </div>
       </div>
 
