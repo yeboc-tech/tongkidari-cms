@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import ChapterTree from '../ChapterTree/ChapterTree';
-import { 자세한통합사회_단원_태그 } from '../../ssot/curriculumStructure';
+import { 자세한통사단원_1 } from '../../ssot/자세한통사_단원_태그/자세한통사단원_1';
+import { 자세한통사단원_2 } from '../../ssot/자세한통사_단원_태그/자세한통사단원_2';
 import { 마더텅_단원_태그 } from '../../ssot/마더텅_단원_태그';
 import type { Chapter } from '../../ssot/types';
 import { SUBJECTS } from '../../ssot/subjects';
@@ -129,10 +130,11 @@ function SocialLeftLayout({
   // 현재 선택된 카테고리에 따라 데이터 결정 (메모이제이션)
   const currentData = useMemo((): Chapter[] => {
     if (categoryType === '통합사회') {
-      return 자세한통합사회_단원_태그;
+      return [자세한통사단원_1, 자세한통사단원_2];
     } else {
       // 사회탐구: 선택된 과목의 데이터 반환
-      const subjectData = 마더텅_단원_태그.find((chapter) => chapter.id === selectedSubject);
+      const subjectId = `사회탐구_${selectedSubject}`;
+      const subjectData = 마더텅_단원_태그.find((chapter) => chapter.id === subjectId);
       return subjectData ? [subjectData] : [];
     }
   }, [categoryType, selectedSubject]);
@@ -199,7 +201,8 @@ function SocialLeftLayout({
               >
                 {SUBJECTS.사회['2015교육과정'].map((subject) => {
                   // 마더텅_단원_태그에 해당 과목이 있는지 확인
-                  const isAvailable = 마더텅_단원_태그.some((book) => book.id === subject);
+                  const subjectId = `사회탐구_${subject}`;
+                  const isAvailable = 마더텅_단원_태그.some((book) => book.id === subjectId);
                   return (
                     <option key={subject} value={subject} disabled={!isAvailable}>
                       {subject}

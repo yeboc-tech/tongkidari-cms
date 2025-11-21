@@ -3,7 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import CurriculumTagInput from '../components/tag-input/CurriculumTagInput/CurriculumTagInput';
 import CustomTagInput from '../components/tag-input/CustomTagInput/CustomTagInput';
 import ChapterTree from '../components/ChapterTree/ChapterTree';
-import { 자세한통합사회_단원_태그 } from '../ssot/curriculumStructure';
+import { 자세한통사단원_1 } from '../ssot/자세한통사_단원_태그/자세한통사단원_1';
+import { 자세한통사단원_2 } from '../ssot/자세한통사_단원_태그/자세한통사단원_2';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 
 interface SelectedTag {
@@ -45,7 +46,7 @@ function TestPage() {
       {/* 단원 트리 컴포넌트 테스트 */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold text-gray-900 mb-4">단원 트리 (자세한통합사회)</h2>
-        <ChapterTree data={자세한통합사회_단원_태그} />
+        <ChapterTree data={[자세한통사단원_1, 자세한통사단원_2]} />
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
@@ -76,7 +77,7 @@ function TestPage() {
 
       <div className="bg-white p-6 rounded-lg shadow">
         <CurriculumTagInput
-          data={자세한통합사회_단원_태그}
+          data={[자세한통사단원_1, 자세한통사단원_2]}
           onSelect={handleSelectIntegrated}
           placeholder="자세한통사 단원 태그 입력기"
         />
