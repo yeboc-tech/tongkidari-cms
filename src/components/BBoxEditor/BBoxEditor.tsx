@@ -137,24 +137,23 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     };
   }, [onClose]);
 
-  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>, bboxIndex: number) => {
-    if (!imageRef.current || !imageSize) return;
+  const handleSelect = (bboxIndex: number) => {
+    setSelectedBboxIndex(bboxIndex);
+  };
 
-    const rect = imageRef.current.getBoundingClientRect();
-    const scaleX = imageSize.width / rect.width;
-    const scaleY = imageSize.height / rect.height;
+  const handleDrag = (bboxIndex: number, dx: number, dy: number) => {
+    const updated = [...currentBBoxes];
+    const bbox = updated[bboxIndex];
 
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    updated[bboxIndex] = {
+      ...bbox,
+      x0: roundToTwo(bbox.x0 + dx),
+      x1: roundToTwo(bbox.x1 + dx),
+      y0: roundToTwo(bbox.y0 + dy),
+      y1: roundToTwo(bbox.y1 + dy),
+    };
 
-    const bbox = currentBBoxes[bboxIndex];
-
-    // bbox 내부 클릭인지 확인
-    if (x >= bbox.x0 && x <= bbox.x1 && y >= bbox.y0 && y <= bbox.y1) {
-      setSelectedBboxIndex(bboxIndex);
-      setIsDragging(true);
-      setDragStart({ x, y });
-    }
+    setCurrentBBoxes(updated);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -467,7 +466,8 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
                   index={index}
                   isSelected={selectedBboxIndex === index}
                   imageSize={imageSize}
-                  onMouseDown={handleImageClick}
+                  onSelect={handleSelect}
+                  onDrag={handleDrag}
                   onDoubleClick={handleDoubleClick}
                   onResizeStart={handleResizeStart}
                 />
