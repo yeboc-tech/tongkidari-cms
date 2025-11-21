@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { type BBox } from '../../api/Api';
 import BBoxInfoFooter from './components/BBoxInfoFooter';
+import BBoxSvgOverlay from './components/BBoxSvgOverlay';
+import BBoxInteractiveOverlay from './components/BBoxInteractiveOverlay';
 
 interface BBoxEditorProps {
   imageUrl: string;
@@ -21,15 +23,16 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
   };
 
   // 모든 bbox를 px 단위로 변환
-  const initialBBoxes: BBox[] = bbox.length > 0
-    ? bbox.map(b => ({
-        page: b.page,
-        x0: roundToTwo(b.x0 * PT_TO_PX_SCALE),
-        y0: roundToTwo(b.y0 * PT_TO_PX_SCALE),
-        x1: roundToTwo(b.x1 * PT_TO_PX_SCALE),
-        y1: roundToTwo(b.y1 * PT_TO_PX_SCALE),
-      }))
-    : [{ page: 0, x0: 0, y0: 0, x1: 0, y1: 0 }];
+  const initialBBoxes: BBox[] =
+    bbox.length > 0
+      ? bbox.map((b) => ({
+          page: b.page,
+          x0: roundToTwo(b.x0 * PT_TO_PX_SCALE),
+          y0: roundToTwo(b.y0 * PT_TO_PX_SCALE),
+          x1: roundToTwo(b.x1 * PT_TO_PX_SCALE),
+          y1: roundToTwo(b.y1 * PT_TO_PX_SCALE),
+        }))
+      : [{ page: 0, x0: 0, y0: 0, x1: 0, y1: 0 }];
 
   const [currentBBoxes, setCurrentBBoxes] = useState<BBox[]>(initialBBoxes);
   const [selectedBboxIndex, setSelectedBboxIndex] = useState<number | null>(null);
@@ -147,12 +150,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     const bbox = currentBBoxes[bboxIndex];
 
     // bbox 내부 클릭인지 확인
-    if (
-      x >= bbox.x0 &&
-      x <= bbox.x1 &&
-      y >= bbox.y0 &&
-      y <= bbox.y1
-    ) {
+    if (x >= bbox.x0 && x <= bbox.x1 && y >= bbox.y0 && y <= bbox.y1) {
       setSelectedBboxIndex(bboxIndex);
       setIsDragging(true);
       setDragStart({ x, y });
@@ -274,7 +272,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
       });
 
       // 각 bbox의 크기 계산 (PX 단위)
-      const croppedImages = sortedBBoxes.map(bbox => ({
+      const croppedImages = sortedBBoxes.map((bbox) => ({
         bbox,
         width: bbox.x1 - bbox.x0,
         height: bbox.y1 - bbox.y0,
@@ -282,7 +280,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
 
       // 전체 캔버스 크기 계산
       const GAP = 2; // 이미지 간 간격
-      const maxWidth = Math.max(...croppedImages.map(item => item.width));
+      const maxWidth = Math.max(...croppedImages.map((item) => item.width));
       const totalHeight = croppedImages.reduce((sum, item) => sum + item.height, 0) + GAP * (croppedImages.length - 1);
 
       // 합친 이미지를 그릴 캔버스 생성
@@ -348,7 +346,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
     if (croppedFile && croppedBBoxes) {
       // PX → PT 변환
       const PX_TO_PT_SCALE = 72 / 200;
-      const bboxesInPT: BBox[] = croppedBBoxes.map(bbox => ({
+      const bboxesInPT: BBox[] = croppedBBoxes.map((bbox) => ({
         page: bbox.page,
         x0: roundToTwo(bbox.x0 * PX_TO_PT_SCALE),
         y0: roundToTwo(bbox.y0 * PX_TO_PT_SCALE),
@@ -378,10 +376,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
         <div className="bg-white p-4 rounded-lg max-w-md">
           <h3 className="text-lg font-bold text-red-600 mb-2">오류</h3>
           <p className="text-sm text-gray-700 mb-4">{loadError}</p>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
+          <button onClick={onClose} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             닫기
           </button>
         </div>
@@ -412,102 +407,52 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
             </button>
           </div>
 
-        <div
-          ref={containerRef}
-          className="relative overflow-auto flex-1"
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          <div className="relative inline-block">
-            <img
-              ref={imageRef}
-              src={currentImageUrl}
-              alt="Problem"
-              className="max-w-full"
-              draggable={false}
-            />
+          {/* Wrapper  */}
+          <div
+            ref={containerRef}
+            className="relative overflow-auto flex-1"
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            {/* Image Container */}
+            <div className="relative inline-block">
+              <img ref={imageRef} src={currentImageUrl} alt="Problem" className="max-w-full" draggable={false} />
 
-            {/* BBox Overlays - 모든 bbox 표시 */}
-            <svg
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                width: '100%',
-                height: '100%',
-              }}
-            >
-              {currentBBoxes.map((bbox, index) => {
-                const isSelected = selectedBboxIndex === index;
-                return (
-                  <g key={index}>
-                    <rect
-                      x={`${(bbox.x0 / imageSize.width) * 100}%`}
-                      y={`${(bbox.y0 / imageSize.height) * 100}%`}
-                      width={`${((bbox.x1 - bbox.x0) / imageSize.width) * 100}%`}
-                      height={`${((bbox.y1 - bbox.y0) / imageSize.height) * 100}%`}
-                      fill="none"
-                      stroke={isSelected ? 'red' : 'blue'}
-                      strokeWidth={isSelected ? '1.5' : '1'}
-                      strokeDasharray="5,5"
-                    />
-                    <text
-                      x={`${(bbox.x0 / imageSize.width) * 100}%`}
-                      y={`${(bbox.y0 / imageSize.height) * 100}%`}
-                      fill={isSelected ? 'red' : 'blue'}
-                      fontSize="14"
-                      fontWeight="bold"
-                      dx="-2"
-                      dy="-4"
-                    >
-                      {index + 1}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* Draggable Areas - 각 bbox마다 */}
-            {currentBBoxes.map((bbox, index) => (
-              <div
-                key={`drag-${index}`}
-                className="absolute cursor-move"
+              {/* BBox SVG 레이어 - 시각적 표시 */}
+              <svg
+                className="absolute inset-0 pointer-events-none"
                 style={{
-                  left: `${(bbox.x0 / imageSize.width) * 100}%`,
-                  top: `${(bbox.y0 / imageSize.height) * 100}%`,
-                  width: `${((bbox.x1 - bbox.x0) / imageSize.width) * 100}%`,
-                  height: `${((bbox.y1 - bbox.y0) / imageSize.height) * 100}%`,
+                  width: '100%',
+                  height: '100%',
                 }}
-                onMouseDown={(e) => handleImageClick(e, index)}
-                onDoubleClick={handleDoubleClick}
-              />
-            ))}
-
-            {/* Resize Handles - 각 bbox마다 */}
-            {currentBBoxes.map((bbox, bboxIndex) =>
-              ['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((direction) => {
-                const isTop = direction.startsWith('top');
-                const isLeft = direction.endsWith('left');
-
-                return (
-                  <div
-                    key={`${bboxIndex}-${direction}`}
-                    className="absolute w-1.5 h-1.5 cursor-nwse-resize"
-                    style={{
-                      backgroundColor: selectedBboxIndex === bboxIndex ? 'red' : 'blue',
-                      left: isLeft
-                        ? `calc(${(bbox.x0 / imageSize.width) * 100}% - 3px)`
-                        : `calc(${(bbox.x1 / imageSize.width) * 100}% - 3px)`,
-                      top: isTop
-                        ? `calc(${(bbox.y0 / imageSize.height) * 100}% - 3px)`
-                        : `calc(${(bbox.y1 / imageSize.height) * 100}% - 3px)`,
-                    }}
-                    onMouseDown={(e) => handleResizeStart(e, direction, bboxIndex)}
+              >
+                {currentBBoxes.map((bbox, index) => (
+                  <BBoxSvgOverlay
+                    key={index}
+                    bbox={bbox}
+                    index={index}
+                    isSelected={selectedBboxIndex === index}
+                    imageSize={imageSize}
                   />
-                );
-              })
-            )}
+                ))}
+              </svg>
+
+              {/* BBox 인터랙션 레이어 - 드래그/리사이즈 */}
+              {currentBBoxes.map((bbox, index) => (
+                <BBoxInteractiveOverlay
+                  key={index}
+                  bbox={bbox}
+                  index={index}
+                  isSelected={selectedBboxIndex === index}
+                  imageSize={imageSize}
+                  onMouseDown={handleImageClick}
+                  onDoubleClick={handleDoubleClick}
+                  onResizeStart={handleResizeStart}
+                />
+              ))}
+            </div>
           </div>
-        </div>
 
           {/* Page Navigation Buttons */}
           <button
@@ -563,10 +508,13 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
                   return (
                     <div key={index} className="text-xs mb-2">
                       <p className="font-mono">
-                        [{index + 1}] PX: {'{'}page: {bbox.page}, x0: {bbox.x0}, y0: {bbox.y0}, x1: {bbox.x1}, y1: {bbox.y1}{'}'}
+                        [{index + 1}] PX: {'{'}page: {bbox.page}, x0: {bbox.x0}, y0: {bbox.y0}, x1: {bbox.x1}, y1:{' '}
+                        {bbox.y1}
+                        {'}'}
                       </p>
                       <p className="font-mono text-blue-600 ml-5">
-                        PT: {'{'}page: {bboxPT.page}, x0: {bboxPT.x0}, y0: {bboxPT.y0}, x1: {bboxPT.x1}, y1: {bboxPT.y1}{'}'}
+                        PT: {'{'}page: {bboxPT.page}, x0: {bboxPT.x0}, y0: {bboxPT.y0}, x1: {bboxPT.x1}, y1: {bboxPT.y1}
+                        {'}'}
                       </p>
                     </div>
                   );
