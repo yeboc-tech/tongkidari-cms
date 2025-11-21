@@ -3,16 +3,16 @@
  * Single Source of Truth for 마더텅 Society and Culture curriculum structure
  */
 
-import type { Book } from '../types';
+import type { Chapter } from '../types';
 
-export const 사회문화: Book = {
+export const 사회문화: Chapter = {
   id: '사회문화',
   title: '사회·문화',
   chapters: [
     {
       id: '사회문화-1',
       title: 'I. 사회·문화 현상의 탐구',
-      topics: [
+      chapters: [
         {
           id: '사회문화-1-1',
           title: '01. 사회·문화 현상의 이해',
@@ -30,7 +30,7 @@ export const 사회문화: Book = {
     {
       id: '사회문화-2',
       title: 'II. 개인과 사회 구조',
-      topics: [
+      chapters: [
         {
           id: '사회문화-2-1',
           title: '01. 개인과 사회의 관계를 바라보는 관점',
@@ -52,7 +52,7 @@ export const 사회문화: Book = {
     {
       id: '사회문화-3',
       title: 'III. 문화와 일상생활',
-      topics: [
+      chapters: [
         {
           id: '사회문화-3-1',
           title: '01. 문화의 이해',
@@ -70,7 +70,7 @@ export const 사회문화: Book = {
     {
       id: '사회문화-4',
       title: 'IV. 사회 계층과 불평등',
-      topics: [
+      chapters: [
         {
           id: '사회문화-4-1',
           title: '01. 사회 불평등 현상과 계층',
@@ -88,7 +88,7 @@ export const 사회문화: Book = {
     {
       id: '사회문화-5',
       title: 'V. 현대의 사회 변동',
-      topics: [
+      chapters: [
         {
           id: '사회문화-5-1',
           title: '01. 사회 변동과 사회 운동',

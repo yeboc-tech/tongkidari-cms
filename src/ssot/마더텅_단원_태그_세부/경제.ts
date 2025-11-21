@@ -3,16 +3,16 @@
  * Single Source of Truth for 마더텅 Economy curriculum structure
  */
 
-import type { Book } from '../types';
+import type { Chapter } from '../types';
 
-export const 경제: Book = {
+export const 경제: Chapter = {
   id: '경제',
   title: '경제',
   chapters: [
     {
       id: '경제-1',
       title: '1. 경제생활',
-      topics: [
+      chapters: [
         {
           id: '경제-1-1',
           title: '01. 경제생활 및 경제 주체와 객체',
@@ -26,7 +26,7 @@ export const 경제: Book = {
     {
       id: '경제-2',
       title: '2. 경제 문제의 합리적 해결',
-      topics: [
+      chapters: [
         {
           id: '경제-2-1',
           title: '01. 합리적 선택과 기회비용',
@@ -40,7 +40,7 @@ export const 경제: Book = {
     {
       id: '경제-3',
       title: '3. 경제 체제와 경제 목표',
-      topics: [
+      chapters: [
         {
           id: '경제-3-1',
           title: '01. 다양한 경제 체제',
@@ -50,7 +50,7 @@ export const 경제: Book = {
     {
       id: '경제-4',
       title: '4. 경제 주체의 역할과 의사 결정',
-      topics: [
+      chapters: [
         {
           id: '경제-4-1',
           title: '01. 가계의 역할과 의사 결정',
@@ -68,7 +68,7 @@ export const 경제: Book = {
     {
       id: '경제-5',
       title: '5. 시장 가격의 결정과 변동',
-      topics: [
+      chapters: [
         {
           id: '경제-5-1',
           title: '01. 수요와 공급',
@@ -86,7 +86,7 @@ export const 경제: Book = {
     {
       id: '경제-6',
       title: '6. 시장의 효율성',
-      topics: [
+      chapters: [
         {
           id: '경제-6-1',
           title: '01. 잉여와 시장의 효율성',
@@ -96,7 +96,7 @@ export const 경제: Book = {
     {
       id: '경제-7',
       title: '7. 시장 실패',
-      topics: [
+      chapters: [
         {
           id: '경제-7-1',
           title: '01. 시장 실패',
@@ -106,7 +106,7 @@ export const 경제: Book = {
     {
       id: '경제-8',
       title: '8. 정부의 시장 개입과 한계',
-      topics: [
+      chapters: [
         {
           id: '경제-8-1',
           title: '01. 시장 실패의 개선',
@@ -120,7 +120,7 @@ export const 경제: Book = {
     {
       id: '경제-9',
       title: '9. 국민 경제 순환과 경제 성장',
-      topics: [
+      chapters: [
         {
           id: '경제-9-1',
           title: '01. 국민 경제의 순환',
@@ -134,7 +134,7 @@ export const 경제: Book = {
     {
       id: '경제-10',
       title: '10. 실업과 인플레이션',
-      topics: [
+      chapters: [
         {
           id: '경제-10-1',
           title: '01. 실업',
@@ -148,7 +148,7 @@ export const 경제: Book = {
     {
       id: '경제-11',
       title: '11. 경기 변동과 경제 안정화 정책',
-      topics: [
+      chapters: [
         {
           id: '경제-11-1',
           title: '01. 총수요와 총공급',
@@ -162,7 +162,7 @@ export const 경제: Book = {
     {
       id: '경제-12',
       title: '12. 무역 원리와 무역 정책',
-      topics: [
+      chapters: [
         {
           id: '경제-12-1',
           title: '01. 무역 원리',
@@ -176,7 +176,7 @@ export const 경제: Book = {
     {
       id: '경제-13',
       title: '13. 환율과 국제 수지',
-      topics: [
+      chapters: [
         {
           id: '경제-13-1',
           title: '01. 환율',
@@ -190,7 +190,7 @@ export const 경제: Book = {
     {
       id: '경제-14',
       title: '14. 경제생활과 금융',
-      topics: [
+      chapters: [
         {
           id: '경제-14-1',
           title: '01. 금융과 신용 관리',

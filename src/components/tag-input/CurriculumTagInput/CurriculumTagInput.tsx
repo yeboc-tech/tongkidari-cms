@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Book, Chapter, Topic } from '../../../ssot/types';
+import type { Chapter } from '../../../ssot/types';
 
 // 한글 초성 추출 함수
 const getChosung = (text: string): string => {
@@ -40,9 +40,7 @@ const matchesChosung = (text: string, query: string): boolean => {
 };
 
 interface SearchResult {
-  book: Book;
-  chapter: Chapter;
-  topic: Topic;
+  path: Chapter[]; // 계층 경로 (예: [교과서, 대단원, 중단원, 소단원])
   tagIds: string[];
   tagLabels: string[];
 }
@@ -53,7 +51,7 @@ interface SelectedTag {
 }
 
 interface CurriculumTagInputProps {
-  data: Book[];
+  data: Chapter[];
   onSelect: (tag: SelectedTag | null) => void;
   placeholder?: string;
   value?: SelectedTag | null;
@@ -101,6 +99,36 @@ function CurriculumTagInput({
     setSelectedTag(value ?? null);
   }, [value]);
 
+  // 재귀적으로 Chapter 트리를 순회하며 검색
+  const searchChapters = (chapters: Chapter[], parentPath: Chapter[] = []): SearchResult[] => {
+    const results: SearchResult[] = [];
+    const query = searchText.toLowerCase();
+
+    chapters.forEach((chapter) => {
+      const currentPath = [...parentPath, chapter];
+
+      // 현재 Chapter가 검색어와 매치되는지 확인
+      const isMatch = matchesChosung(chapter.title, query);
+
+      // 하위 chapters가 없으면 리프 노드 -> 검색 결과에 추가
+      if (!chapter.chapters || chapter.chapters.length === 0) {
+        if (isMatch || parentPath.some((p) => matchesChosung(p.title, query))) {
+          results.push({
+            path: currentPath,
+            tagIds: currentPath.map((c) => c.id),
+            tagLabels: currentPath.map((c) => c.title),
+          });
+        }
+      } else {
+        // 하위 chapters가 있으면 재귀적으로 탐색
+        const childResults = searchChapters(chapter.chapters, currentPath);
+        results.push(...childResults);
+      }
+    });
+
+    return results;
+  };
+
   // 검색 로직
   useEffect(() => {
     if (!searchText.trim()) {
@@ -110,30 +138,7 @@ function CurriculumTagInput({
       return;
     }
 
-    const searchResults: SearchResult[] = [];
-    const query = searchText.toLowerCase();
-
-    // 모든 Book, Chapter, Topic을 순회하며 검색
-    data.forEach((book) => {
-      book.chapters.forEach((chapter) => {
-        chapter.topics.forEach((topic) => {
-          // Book, Chapter, Topic 중 하나라도 매치되면 결과에 추가 (초성 검색 포함)
-          if (
-            matchesChosung(book.title, query) ||
-            matchesChosung(chapter.title, query) ||
-            matchesChosung(topic.title, query)
-          ) {
-            searchResults.push({
-              book,
-              chapter,
-              topic,
-              tagIds: [book.id, chapter.id, topic.id],
-              tagLabels: [book.title, chapter.title, topic.title],
-            });
-          }
-        });
-      });
-    });
+    const searchResults = searchChapters(data);
 
     setResults(searchResults);
     setIsOpen(searchResults.length > 0);
@@ -413,11 +418,12 @@ function CurriculumTagInput({
                 }}
               >
                 <div className="text-sm text-gray-600">
-                  {highlightText(result.book.title, searchText)}
-                  <span className="mx-2 text-gray-400">&gt;</span>
-                  {highlightText(result.chapter.title, searchText)}
-                  <span className="mx-2 text-gray-400">&gt;</span>
-                  {highlightText(result.topic.title, searchText)}
+                  {result.path.map((chapter, idx) => (
+                    <span key={chapter.id}>
+                      {idx > 0 && <span className="mx-2 text-gray-400">&gt;</span>}
+                      {highlightText(chapter.title, searchText)}
+                    </span>
+                  ))}
                 </div>
               </div>
             );

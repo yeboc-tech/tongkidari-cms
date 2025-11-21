@@ -3,20 +3,20 @@
  * Single Source of Truth for 마더텅 Ethics and Thought curriculum structure
  */
 
-import type { Book } from '../types';
+import type { Chapter } from '../types';
 
-export const 생활과윤리: Book = {
+export const 생활과윤리: Chapter = {
   id: '생활과윤리',
   title: '생활과 윤리',
   chapters: [
     {
       id: '생활과윤리-1',
       title: 'I. 현대의 삶과 실천 윤리',
-      topics: [
+      chapters: [
         {
           id: '생활과윤리-1-1',
           title: '1. 현대 생활과 실천 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-1-1-1',
               title: '01. 현대인의 삶과 다양한 윤리적 쟁점들',
@@ -30,7 +30,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-1-2',
           title: '2. 현대 윤리 문제에 대한 접근',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-1-2-1',
               title: '01. 동양 윤리의 접근',
@@ -44,7 +44,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-1-3',
           title: '3. 윤리 문제에 대한 탐구와 성찰',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-1-3-1',
               title: '01. 도덕적 탐구의 방법',
@@ -60,11 +60,11 @@ export const 생활과윤리: Book = {
     {
       id: '생활과윤리-2',
       title: 'II. 생명과 윤리',
-      topics: [
+      chapters: [
         {
           id: '생활과윤리-2-1',
           title: '1. 삶과 죽음의 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-2-1-1',
               title: '01. 출생의 의미와 삶의 가치',
@@ -78,7 +78,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-2-2',
           title: '2. 생명 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-2-2-1',
               title: '01. 생명 복제와 유전자 치료 문제',
@@ -92,7 +92,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-2-3',
           title: '3. 사랑과 성 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-2-3-1',
               title: '01. 사랑과 성의 관계',
@@ -108,11 +108,11 @@ export const 생활과윤리: Book = {
     {
       id: '생활과윤리-3',
       title: 'III. 사회와 윤리',
-      topics: [
+      chapters: [
         {
           id: '생활과윤리-3-1',
           title: '1. 직업과 청렴의 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-3-1-1',
               title: '01. 직업 생활과 행복한 삶',
@@ -126,7 +126,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-3-2',
           title: '2. 사회 정의와 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-3-2-1',
               title: '01. 사회 정의의 의미',
@@ -144,7 +144,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-3-3',
           title: '3. 국가와 시민의 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-3-3-1',
               title: '01. 국가의 권위와 시민에 대한 의무',
@@ -160,11 +160,11 @@ export const 생활과윤리: Book = {
     {
       id: '생활과윤리-4',
       title: 'IV. 과학과 윤리',
-      topics: [
+      chapters: [
         {
           id: '생활과윤리-4-1',
           title: '1. 과학 기술과 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-4-1-1',
               title: '01. 과학 기술의 가치 중립성 논쟁',
@@ -174,7 +174,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-4-2',
           title: '2. 정보 사회와 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-4-2-1',
               title: '01. 정보 통신 기술의 발전과 윤리적 문제',
@@ -188,7 +188,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-4-3',
           title: '3. 자연과 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-4-3-1',
               title: '01. 인간과 자연의 관계에 대한 다양한 관점',
@@ -204,11 +204,11 @@ export const 생활과윤리: Book = {
     {
       id: '생활과윤리-5',
       title: 'V. 문화와 윤리',
-      topics: [
+      chapters: [
         {
           id: '생활과윤리-5-1',
           title: '1. 예술과 대중문화 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-5-1-1',
               title: '01. 미적 가치와 윤리적 가치',
@@ -222,7 +222,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-5-2',
           title: '2. 의식주 윤리와 윤리적 소비',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-5-2-1',
               title: '01. 의식주의 윤리',
@@ -236,7 +236,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-5-3',
           title: '3. 다문화 사회의 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-5-3-1',
               title: '01. 문화 다양성과 존중',
@@ -252,11 +252,11 @@ export const 생활과윤리: Book = {
     {
       id: '생활과윤리-6',
       title: 'VI. 평화와 공존의 윤리',
-      topics: [
+      chapters: [
         {
           id: '생활과윤리-6-1',
           title: '1. 갈등 해결과 소통의 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-6-1-1',
               title: '01. 사회 갈등과 사회 통합',
@@ -270,7 +270,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-6-2',
           title: '2. 민족 통합의 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-6-2-1',
               title: '01. 통일 문제를 둘러싼 쟁점',
@@ -284,7 +284,7 @@ export const 생활과윤리: Book = {
         {
           id: '생활과윤리-6-3',
           title: '3. 지구촌 평화의 윤리',
-          subtopics: [
+          chapters: [
             {
               id: '생활과윤리-6-3-1',
               title: '01. 국제 분쟁의 해결과 평화',

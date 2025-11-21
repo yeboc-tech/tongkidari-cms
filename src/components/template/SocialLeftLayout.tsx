@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import ChapterTree from '../ChapterTree/ChapterTree';
 import { 자세한통합사회_단원_태그 } from '../../ssot/curriculumStructure';
 import { 마더텅_단원_태그 } from '../../ssot/마더텅_단원_태그';
-import type { Book } from '../../ssot/types';
+import type { Chapter } from '../../ssot/types';
 import { SUBJECTS } from '../../ssot/subjects';
 
 type CategoryType = '통합사회' | '사회탐구';
@@ -127,12 +127,12 @@ function SocialLeftLayout({
   };
 
   // 현재 선택된 카테고리에 따라 데이터 결정 (메모이제이션)
-  const currentData = useMemo((): Book[] => {
+  const currentData = useMemo((): Chapter[] => {
     if (categoryType === '통합사회') {
       return 자세한통합사회_단원_태그;
     } else {
       // 사회탐구: 선택된 과목의 데이터 반환
-      const subjectData = 마더텅_단원_태그.find((book) => book.id === selectedSubject);
+      const subjectData = 마더텅_단원_태그.find((chapter) => chapter.id === selectedSubject);
       return subjectData ? [subjectData] : [];
     }
   }, [categoryType, selectedSubject]);

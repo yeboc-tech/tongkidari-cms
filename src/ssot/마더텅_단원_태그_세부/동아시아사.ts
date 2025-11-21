@@ -3,20 +3,20 @@
  * Single Source of Truth for 마더텅 East Asian History curriculum structure
  */
 
-import type { Book } from '../types';
+import type { Chapter } from '../types';
 
-export const 동아시아사: Book = {
+export const 동아시아사: Chapter = {
   id: '동아시아사',
   title: '동아시아사',
   chapters: [
     {
       id: '동아시아사-1',
       title: 'I. 동아시아 역사의 시작',
-      topics: [
+      chapters: [
         {
           id: '동아시아사-1-1',
           title: '1. 동아시아의 자연환경과 생업',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-1-1-1',
               title: '01. 동아시아의 자연환경과 생업',
@@ -26,7 +26,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-1-2',
           title: '2. 동아시아의 신석기·청동기 문화',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-1-2-1',
               title: '01. 동아시아의 신석기 문화',
@@ -40,7 +40,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-1-3',
           title: '3. 국가의 성립과 발전',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-1-3-1',
               title: '01. 하·상·주와 춘추전국 시대의 전개',
@@ -64,11 +64,11 @@ export const 동아시아사: Book = {
     {
       id: '동아시아사-2',
       title: 'II. 동아시아 세계의 성립과 변화',
-      topics: [
+      chapters: [
         {
           id: '동아시아사-2-1',
           title: '1. 인구 이동과 정치·사회 변동',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-2-1-1',
               title: '01. 인구 이동과 국가의 형성',
@@ -82,7 +82,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-2-2',
           title: '2. 국제 관계의 다원화',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-2-2-1',
               title: '01. 조공·책봉관계의 형성',
@@ -104,7 +104,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-2-3',
           title: '3. 유학과 불교',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-2-3-1',
               title: '01. 율령과 유교',
@@ -144,11 +144,11 @@ export const 동아시아사: Book = {
     {
       id: '동아시아사-3',
       title: 'III. 동아시아의 사회 변동과 문화 교류',
-      topics: [
+      chapters: [
         {
           id: '동아시아사-3-1',
           title: '1. 17세기 전후 동아시아 전쟁',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-3-1-1',
               title: '01. 16세기 동아시아의 정세',
@@ -166,7 +166,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-3-2',
           title: '2. 교역망의 발달과 은 유통',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-3-2-1',
               title: '01. 동아시아 교역망의 발달',
@@ -184,7 +184,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-3-3',
           title: '3. 사회 변동과 서민 문화',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-3-3-1',
               title: '01. 급격한 인구 증가',
@@ -204,11 +204,11 @@ export const 동아시아사: Book = {
     {
       id: '동아시아사-4',
       title: 'IV. 동아시아의 근대화 운동과 반제국주의 민족 운동',
-      topics: [
+      chapters: [
         {
           id: '동아시아사-4-1',
           title: '1. 새로운 국제 질서와 근대화 운동',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-4-1-1',
               title: '01. 서양 세력의 등장과 동아시아의 개항',
@@ -222,7 +222,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-4-2',
           title: '2. 제국주의 침략 전쟁과 민족 운동',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-4-2-1',
               title: '01. 일본의 제국주의적 침략과 동아시아 전통 질서의 변화',
@@ -240,7 +240,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-4-3',
           title: '3. 서양 문물의 수용',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-4-3-1',
               title: '01. 서구 근대 지식과 사상의 유입',
@@ -256,11 +256,11 @@ export const 동아시아사: Book = {
     {
       id: '동아시아사-5',
       title: 'V. 오늘날의 동아시아',
-      topics: [
+      chapters: [
         {
           id: '동아시아사-5-1',
           title: '1. 제2차 세계 대전 후 처리와 냉전 체제',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-5-1-1',
               title: '01. 전후 처리와 국교 회복',
@@ -274,7 +274,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-5-2',
           title: '2. 경제 성장과 정치·사회의 발전',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-5-2-1',
               title: '01. 경제 성장과 정치·사회의 발전',
@@ -284,7 +284,7 @@ export const 동아시아사: Book = {
         {
           id: '동아시아사-5-3',
           title: '3. 갈등과 화해',
-          subtopics: [
+          chapters: [
             {
               id: '동아시아사-5-3-1',
               title: '01. 갈등과 화해',

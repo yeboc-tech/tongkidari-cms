@@ -3,16 +3,16 @@
  * Single Source of Truth for 마더텅 Politics and Law curriculum structure
  */
 
-import type { Book } from '../types';
+import type { Chapter } from '../types';
 
-export const 정치와법: Book = {
+export const 정치와법: Chapter = {
   id: '정치와법',
   title: '정치와 법',
   chapters: [
     {
       id: '정치와법-1',
       title: '1. 민주 정치와 법',
-      topics: [
+      chapters: [
         {
           id: '정치와법-1-1',
           title: '01. 정치의 의미와 기능',
@@ -26,7 +26,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-2',
       title: '2. 민주주의와 법치주의',
-      topics: [
+      chapters: [
         {
           id: '정치와법-2-1',
           title: '01. 민주주의 의미와 발전 과정',
@@ -40,7 +40,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-3',
       title: '3. 헌법의 의의와 기본 원리',
-      topics: [
+      chapters: [
         {
           id: '정치와법-3-1',
           title: '01. 헌법의 의미와 의의',
@@ -54,7 +54,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-4',
       title: '4. 기본권의 보장과 제한',
-      topics: [
+      chapters: [
         {
           id: '정치와법-4-1',
           title: '01. 국민의 기본권',
@@ -68,7 +68,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-5',
       title: '5. 정부 형태',
-      topics: [
+      chapters: [
         {
           id: '정치와법-5-1',
           title: '01. 정부 형태',
@@ -82,7 +82,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-6',
       title: '6. 우리나라의 국가 기관과 지방 자치',
-      topics: [
+      chapters: [
         {
           id: '정치와법-6-1',
           title: '01. 국회',
@@ -108,7 +108,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-7',
       title: '7. 정치 과정과 정치 참여',
-      topics: [
+      chapters: [
         {
           id: '정치와법-7-1',
           title: '01. 정치 과정의 이해',
@@ -122,7 +122,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-8',
       title: '8. 선거와 선거 제도',
-      topics: [
+      chapters: [
         {
           id: '정치와법-8-1',
           title: '01. 선거의 기능',
@@ -144,7 +144,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-9',
       title: '9. 정치 참여 주체와 시민 참여',
-      topics: [
+      chapters: [
         {
           id: '정치와법-9-1',
           title: '01. 정당',
@@ -162,7 +162,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-10',
       title: '10. 민법의 의의와 기본 원리',
-      topics: [
+      chapters: [
         {
           id: '정치와법-10-1',
           title: '01. 민법의 의의와 기능',
@@ -176,7 +176,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-11',
       title: '11. 재산 관계와 법',
-      topics: [
+      chapters: [
         {
           id: '정치와법-11-1',
           title: '01. 계약의 이해',
@@ -190,7 +190,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-12',
       title: '12. 가족 관계와 법',
-      topics: [
+      chapters: [
         {
           id: '정치와법-12-1',
           title: '01. 가족 간의 법률관계',
@@ -204,7 +204,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-13',
       title: '13. 형법의 이해',
-      topics: [
+      chapters: [
         {
           id: '정치와법-13-1',
           title: '01. 형법과 죄형 법정주의',
@@ -218,7 +218,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-14',
       title: '14. 형사 절차와 인권 보장',
-      topics: [
+      chapters: [
         {
           id: '정치와법-14-1',
           title: '01. 형사 절차의 이해',
@@ -232,7 +232,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-15',
       title: '15. 근로자의 권리 보호',
-      topics: [
+      chapters: [
         {
           id: '정치와법-15-1',
           title: '01. 근로자의 권리 보호',
@@ -242,7 +242,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-16',
       title: '16. 국제 관계와 국제법',
-      topics: [
+      chapters: [
         {
           id: '정치와법-16-1',
           title: '01. 국제 사회의 형성과 변화',
@@ -256,7 +256,7 @@ export const 정치와법: Book = {
     {
       id: '정치와법-17',
       title: '17. 국제 문제와 국제 기구',
-      topics: [
+      chapters: [
         {
           id: '정치와법-17-1',
           title: '01. 국제 문제와 국제 기구',
