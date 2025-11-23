@@ -2,8 +2,9 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { S3 } from 'https://deno.land/x/s3@0.5.0/mod.ts';
 
 const TARGET_BUCKET = 'cdn.y3c.kr';
-const TARGET_DIR = '/tongkidari/edited-contents/';
+const TARGET_DIR = '/tongkidari/contents-edited/';
 const TARGET_REGION = 'ap-northeast-2';
+const CLOUDFRONT_DISTRIBUTION_ID = 'E124HBPNT0RV9V';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,12 +38,10 @@ serve(async (req) => {
     }
 
     // S3 클라이언트 생성
-    const s3Client = new S3Client({
+    const s3Client = new S3({
+      accessKeyID: accessKeyId,
+      secretKey: secretAccessKey,
       region: TARGET_REGION,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
     });
 
     // base64 데이터에서 prefix 제거 (data:image/png;base64, 부분)
@@ -54,16 +53,13 @@ serve(async (req) => {
     // S3 업로드 파라미터
     const key = `${TARGET_DIR.replace(/^\//, '')}${resource_id}.png`;
 
-    const command = new PutObjectCommand({
-      Bucket: TARGET_BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: 'image/png',
-      ContentEncoding: 'base64',
-    });
+    // S3 버킷 가져오기
+    const bucket = s3Client.getBucket(TARGET_BUCKET);
 
     // S3에 업로드
-    await s3Client.send(command);
+    await bucket.putObject(key, buffer, {
+      contentType: 'image/png',
+    });
 
     const s3Url = `https://${TARGET_BUCKET}.s3.${TARGET_REGION}.amazonaws.com/${key}`;
 
@@ -76,7 +72,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
-      }
+      },
     );
   } catch (error) {
     console.error('Upload error:', error);
@@ -88,7 +84,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      }
+      },
     );
   }
 });
