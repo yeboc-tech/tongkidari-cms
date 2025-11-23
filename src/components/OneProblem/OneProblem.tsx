@@ -88,6 +88,7 @@ function OneProblem({
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // props 변경 시 state 업데이트
   useEffect(() => {
@@ -160,22 +161,18 @@ function OneProblem({
       });
 
       // Supabase에 bboxes 배열과 base64 저장
-      try {
-        await Supabase.EditedContent.upsertBBox(problemId, bboxes, base64);
+      await Supabase.EditedContent.upsertBBox(problemId, bboxes, base64);
 
-        // 저장 후 즉시 이미지 및 bbox 업데이트
-        setCurrentBase64(base64);
-        setCurrentBBox(bboxes);
+      // 저장 후 즉시 이미지 및 bbox 업데이트
+      setCurrentBase64(base64);
+      setCurrentBBox(bboxes);
 
-        // Snackbar 표시
-        setShowSaveSnackbar(true);
-      } catch (error) {
-        console.error('Save failed:', error);
-        setErrorMessage(error instanceof Error ? error.message : '저장 실패');
-      }
+      // Snackbar 표시
+      setShowSaveSnackbar(true);
     } catch (error) {
-      console.error('Failed to save bbox:', error);
-      alert('BBox 저장에 실패했습니다.');
+      console.error('Save failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : '저장 실패');
+      throw error; // 에러를 BBoxEditor로 전달
     }
   };
 
@@ -200,6 +197,8 @@ function OneProblem({
       return;
     }
 
+    setIsDeleting(true);
+
     try {
       await Supabase.EditedContent.delete(problemId);
 
@@ -211,7 +210,9 @@ function OneProblem({
       setShowDeleteSnackbar(true);
     } catch (error) {
       console.error('Failed to delete edited image:', error);
-      alert('이미지 삭제에 실패했습니다.');
+      setErrorMessage(error instanceof Error ? error.message : '이미지 삭제 실패');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -610,6 +611,19 @@ function OneProblem({
                   업로드
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deleting Overlay */}
+      {isDeleting && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-2xl">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">이미지 삭제 중...</p>
+              <p className="text-sm text-gray-600 mt-1">S3 삭제 및 캐시 무효화 진행 중</p>
             </div>
           </div>
         </div>

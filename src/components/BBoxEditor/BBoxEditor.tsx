@@ -8,7 +8,7 @@ interface BBoxEditorProps {
   imageUrl: string;
   bbox: BBox[];
   onClose: () => void;
-  onConfirm: (file: File, bboxes: BBox[]) => void;
+  onConfirm: (file: File, bboxes: BBox[]) => Promise<void>;
   problemId: string;
   getPageUrl: (page: number) => string;
 }
@@ -47,6 +47,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
   const [croppedFile, setCroppedFile] = useState<File | null>(null);
   const [croppedBBoxes, setCroppedBBoxes] = useState<BBox[] | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -368,7 +369,7 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
   };
 
   // 확인 다이얼로그에서 확인 버튼 클릭
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (croppedFile && croppedBBoxes) {
       // PX → PT 변환
       const PX_TO_PT_SCALE = 72 / 200;
@@ -380,8 +381,17 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
         y1: roundToTwo(bbox.y1 * PX_TO_PT_SCALE),
       }));
 
-      onConfirm(croppedFile, bboxesInPT);
-      onClose();
+      setIsSaving(true);
+      setShowConfirmDialog(false);
+
+      try {
+        await onConfirm(croppedFile, bboxesInPT);
+        onClose();
+      } catch (error) {
+        console.error('Save failed:', error);
+        setIsSaving(false);
+        // 에러는 부모 컴포넌트에서 처리
+      }
     }
   };
 
@@ -563,6 +573,19 @@ function BBoxEditor({ imageUrl: initialImageUrl, bbox, onClose, onConfirm, probl
               >
                 저장
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saving Overlay */}
+      {isSaving && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-2xl">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">이미지 저장 중...</p>
+              <p className="text-sm text-gray-600 mt-1">S3 업로드 및 캐시 무효화 진행 중</p>
             </div>
           </div>
         </div>
