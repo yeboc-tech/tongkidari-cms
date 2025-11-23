@@ -49,7 +49,7 @@ export function ChapterStoreProvider({ children, preloadKeys = [] }: ChapterStor
     if (keys.length === 0) return;
 
     // 이미 로드된 키 필터링
-    const keysToLoad = keys.filter(key => !chapters[key]);
+    const keysToLoad = keys.filter((key) => !chapters[key]);
     if (keysToLoad.length === 0) return;
 
     setLoading(true);
@@ -60,11 +60,11 @@ export function ChapterStoreProvider({ children, preloadKeys = [] }: ChapterStor
 
       // 레코드를 ChapterStore 형식으로 변환
       const newChapters: ChapterStore = {};
-      records.forEach(record => {
+      records.forEach((record) => {
         newChapters[record.key] = record.value as Chapter;
       });
 
-      setChapters(prev => ({
+      setChapters((prev) => ({
         ...prev,
         ...newChapters,
       }));
@@ -92,11 +92,7 @@ export function ChapterStoreProvider({ children, preloadKeys = [] }: ChapterStor
     loadChapters,
   };
 
-  return (
-    <ChapterStoreContext.Provider value={value}>
-      {children}
-    </ChapterStoreContext.Provider>
-  );
+  return <ChapterStoreContext.Provider value={value}>{children}</ChapterStoreContext.Provider>;
 }
 
 /**

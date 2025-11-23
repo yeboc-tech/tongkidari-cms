@@ -4,7 +4,7 @@
  * Migrates chapter data from TypeScript files to Supabase SSOT table
  * - Reads files from 마더텅_단원_태그 and 자세한통사_단원_태그 directories
  * - Uploads to Supabase ssot table with ANON_KEY
- * - Key format: CHAPTER_{filename}
+ * - Key format: tagType
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -25,10 +25,7 @@ const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SU
 
 // Directory paths
 const SSOT_DIR = path.join(__dirname, '../src/ssot');
-const DIRECTORIES = [
-  { path: '마더텅_단원_태그' },
-  { path: '자세한통사_단원_태그' },
-];
+const DIRECTORIES = [{ path: '마더텅_단원_태그' }, { path: '자세한통사_단원_태그' }];
 
 /**
  * Extract exported object from TypeScript file using dynamic import
