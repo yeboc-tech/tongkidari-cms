@@ -15,6 +15,13 @@ supabase functions deploy upload-edited-content-s3 --project-ref lezajqbwzhxksku
 supabase functions deploy delete-edited-content-s3 --project-ref lezajqbwzhxkskullexz
 ```
 
+## Edge Function 삭제
+
+```bash
+# 배포된 함수 삭제
+supabase functions delete {function_name} --project-ref lezajqbwzhxkskullexz
+```
+
 ## 배포 확인
 
 ### 배포된 Functions 목록 확인
