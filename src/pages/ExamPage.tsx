@@ -212,30 +212,46 @@ function ExamPage() {
       }).flat();
 
       try {
-        const editedContents = await Supabase.EditedContent.fetchByIds(allResourceIds);
+        const editedContents = await Supabase.EditedContent.fetchWithoutBase64ByIds(allResourceIds);
 
-        const problemBase64Map = new Map<string, string>();
+        const problemHasEditedMap = new Map<string, boolean>();
         const problemBBoxMap = new Map<string, BBox[]>();
-        const answerBase64Map = new Map<string, string>();
+        const answerHasEditedMap = new Map<string, boolean>();
         const answerBBoxMap = new Map<string, BBox[]>();
 
         editedContents.forEach((ec) => {
           const isProblem = ec.resource_id.endsWith('_문제');
 
-          if (ec.base64) {
-            if (isProblem) {
-              problemBase64Map.set(ec.resource_id, ec.base64);
-            } else {
-              answerBase64Map.set(ec.resource_id, ec.base64);
-            }
-          }
-
-          if (ec.json) {
-            if (isProblem) {
+          if (isProblem) {
+            problemHasEditedMap.set(ec.resource_id, true);
+            if (ec.json) {
               problemBBoxMap.set(ec.resource_id, ec.json);
-            } else {
+            }
+          } else {
+            answerHasEditedMap.set(ec.resource_id, true);
+            if (ec.json) {
               answerBBoxMap.set(ec.resource_id, ec.json);
             }
+          }
+        });
+
+        // base64 Map은 CDN URL을 저장하도록 변경
+        const problemBase64Map = new Map<string, string>();
+        const answerBase64Map = new Map<string, string>();
+
+        // 모든 리소스에 대해 CDN URL 생성
+        allResourceIds.forEach((resourceId) => {
+          const isProblem = resourceId.endsWith('_문제');
+          const hasEdited = isProblem
+            ? problemHasEditedMap.has(resourceId)
+            : answerHasEditedMap.has(resourceId);
+
+          const cdnUrl = `https://cdn.y3c.kr/tongkidari/${hasEdited ? 'edited-contents' : 'contents'}/${resourceId}.png`;
+
+          if (isProblem) {
+            problemBase64Map.set(resourceId, cdnUrl);
+          } else {
+            answerBase64Map.set(resourceId, cdnUrl);
           }
         });
 

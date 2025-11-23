@@ -57,9 +57,9 @@ export interface ProblemInfo {
   motherTongTag: SelectedTag | null;
   integratedTag: SelectedTag | null;
   customTags: TagWithId[];
-  editedBase64?: string;
+  hasEditedProblem?: boolean;
   editedBBox?: BBox[];
-  answerEditedBase64?: string;
+  hasEditedAnswer?: boolean;
   answerEditedBBox?: BBox[];
 }
 

@@ -95,12 +95,12 @@ function SocialPlayground() {
         // 2. problem_id로 모든 정보 가져오기 (accuracy_rate + problem_tags)
         const problemInfos = await Supabase.fetchProblemInfoByIds(problemIds);
 
-        // 3. 편집된 콘텐츠를 한 번에 조회 (문제 + 답안)
+        // 3. 편집된 콘텐츠를 한 번에 조회 (문제 + 답안) - base64 제외
         const allResourceIds = problemInfos.flatMap(info => [
           info.problemId,
           info.problemId.replace('_문제', '_해설')
         ]);
-        const editedContents = await Supabase.EditedContent.fetchByIds(allResourceIds);
+        const editedContents = await Supabase.EditedContent.fetchWithoutBase64ByIds(allResourceIds);
 
         // 4. Map으로 변환하여 빠른 조회
         const editedMap = new Map(editedContents.map(ec => [ec.resource_id, ec]));
@@ -108,9 +108,9 @@ function SocialPlayground() {
         // 5. problemInfos에 편집된 콘텐츠 추가
         const enrichedInfos = problemInfos.map(info => ({
           ...info,
-          editedBase64: editedMap.get(info.problemId)?.base64,
+          hasEditedProblem: editedMap.has(info.problemId),
           editedBBox: editedMap.get(info.problemId)?.json,
-          answerEditedBase64: editedMap.get(info.problemId.replace('_문제', '_해설'))?.base64,
+          hasEditedAnswer: editedMap.has(info.problemId.replace('_문제', '_해설')),
           answerEditedBBox: editedMap.get(info.problemId.replace('_문제', '_해설'))?.json,
         }));
 

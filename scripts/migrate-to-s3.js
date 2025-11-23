@@ -16,7 +16,7 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 // 설정
 const BATCH_SIZE = 10;
 const TARGET_BUCKET = 'cdn.y3c.kr';
-const TARGET_DIR = 'tongkidari/edited-content/';
+const TARGET_DIR = 'tongkidari/edited-contents/';
 const LOCAL_OUTPUT_DIR = path.join(__dirname, 'temp-images');
 const AWS_PROFILE = 'yeboc';
 const AWS_REGION = 'ap-northeast-2';

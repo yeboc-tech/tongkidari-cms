@@ -104,10 +104,8 @@ function OneAnswer({
   // answerId에서 subject 추출: "경제_고3_2024_03_학평_1_해설" -> "경제"
   const subject = answerId.split('_')[0];
 
-  // 해설 이미지 URL 생성 (base64가 있으면 우선 사용)
-  const imageUrl = currentBase64
-    ? `data:image/png;base64,${currentBase64}`
-    : getSolutionImageUrl(examId, questionNumber);
+  // 해설 이미지 URL 생성 (CDN URL 또는 로컬 URL)
+  const imageUrl = currentBase64 || getSolutionImageUrl(examId, questionNumber);
 
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {

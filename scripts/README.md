@@ -38,7 +38,7 @@ npm run migrate:s3
 1. `.env` 파일에서 Supabase 설정 읽기
 2. `edited_contents` 테이블에서 10개씩 배치로 데이터 조회
 3. 각 항목의 base64 데이터를 로컬에 `.png` 파일로 저장
-4. AWS S3 `cdn.y3c.kr` 버킷의 `tongkidari/edited-content/` 디렉토리에 업로드
+4. AWS S3 `cdn.y3c.kr` 버킷의 `tongkidari/edited-contents/` 디렉토리에 업로드
 5. 업로드 후 로컬 파일 삭제
 6. 다음 배치 처리 (모든 데이터 처리 완료까지)
 
@@ -47,11 +47,11 @@ npm run migrate:s3
 스크립트 파일(`migrate-to-s3.js`) 상단의 설정값:
 
 ```javascript
-const BATCH_SIZE = 10;                          // 한 번에 처리할 항목 수
-const TARGET_BUCKET = 'cdn.y3c.kr';            // S3 버킷 이름
-const TARGET_DIR = 'tongkidari/edited-content/'; // S3 디렉토리
-const AWS_PROFILE = 'yeboc';                    // AWS CLI 프로필
-const AWS_REGION = 'ap-northeast-2';           // AWS 리전
+const BATCH_SIZE = 10;                           // 한 번에 처리할 항목 수
+const TARGET_BUCKET = 'cdn.y3c.kr';             // S3 버킷 이름
+const TARGET_DIR = 'tongkidari/edited-contents/'; // S3 디렉토리
+const AWS_PROFILE = 'yeboc';                     // AWS CLI 프로필
+const AWS_REGION = 'ap-northeast-2';            // AWS 리전
 ```
 
 ### 출력 예시
@@ -62,7 +62,7 @@ const AWS_REGION = 'ap-northeast-2';           // AWS 리전
 Configuration:
   - Supabase URL: https://lezajqbwzhxkskullexz.supabase.co
   - S3 Bucket: cdn.y3c.kr
-  - S3 Directory: tongkidari/edited-content/
+  - S3 Directory: tongkidari/edited-contents/
   - AWS Profile: yeboc
   - Batch Size: 10
   - Local Output: /path/to/scripts/temp-images
@@ -72,7 +72,7 @@ Configuration:
 📦 Processing batch: offset=0, size=10
    Retrieved 10 items
    💾 Saved locally: 경제_고3_2024_03_학평_1_문제.png
-   ☁️  Uploaded to S3: tongkidari/edited-content/경제_고3_2024_03_학평_1_문제.png
+   ☁️  Uploaded to S3: tongkidari/edited-contents/경제_고3_2024_03_학평_1_문제.png
    ...
    ✅ Success: 10, ❌ Failed: 0
 

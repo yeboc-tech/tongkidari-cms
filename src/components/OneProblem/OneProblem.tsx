@@ -103,10 +103,8 @@ function OneProblem({
   // problemId에서 subject 추출: "경제_고3_2024_03_학평_1_문제" -> "경제"
   const subject = problemId.split('_')[0];
 
-  // 문제 이미지 URL 생성 (base64가 있으면 우선 사용)
-  const imageUrl = currentBase64
-    ? `data:image/png;base64,${currentBase64}`
-    : getQuestionImageUrl(examId, questionNumber);
+  // 문제 이미지 URL 생성 (CDN URL 또는 로컬 URL)
+  const imageUrl = currentBase64 || getQuestionImageUrl(examId, questionNumber);
 
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {
