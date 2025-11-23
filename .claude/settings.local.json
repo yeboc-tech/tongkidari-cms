@@ -7,7 +7,8 @@
       "Bash(node test-decompose.js:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

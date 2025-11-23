@@ -208,6 +208,31 @@ export const Supabase = {
    */
   EditedContent: {
     /**
+     * S3에 이미지 업로드
+     * @param resourceId - 리소스 ID
+     * @param base64 - base64 이미지 데이터
+     * @throws Error S3 업로드 또는 캐시 무효화 실패 시
+     */
+    async uploadToS3(resourceId: string, base64: string): Promise<void> {
+      const { data, error } = await supabase.functions.invoke('upload-edited-content-s3', {
+        body: { resource_id: resourceId, base64 },
+      });
+
+      if (error) {
+        console.error('Error uploading to S3:', error);
+        throw new Error(`S3 업로드 요청 실패: ${error.message}`);
+      }
+
+      if (!data?.success) {
+        const errorMessage = data?.error || 'S3 upload failed';
+        const details = data?.details ? `\n상세: ${data.details}` : '';
+        throw new Error(`${errorMessage}${details}`);
+      }
+
+      console.log('S3 upload successful:', data.url);
+    },
+
+    /**
      * 편집된 콘텐츠 저장 또는 업데이트
      * @param resourceId - 리소스 ID (문제 ID)
      * @param bbox - BBox 데이터 배열
@@ -230,6 +255,9 @@ export const Supabase = {
         console.error('Error upserting edited content:', error);
         throw error;
       }
+
+      // S3에 업로드 (비동기, 실패해도 계속 진행)
+      await this.uploadToS3(resourceId, base64);
     },
 
     /**
@@ -254,6 +282,9 @@ export const Supabase = {
         console.error('Error upserting base64 content:', error);
         throw error;
       }
+
+      // S3에 업로드 (비동기, 실패해도 계속 진행)
+      await this.uploadToS3(resourceId, base64);
     },
 
     /**

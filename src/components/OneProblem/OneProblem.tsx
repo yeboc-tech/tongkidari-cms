@@ -3,6 +3,8 @@ import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
 import BBoxEditor from '../BBoxEditor/BBoxEditor';
+import ErrorSnackbar from '../Snackbar/ErrorSnackbar';
+import SuccessSnackbar from '../Snackbar/SuccessSnackbar';
 import { AccuracyRate } from '../../types/accuracyRate';
 import { getQuestionImageUrl } from '../../constants/apiConfig';
 import { Api, type BBox } from '../../api/Api';
@@ -80,6 +82,7 @@ function OneProblem({
   const [currentBBox, setCurrentBBox] = useState<BBox[] | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
@@ -157,17 +160,19 @@ function OneProblem({
       });
 
       // Supabase에 bboxes 배열과 base64 저장
-      await Supabase.EditedContent.upsertBBox(problemId, bboxes, base64);
+      try {
+        await Supabase.EditedContent.upsertBBox(problemId, bboxes, base64);
 
-      // 저장 후 즉시 이미지 및 bbox 업데이트
-      setCurrentBase64(base64);
-      setCurrentBBox(bboxes);
+        // 저장 후 즉시 이미지 및 bbox 업데이트
+        setCurrentBase64(base64);
+        setCurrentBBox(bboxes);
 
-      // Snackbar 표시
-      setShowSaveSnackbar(true);
-      setTimeout(() => {
-        setShowSaveSnackbar(false);
-      }, 3000);
+        // Snackbar 표시
+        setShowSaveSnackbar(true);
+      } catch (error) {
+        console.error('Save failed:', error);
+        setErrorMessage(error instanceof Error ? error.message : '저장 실패');
+      }
     } catch (error) {
       console.error('Failed to save bbox:', error);
       alert('BBox 저장에 실패했습니다.');
@@ -204,9 +209,6 @@ function OneProblem({
 
       // Snackbar 표시
       setShowDeleteSnackbar(true);
-      setTimeout(() => {
-        setShowDeleteSnackbar(false);
-      }, 3000);
     } catch (error) {
       console.error('Failed to delete edited image:', error);
       alert('이미지 삭제에 실패했습니다.');
@@ -275,27 +277,29 @@ function OneProblem({
       });
 
       // Supabase에 base64만 저장
-      await Supabase.EditedContent.upsertBase64Only(problemId, base64);
+      try {
+        await Supabase.EditedContent.upsertBase64Only(problemId, base64);
 
-      // 업로드 후 이미지 업데이트
-      setCurrentBase64(base64);
+        // 업로드 후 이미지 업데이트
+        setCurrentBase64(base64);
 
-      // 다이얼로그 닫기 및 정리
-      setShowUploadDialog(false);
-      if (uploadPreviewUrl) {
-        URL.revokeObjectURL(uploadPreviewUrl);
+        // 다이얼로그 닫기 및 정리
+        setShowUploadDialog(false);
+        if (uploadPreviewUrl) {
+          URL.revokeObjectURL(uploadPreviewUrl);
+        }
+        setUploadPreviewUrl(null);
+      } catch (error) {
+        console.error('Upload failed:', error);
+        setErrorMessage(error instanceof Error ? error.message : '업로드 실패');
       }
-      setUploadPreviewUrl(null);
       setDraggedFile(null);
 
       // Snackbar 표시
       setShowSaveSnackbar(true);
-      setTimeout(() => {
-        setShowSaveSnackbar(false);
-      }, 3000);
     } catch (error) {
-      console.error('Failed to upload image:', error);
-      alert('이미지 업로드에 실패했습니다.');
+      console.error('Upload failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : '업로드 실패');
     }
   };
 
@@ -571,29 +575,16 @@ function OneProblem({
         />
       )}
 
-      {/* Save Success Snackbar */}
+      {/* Snackbars */}
       {showSaveSnackbar && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>BBox와 이미지가 저장되었습니다</span>
-          </div>
-        </div>
+        <SuccessSnackbar message="BBox와 이미지가 저장되었습니다" onClose={() => setShowSaveSnackbar(false)} />
       )}
 
-      {/* Delete Success Snackbar */}
       {showDeleteSnackbar && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>편집된 이미지가 삭제되었습니다</span>
-          </div>
-        </div>
+        <SuccessSnackbar message="편집된 이미지가 삭제되었습니다" onClose={() => setShowDeleteSnackbar(false)} />
       )}
+
+      {errorMessage && <ErrorSnackbar message={errorMessage} onClose={() => setErrorMessage(null)} />}
 
       {/* Upload Confirmation Dialog */}
       {showUploadDialog && uploadPreviewUrl && (
