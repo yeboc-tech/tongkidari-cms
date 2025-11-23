@@ -18,6 +18,13 @@ export interface EditedContent {
   updated_at: string;
 }
 
+export interface EditedContentWithoutBase64 {
+  resource_id: string;
+  json: any;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ProblemTag {
   problem_id: string;
   type: ProblemTagType;
@@ -363,6 +370,28 @@ export const Supabase = {
 
       if (error) {
         console.error('Error fetching edited contents by ids:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+
+    /**
+     * 여러 리소스의 편집된 콘텐츠 조회 (base64 제외, RPC 사용)
+     * @param resourceIds - 리소스 ID 배열
+     * @returns 편집된 콘텐츠 배열 (base64 제외)
+     */
+    async fetchWithoutBase64ByIds(resourceIds: string[]): Promise<EditedContentWithoutBase64[]> {
+      if (resourceIds.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabase.rpc('fetch_edited_contents_without_base64_by_ids', {
+        p_resource_ids: resourceIds,
+      });
+
+      if (error) {
+        console.error('Error fetching edited contents without base64 by ids:', error);
         throw error;
       }
 
