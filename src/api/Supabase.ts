@@ -233,6 +233,30 @@ export const Supabase = {
     },
 
     /**
+     * S3에서 이미지 삭제
+     * @param resourceId - 리소스 ID
+     * @throws Error S3 삭제 또는 캐시 무효화 실패 시
+     */
+    async deleteFromS3(resourceId: string): Promise<void> {
+      const { data, error } = await supabase.functions.invoke('delete-edited-content-s3', {
+        body: { resource_id: resourceId },
+      });
+
+      if (error) {
+        console.error('Error deleting from S3:', error);
+        throw new Error(`S3 삭제 요청 실패: ${error.message}`);
+      }
+
+      if (!data?.success) {
+        const errorMessage = data?.error || 'S3 delete failed';
+        const details = data?.details ? `\n상세: ${data.details}` : '';
+        throw new Error(`${errorMessage}${details}`);
+      }
+
+      console.log('S3 delete successful:', data.key);
+    },
+
+    /**
      * 편집된 콘텐츠 저장 또는 업데이트
      * @param resourceId - 리소스 ID (문제 ID)
      * @param bbox - BBox 데이터 배열
@@ -318,6 +342,9 @@ export const Supabase = {
         console.error('Error deleting edited content:', error);
         throw error;
       }
+
+      // S3에서도 삭제
+      await this.deleteFromS3(resourceId);
     },
 
     /**
