@@ -3,8 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import CurriculumTagInput from '../components/tag-input/CurriculumTagInput/CurriculumTagInput';
 import CustomTagInput from '../components/tag-input/CustomTagInput/CustomTagInput';
 import ChapterTree from '../components/ChapterTree/ChapterTree';
-import { 자세한통사단원_1 } from '../ssot/자세한통사_단원_태그/자세한통사단원_1';
-import { 자세한통사단원_2 } from '../ssot/자세한통사_단원_태그/자세한통사단원_2';
+import { 자세한통합사회_1 } from '../ssot/자세한통사_단원_태그/자세한통합사회_1';
+import { 자세한통합사회_2 } from '../ssot/자세한통사_단원_태그/자세한통합사회_2';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 
 interface SelectedTag {
@@ -46,7 +46,7 @@ function TestPage() {
       {/* 단원 트리 컴포넌트 테스트 */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold text-gray-900 mb-4">단원 트리 (자세한통합사회)</h2>
-        <ChapterTree data={[자세한통사단원_1, 자세한통사단원_2]} />
+        <ChapterTree data={[자세한통합사회_1, 자세한통사단원_2]} />
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
@@ -62,7 +62,9 @@ function TestPage() {
             <div className="space-y-2">
               <div>
                 <span className="font-semibold">Tag IDs:</span>
-                <code className="ml-2 text-purple-600">[{selectedMadertongTag.tagIds.map((id) => `'${id}'`).join(', ')}]</code>
+                <code className="ml-2 text-purple-600">
+                  [{selectedMadertongTag.tagIds.map((id) => `'${id}'`).join(', ')}]
+                </code>
               </div>
               <div>
                 <span className="font-semibold">Tag Labels:</span>
@@ -77,7 +79,7 @@ function TestPage() {
 
       <div className="bg-white p-6 rounded-lg shadow">
         <CurriculumTagInput
-          data={[자세한통사단원_1, 자세한통사단원_2]}
+          data={[자세한통합사회_1, 자세한통합사회_2]}
           onSelect={handleSelectIntegrated}
           placeholder="자세한통사 단원 태그 입력기"
         />
@@ -88,7 +90,9 @@ function TestPage() {
             <div className="space-y-2">
               <div>
                 <span className="font-semibold">Tag IDs:</span>
-                <code className="ml-2 text-blue-600">[{selectedIntegratedTag.tagIds.map((id) => `'${id}'`).join(', ')}]</code>
+                <code className="ml-2 text-blue-600">
+                  [{selectedIntegratedTag.tagIds.map((id) => `'${id}'`).join(', ')}]
+                </code>
               </div>
               <div>
                 <span className="font-semibold">Tag Labels:</span>
@@ -102,10 +106,7 @@ function TestPage() {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow">
-        <CustomTagInput
-          onTagsChange={handleCustomTagsChange}
-          placeholder="커스텀 태그 입력기"
-        />
+        <CustomTagInput onTagsChange={handleCustomTagsChange} placeholder="커스텀 태그 입력기" />
 
         {customTags.length > 0 && (
           <div className="mt-6 p-4 bg-green-50 rounded-lg">
@@ -113,9 +114,7 @@ function TestPage() {
             <div className="space-y-2">
               {customTags.map((tag, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <code className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                    {tag.label}
-                  </code>
+                  <code className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">{tag.label}</code>
                   <span className="text-xs text-gray-500">ID: {tag.id}</span>
                 </div>
               ))}

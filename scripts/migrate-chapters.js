@@ -21,16 +21,13 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 // Supabase client with ANON_KEY (unrestricted table)
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_ANON_KEY
-);
+const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
 
 // Directory paths
 const SSOT_DIR = path.join(__dirname, '../src/ssot');
 const DIRECTORIES = [
-  { path: '마더텅_단원_태그', prefix: 'CHAPTER_' },
-  { path: '자세한통사_단원_태그', prefix: 'CHAPTER_' }
+  { path: '마더텅_단원_태그' },
+  { path: '자세한통사_단원_태그' },
 ];
 
 /**
@@ -60,23 +57,49 @@ async function extractChapterData(filePath) {
 }
 
 /**
+ * 객체의 모든 문자열을 NFC로 정규화
+ */
+function normalizeStrings(obj) {
+  if (typeof obj === 'string') {
+    return obj.normalize('NFC');
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => normalizeStrings(item));
+  }
+
+  if (obj && typeof obj === 'object') {
+    const normalized = {};
+    for (const [key, value] of Object.entries(obj)) {
+      normalized[key.normalize('NFC')] = normalizeStrings(value);
+    }
+    return normalized;
+  }
+
+  return obj;
+}
+
+/**
  * Upload chapter data to Supabase
  */
 async function uploadChapter(key, value) {
   console.log(`Uploading ${key}...`);
+
+  // value 전체를 NFC로 정규화
+  const normalizedValue = normalizeStrings(value);
 
   const { data, error } = await supabase
     .from('ssot')
     .upsert(
       {
         key,
-        value,
-        updated_at: new Date().toISOString()
+        value: normalizedValue,
+        updated_at: new Date().toISOString(),
       },
       {
         onConflict: 'key',
-        ignoreDuplicates: false
-      }
+        ignoreDuplicates: false,
+      },
     )
     .select();
 
@@ -92,14 +115,14 @@ async function uploadChapter(key, value) {
 /**
  * Process all TypeScript files in a directory
  */
-async function processDirectory(dirName, prefix) {
+async function processDirectory(dirName) {
   const dirPath = path.join(SSOT_DIR, dirName);
 
   console.log(`\nProcessing directory: ${dirName}`);
 
   try {
     const files = await fs.readdir(dirPath);
-    const tsFiles = files.filter(file => file.endsWith('.ts'));
+    const tsFiles = files.filter((file) => file.endsWith('.ts'));
 
     console.log(`Found ${tsFiles.length} TypeScript files`);
 
@@ -109,11 +132,16 @@ async function processDirectory(dirName, prefix) {
     for (const file of tsFiles) {
       try {
         const filePath = path.join(dirPath, file);
-        const fileName = path.basename(file, '.ts');
-        const key = `${prefix}${fileName}`;
 
         // Extract chapter data
         const chapterData = await extractChapterData(filePath);
+
+        // tagType을 key로 사용
+        const key = chapterData.tagType;
+
+        if (!key) {
+          throw new Error(`tagType not found in ${file}`);
+        }
 
         // Upload to Supabase
         await uploadChapter(key, chapterData);
@@ -149,7 +177,7 @@ async function migrate() {
 
   for (const dir of DIRECTORIES) {
     try {
-      const result = await processDirectory(dir.path, dir.prefix);
+      const result = await processDirectory(dir.path);
       totalSuccess += result.successCount;
       totalFail += result.failCount;
     } catch (error) {

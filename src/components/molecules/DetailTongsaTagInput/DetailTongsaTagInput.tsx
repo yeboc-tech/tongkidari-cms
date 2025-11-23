@@ -1,6 +1,6 @@
 import CurriculumTagInput from '../../tag-input/CurriculumTagInput/CurriculumTagInput';
-import { 자세한통사단원_1 } from '../../../ssot/자세한통사_단원_태그/자세한통사단원_1';
-import { 자세한통사단원_2 } from '../../../ssot/자세한통사_단원_태그/자세한통사단원_2';
+import { 자세한통합사회_1 } from '../../../ssot/자세한통사_단원_태그/자세한통합사회_1';
+import { 자세한통합사회_2 } from '../../../ssot/자세한통사_단원_태그/자세한통합사회_2';
 
 export interface SelectedTag {
   tagIds: string[];
@@ -13,14 +13,10 @@ export interface DetailTongsaTagInputProps {
   value?: SelectedTag | null;
 }
 
-function DetailTongsaTagInput({
-  onSelect,
-  placeholder = '자세한통사 단원 태그',
-  value,
-}: DetailTongsaTagInputProps) {
+function DetailTongsaTagInput({ onSelect, placeholder = '자세한통사 단원 태그', value }: DetailTongsaTagInputProps) {
   return (
     <CurriculumTagInput
-      data={[자세한통사단원_1, 자세한통사단원_2]}
+      data={[자세한통합사회_1, 자세한통합사회_2]}
       onSelect={onSelect}
       placeholder={placeholder}
       value={value}

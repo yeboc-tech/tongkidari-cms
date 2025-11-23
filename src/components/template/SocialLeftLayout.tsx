@@ -1,10 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import ChapterTree from '../ChapterTree/ChapterTree';
-import { 자세한통사단원_1 } from '../../ssot/자세한통사_단원_태그/자세한통사단원_1';
-import { 자세한통사단원_2 } from '../../ssot/자세한통사_단원_태그/자세한통사단원_2';
-import { 마더텅_단원_태그 } from '../../ssot/마더텅_단원_태그';
 import type { Chapter } from '../../ssot/types';
 import { SUBJECTS } from '../../ssot/subjects';
+import { useChapterStore } from '../../contexts/ChapterStoreContext';
 
 type CategoryType = '통합사회' | '사회탐구';
 type SubjectType = (typeof SUBJECTS.사회['2015교육과정'])[number];
@@ -44,6 +42,8 @@ function SocialLeftLayout({
   onSelectionChange,
   onApplyFilter,
 }: SocialLeftLayoutProps) {
+  const { getChapter } = useChapterStore();
+
   const years = ['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015', '2014', '2013'];
   const grades = ['고3', '고2', '고1'];
   const difficulties = ['상', '중', '하'];
@@ -130,14 +130,17 @@ function SocialLeftLayout({
   // 현재 선택된 카테고리에 따라 데이터 결정 (메모이제이션)
   const currentData = useMemo((): Chapter[] => {
     if (categoryType === '통합사회') {
-      return [자세한통사단원_1, 자세한통사단원_2];
+      // SSOT에서 통합사회 단원 조회
+      const chapter1 = getChapter('단원_자세한통합사회_1');
+      const chapter2 = getChapter('단원_자세한통합사회_2');
+      return [chapter1, chapter2].filter((ch): ch is Chapter => ch !== undefined);
     } else {
-      // 사회탐구: 선택된 과목의 데이터 반환
-      const subjectId = `사회탐구_${selectedSubject}`;
-      const subjectData = 마더텅_단원_태그.find((chapter) => chapter.id === subjectId);
-      return subjectData ? [subjectData] : [];
+      // 사회탐구: SSOT에서 선택된 과목의 데이터 조회
+      const chapterKey = `단원_사회탐구_${selectedSubject}`;
+      const chapter = getChapter(chapterKey);
+      return chapter ? [chapter] : [];
     }
-  }, [categoryType, selectedSubject]);
+  }, [categoryType, selectedSubject, getChapter]);
 
   // ChapterTree에서 선택된 ID들을 받아 저장
   const handleSelectionChange = useCallback(
@@ -200,9 +203,9 @@ function SocialLeftLayout({
                 style={{ '--tw-ring-color': '#ff4081' } as React.CSSProperties}
               >
                 {SUBJECTS.사회['2015교육과정'].map((subject) => {
-                  // 마더텅_단원_태그에 해당 과목이 있는지 확인
-                  const subjectId = `사회탐구_${subject}`;
-                  const isAvailable = 마더텅_단원_태그.some((book) => book.id === subjectId);
+                  // SSOT에서 해당 과목이 있는지 확인
+                  const chapterKey = `단원_사회탐구_${subject}`;
+                  const isAvailable = getChapter(chapterKey) !== undefined;
                   return (
                     <option key={subject} value={subject} disabled={!isAvailable}>
                       {subject}

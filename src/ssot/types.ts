@@ -16,4 +16,5 @@ export interface Chapter {
   id: string; // 예: "1", "1-1", "1-1-1", "economy-1"
   title: string; // 예: "통합사회 1", "I. 통합적 관점", "01. 인간, 사회, 환경을 바라보는 다양한 관점"
   chapters?: Chapter[]; // 선택적: 하위 Chapter 배열 (재귀 구조)
+  tagType?: string; // 선택적: 태그 타입
 }

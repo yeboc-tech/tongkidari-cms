@@ -25,6 +25,14 @@ export interface EditedContentWithoutBase64 {
   updated_at: string;
 }
 
+export interface SSOTRecord {
+  id: number;
+  key: string;
+  value: any;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ProblemTag {
   problem_id: string;
   type: ProblemTagType;
@@ -517,5 +525,56 @@ export const Supabase = {
         customTags,
       };
     });
+  },
+
+  /**
+   * SSOT 관련 API
+   */
+  SSOT: {
+    /**
+     * 여러 키로 SSOT 데이터 조회
+     * @param keys - SSOT 키 배열 (예: ['CHAPTER_사회탐구_경제', 'CHAPTER_자세한통사단원_1'])
+     * @returns SSOT 레코드 배열
+     */
+    async fetchByKeys(keys: string[]): Promise<SSOTRecord[]> {
+      if (keys.length === 0) {
+        return [];
+      }
+
+      // 임시 방법: 모든 데이터를 가져와서 클라이언트에서 필터링
+      const { data, error } = await supabase
+        .from('ssot')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching SSOT records:', error);
+        throw error;
+      }
+
+      // 클라이언트 사이드 필터링
+      const filteredData = (data || []).filter(record => keys.includes(record.key));
+
+      return filteredData;
+    },
+
+    /**
+     * 단일 키로 SSOT 데이터 조회
+     * @param key - SSOT 키 (예: 'CHAPTER_사회탐구_경제')
+     * @returns SSOT 레코드 또는 null
+     */
+    async fetchByKey(key: string): Promise<SSOTRecord | null> {
+      const { data, error } = await supabase.from('ssot').select('*').eq('key', key).single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned
+          return null;
+        }
+        console.error('Error fetching SSOT record:', error);
+        throw error;
+      }
+
+      return data;
+    },
   },
 };
