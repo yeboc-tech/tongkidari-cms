@@ -1,29 +1,5 @@
--- 여러 type-tagIds 세트로 검색하는 RPC 함수 (각 필터에 독립적인 조건)
---
--- 사용 예시:
--- SELECT * FROM search_problems_by_filter_items(
---   '[
---     {
---       "type": "단원_사회탐구_경제",
---       "tag_ids": ["1", "1-1"],
---       "years": ["2024", "2023"],
---       "accuracy_min": 30,
---       "accuracy_max": 70
---     },
---     {
---       "type": "단원_사회탐구_사회문화",
---       "tag_ids": null,
---       "years": ["2024"],
---       "accuracy_min": 50,
---       "accuracy_max": 100
---     }
---   ]'::jsonb
--- );
---
--- tag_ids가 null이면 해당 type의 모든 문제를 가져옵니다.
-
 CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
-    p_filters jsonb  -- [{"type": "...", "tag_ids": [...], "years": [...], "accuracy_min": n, "accuracy_max": n}, ...]
+    p_filters jsonb  
   )
   RETURNS TABLE (problem_id text) AS $$
   DECLARE
@@ -33,6 +9,10 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
     filter_years text[];
     filter_accuracy_min numeric;
     filter_accuracy_max numeric;
+    and_filter_items jsonb;
+    and_filter_item jsonb;
+    and_filter_type text;
+    and_filter_tag_ids text[];
   BEGIN
     -- 임시 테이블 생성
     CREATE TEMP TABLE IF NOT EXISTS temp_results (problem_id text) ON COMMIT DROP;
@@ -50,6 +30,7 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
       END;
       filter_accuracy_min := (filter_item->>'accuracy_min')::numeric;
       filter_accuracy_max := (filter_item->>'accuracy_max')::numeric;
+      and_filter_items := filter_item->'and_problem_filter_items';
 
       -- 조건에 맞는 problem_id를 임시 테이블에 삽입
       INSERT INTO temp_results
@@ -60,7 +41,26 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
         AND (filter_tag_ids IS NULL OR pt.tag_ids && filter_tag_ids)
         AND (filter_years IS NULL OR split_part(pt.problem_id, '_', 3) = ANY(filter_years))
         AND (filter_accuracy_min IS NULL OR ar.accuracy_rate >= filter_accuracy_min)
-        AND (filter_accuracy_max IS NULL OR ar.accuracy_rate <= filter_accuracy_max);
+        AND (filter_accuracy_max IS NULL OR ar.accuracy_rate <= filter_accuracy_max)
+        -- AND 조건: and_filter_items가 null이거나 빈 배열이면 무시, 있으면 모든 조건을 만족해야 함
+        AND (
+          and_filter_items IS NULL
+          OR jsonb_array_length(and_filter_items) = 0
+          OR (
+            SELECT COUNT(*) = jsonb_array_length(and_filter_items)
+            FROM jsonb_array_elements(and_filter_items) as and_item
+            WHERE EXISTS (
+              SELECT 1
+              FROM problem_tags and_pt
+              WHERE and_pt.problem_id = pt.problem_id
+                AND and_pt.type = and_item->>'type'
+                AND (
+                  (and_item->'tag_ids' IS NULL OR jsonb_typeof(and_item->'tag_ids') = 'null')
+                  OR and_pt.tag_ids && ARRAY(SELECT jsonb_array_elements_text(and_item->'tag_ids'))
+                )
+            )
+          )
+        );
     END LOOP;
 
     -- 중복 제거하여 반환
@@ -68,7 +68,6 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
     SELECT DISTINCT tr.problem_id
     FROM temp_results tr;
 
-    -- 임시 테이블 삭제
-    DROP TABLE IF EXISTS temp_results;
+    -- 임시 테이블은 ON COMMIT DROP으로 자동 삭제됨
   END;
   $$ LANGUAGE plpgsql;

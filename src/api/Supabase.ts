@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
 import { PROBLEM_TAG_TYPES, type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
 import { type BBox } from './Api';
+import { type ProblemFilterItem } from '../types/ProblemFilterItem';
 
 /**
  * Supabase API 래퍼
@@ -435,6 +436,73 @@ export const Supabase = {
 
     if (error) {
       console.error('Error searching by filter:', error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return (data as Array<{ problem_id: string }>).map((row) => row.problem_id);
+  },
+
+  /**
+   * 여러 type-tagIds 세트로 문제 검색 (다중 필터, 각 필터에 독립적인 조건)
+   * @param filters - type, tagIds, years, accuracyMin, accuracyMax를 포함하는 필터 배열
+   * @returns problem_id 배열
+   *
+   * @example
+   * searchByMultiFilter({
+   *   filters: [
+   *     {
+   *       type: '단원_사회탐구_경제',
+   *       tagIds: ['1', '1-1'],
+   *       years: ['2024', '2023'],
+   *       accuracyMin: 30,
+   *       accuracyMax: 70
+   *     },
+   *     {
+   *       type: '단원_사회탐구_사회문화',
+   *       tagIds: ['1', '1-2'],
+   *       years: ['2024'],
+   *       accuracyMin: 50,
+   *       accuracyMax: 100
+   *     }
+   *   ]
+   * })
+   */
+  async searchByMultiFilter(params: {
+    filters: ProblemFilterItem[];
+  }): Promise<string[]> {
+    const { filters } = params;
+
+    // 필터가 없으면 빈 배열 반환
+    if (!filters || filters.length === 0) {
+      return [];
+    }
+
+    // JSONB 형식으로 변환 (각 필터의 조건 포함)
+    const filtersJson = filters.map((f) => ({
+      type: f.type,
+      tag_ids: f.tagIds,
+      and_problem_filter_items:
+        f.andProblemFilterItems && f.andProblemFilterItems.length > 0
+          ? f.andProblemFilterItems.map((andItem) => ({
+              type: andItem.type,
+              tag_ids: andItem.tagIds,
+            }))
+          : undefined,
+      years: f.years && f.years.length > 0 ? f.years : undefined,
+      accuracy_min: f.accuracyMin ?? undefined,
+      accuracy_max: f.accuracyMax ?? undefined,
+    }));
+
+    const { data, error } = await supabase.rpc('search_problems_by_filter_items', {
+      p_filters: filtersJson,
+    });
+
+    if (error) {
+      console.error('Error searching by multi filter:', error);
       throw error;
     }
 

@@ -14,6 +14,8 @@ export const PROBLEM_TAG_TYPES = {
   DETAIL_TONGSA: '자세한통사_단원_태그',
   /** 커스텀 태그 */
   CUSTOM_TONGSA: '자세한통사_커스텀_태그',
+  /** 단원_사회탐구_경제 */
+  SOCIAL_STUDY_ECONOMY: '단원_사회탐구_경제',
 } as const;
 
 /**
