@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
-import ChapterTree from '../ChapterTree/ChapterTree';
+import ChapterTree, { type SelectedChapterItem } from '../ChapterTree/ChapterTree';
 import type { Chapter } from '../../ssot/types';
 import { SUBJECTS } from '../../ssot/subjects';
 import { useChapterStore } from '../../contexts/ChapterStoreContext';
 
 type CategoryType = '통합사회' | '사회탐구';
-type SubjectType = (typeof SUBJECTS.사회['2015교육과정'])[number];
+type SubjectType = (typeof SUBJECTS.사회)['2015교육과정'][number];
 
 interface SocialLeftLayoutProps {
   categoryType: CategoryType;
@@ -21,7 +21,7 @@ interface SocialLeftLayoutProps {
   setAccuracyMin: (value: string) => void;
   accuracyMax: string;
   setAccuracyMax: (value: string) => void;
-  onSelectionChange: (selectedIds: string[]) => void;
+  onSelectionChange: (selectedItems: SelectedChapterItem[]) => void;
   onApplyFilter: () => void;
 }
 
@@ -48,9 +48,9 @@ function SocialLeftLayout({
   const grades = ['고3', '고2', '고1'];
   const difficulties = ['상', '중', '하'];
   const difficultyRanges: Record<string, { min: number; max: number }> = {
-    '상': { min: 0, max: 39 },
-    '중': { min: 40, max: 59 },
-    '하': { min: 60, max: 100 },
+    상: { min: 0, max: 39 },
+    중: { min: 40, max: 59 },
+    하: { min: 60, max: 100 },
   };
 
   const toggleYear = (year: string) => {
@@ -74,7 +74,9 @@ function SocialLeftLayout({
   // 연속된 난이도 범위인지 체크
   const isConsecutiveRange = (diffs: Set<string>): boolean => {
     if (diffs.size === 0) return true;
-    const indices = Array.from(diffs).map((d) => difficulties.indexOf(d)).sort((a, b) => a - b);
+    const indices = Array.from(diffs)
+      .map((d) => difficulties.indexOf(d))
+      .sort((a, b) => a - b);
     // 연속된 인덱스인지 확인
     for (let i = 1; i < indices.length; i++) {
       if (indices[i] - indices[i - 1] !== 1) {
@@ -127,27 +129,42 @@ function SocialLeftLayout({
     setAccuracyMax('');
   };
 
+  // Chapter의 id를 tagType 포함한 유니크한 값으로 변환하고 tagType 설정
+  const transformChapter = (chapter: Chapter, tagType: string): Chapter => {
+    const transformRecursive = (ch: Chapter): Chapter => ({
+      ...ch,
+      id: `${tagType}.${ch.id}`, // tagType + 기존 id
+      tagType, // tagType 설정
+      chapters: ch.chapters?.map(transformRecursive),
+    });
+    return transformRecursive(chapter);
+  };
+
   // 현재 선택된 카테고리에 따라 데이터 결정 (메모이제이션)
-  const currentData = useMemo((): Chapter[] => {
+  const currentChapters = useMemo((): Chapter[] => {
     if (categoryType === '통합사회') {
       // SSOT에서 통합사회 단원 조회
       const chapter1 = getChapter('단원_자세한통합사회_1');
       const chapter2 = getChapter('단원_자세한통합사회_2');
-      return [chapter1, chapter2].filter((ch): ch is Chapter => ch !== undefined);
+      const chapters = [
+        chapter1 ? transformChapter(chapter1, '단원_자세한통합사회_1') : null,
+        chapter2 ? transformChapter(chapter2, '단원_자세한통합사회_2') : null,
+      ].filter((ch): ch is Chapter => ch !== null);
+      return chapters;
     } else {
       // 사회탐구: SSOT에서 선택된 과목의 데이터 조회
       const chapterKey = `단원_사회탐구_${selectedSubject}`;
       const chapter = getChapter(chapterKey);
-      return chapter ? [chapter] : [];
+      return chapter ? [transformChapter(chapter, chapterKey)] : [];
     }
   }, [categoryType, selectedSubject, getChapter]);
 
   // ChapterTree에서 선택된 ID들을 받아 저장
   const handleSelectionChange = useCallback(
-    (selectedIds: string[]) => {
-      onSelectionChange(selectedIds);
+    (selectedItems: SelectedChapterItem[]) => {
+      onSelectionChange(selectedItems);
     },
-    [onSelectionChange]
+    [onSelectionChange],
   );
 
   return (
@@ -167,63 +184,63 @@ function SocialLeftLayout({
           </div>
 
           <div className="p-4">
-          {/* 카테고리 토글 */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-700">단원 선택</h3>
-            <div className="flex items-center bg-gray-100 rounded-full p-0.5">
-              <button
-                onClick={() => setCategoryType('사회탐구')}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                  categoryType === '사회탐구' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-                style={categoryType === '사회탐구' ? { color: '#ff4081' } : {}}
-              >
-                사회탐구
-              </button>
-              <button
-                onClick={() => setCategoryType('통합사회')}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                  categoryType === '통합사회' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-                style={categoryType === '통합사회' ? { color: '#ff4081' } : {}}
-              >
-                통합사회
-              </button>
+            {/* 카테고리 토글 */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-700">단원 선택</h3>
+              <div className="flex items-center bg-gray-100 rounded-full p-0.5">
+                <button
+                  onClick={() => setCategoryType('사회탐구')}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    categoryType === '사회탐구' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  style={categoryType === '사회탐구' ? { color: '#ff4081' } : {}}
+                >
+                  사회탐구
+                </button>
+                <button
+                  onClick={() => setCategoryType('통합사회')}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    categoryType === '통합사회' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  style={categoryType === '통합사회' ? { color: '#ff4081' } : {}}
+                >
+                  통합사회
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* 사회탐구일 때 과목 선택 */}
-          {categoryType === '사회탐구' && (
-            <div className="mb-3">
-              <label className="text-xs text-gray-600 block mb-1">과목</label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value as SubjectType)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': '#ff4081' } as React.CSSProperties}
-              >
-                {SUBJECTS.사회['2015교육과정'].map((subject) => {
-                  // SSOT에서 해당 과목이 있는지 확인
-                  const chapterKey = `단원_사회탐구_${subject}`;
-                  const isAvailable = getChapter(chapterKey) !== undefined;
-                  return (
-                    <option key={subject} value={subject} disabled={!isAvailable}>
-                      {subject}
-                      {!isAvailable && ' (준비 중)'}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          )}
+            {/* 사회탐구일 때 과목 선택 */}
+            {categoryType === '사회탐구' && (
+              <div className="mb-3">
+                <label className="text-xs text-gray-600 block mb-1">과목</label>
+                <select
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value as SubjectType)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': '#ff4081' } as React.CSSProperties}
+                >
+                  {SUBJECTS.사회['2015교육과정'].map((subject) => {
+                    // SSOT에서 해당 과목이 있는지 확인
+                    const chapterKey = `단원_사회탐구_${subject}`;
+                    const isAvailable = getChapter(chapterKey) !== undefined;
+                    return (
+                      <option key={subject} value={subject} disabled={!isAvailable}>
+                        {subject}
+                        {!isAvailable && ' (준비 중)'}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
 
-          {currentData.length > 0 ? (
-            <div>
-              <ChapterTree data={currentData} onSelectionChange={handleSelectionChange} accentColor="#ff4081" />
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-400 text-sm">선택한 과목의 데이터가 준비 중입니다</div>
-          )}
+            {currentChapters.length > 0 ? (
+              <div>
+                <ChapterTree data={currentChapters} onSelectionChange={handleSelectionChange} accentColor="#ff4081" />
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">선택한 과목의 데이터가 준비 중입니다</div>
+            )}
           </div>
 
           {/* 추가 필터들 */}
@@ -259,7 +276,9 @@ function SocialLeftLayout({
                 <label className="text-xs text-gray-600 block mb-2">난이도 (정답률)</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   <button
-                    onClick={selectedDifficulties.size === difficulties.length ? clearAllDifficulties : selectAllDifficulties}
+                    onClick={
+                      selectedDifficulties.size === difficulties.length ? clearAllDifficulties : selectAllDifficulties
+                    }
                     className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                       selectedDifficulties.size === difficulties.length
                         ? 'text-white'
@@ -276,7 +295,9 @@ function SocialLeftLayout({
                       key={difficulty}
                       onClick={() => toggleDifficulty(difficulty)}
                       className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        selectedDifficulties.has(difficulty) ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        selectedDifficulties.has(difficulty)
+                          ? 'text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                       style={selectedDifficulties.has(difficulty) ? { backgroundColor: '#ff4081' } : {}}
                     >
@@ -310,9 +331,7 @@ function SocialLeftLayout({
                   <button
                     onClick={selectedYears.size === years.length ? clearAllYears : selectAllYears}
                     className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                      selectedYears.size === years.length
-                        ? 'text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      selectedYears.size === years.length ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                     style={selectedYears.size === years.length ? { backgroundColor: '#ff4081' } : {}}
                   >

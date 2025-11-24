@@ -492,6 +492,7 @@ export const Supabase = {
               tag_ids: andItem.tagIds,
             }))
           : undefined,
+      grades: f.grades && f.grades.length > 0 ? f.grades : undefined,
       years: f.years && f.years.length > 0 ? f.years : undefined,
       accuracy_min: f.accuracyMin ?? undefined,
       accuracy_max: f.accuracyMax ?? undefined,

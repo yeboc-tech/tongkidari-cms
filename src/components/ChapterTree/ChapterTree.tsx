@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Chapter } from '../../ssot/types';
 
+export interface SelectedChapterItem {
+  id: string;
+  tagType: string;
+}
+
 interface ChapterTreeProps {
   data: Chapter[];
-  onSelectionChange?: (selectedIds: string[]) => void;
+  onSelectionChange?: (selectedItems: SelectedChapterItem[]) => void;
   accentColor?: string;
 }
 
@@ -52,13 +57,16 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
     return result;
   };
 
-  // 리프 노드(자식이 없는 노드) ID만 수집
-  const collectLeafIds = (chapters: Chapter[]): string[] => {
-    const result: string[] = [];
+  // 리프 노드(자식이 없는 노드) ID와 tagType 수집
+  const collectLeafItems = (chapters: Chapter[]): SelectedChapterItem[] => {
+    const result: SelectedChapterItem[] = [];
 
     const traverse = (chapter: Chapter) => {
       if (!chapter.chapters || chapter.chapters.length === 0) {
-        result.push(chapter.id);
+        result.push({
+          id: chapter.id,
+          tagType: chapter.tagType || '',
+        });
       } else {
         chapter.chapters.forEach(traverse);
       }
@@ -71,8 +79,8 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
   // 모든 ID 수집 (초기 펼침 상태용)
   const allIds = useMemo(() => collectAllIds(data), [data]);
 
-  // 리프 노드 ID 수집 (선택 상태 전달용)
-  const leafNodeIds = useMemo(() => new Set(collectLeafIds(data)), [data]);
+  // 리프 노드 아이템 수집 (선택 상태 전달용)
+  const leafNodeItems = useMemo(() => collectLeafItems(data), [data]);
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(allIds));
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
@@ -88,13 +96,13 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
     setExpandedItems(new Set(allIds));
   }, [allIds]);
 
-  // 선택된 리프 노드만 부모에게 전달
+  // 선택된 리프 노드만 부모에게 전달 (id와 tagType 포함)
   useEffect(() => {
     if (onSelectionChangeRef.current) {
-      const checkedLeafIds = Array.from(checkedItems).filter((id) => leafNodeIds.has(id));
-      onSelectionChangeRef.current(checkedLeafIds);
+      const checkedLeafItems = leafNodeItems.filter((item) => checkedItems.has(item.id));
+      onSelectionChangeRef.current(checkedLeafItems);
     }
-  }, [checkedItems, leafNodeIds]);
+  }, [checkedItems, leafNodeItems]);
 
   const toggleExpanded = (id: string) => {
     setExpandedItems((prev) => {

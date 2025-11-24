@@ -18,6 +18,8 @@ export interface ProblemFilterItem {
   type: ProblemTagType;
   /** 태그 ID 배열 (예: ['1', '1-1', '1-2']), null이면 해당 type의 모든 문제 */
   tagIds: string[] | null;
+  /** 학년 필터 (선택적, 예: ['고1', '고2']) */
+  grades?: string[];
   /** 연도 필터 (선택적) */
   years?: string[];
   /** 최소 정답률 (선택적) */

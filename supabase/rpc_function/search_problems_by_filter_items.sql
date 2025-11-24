@@ -1,11 +1,12 @@
 CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
-    p_filters jsonb  
+    p_filters jsonb
   )
   RETURNS TABLE (problem_id text) AS $$
   DECLARE
     filter_item jsonb;
     filter_type text;
     filter_tag_ids text[];
+    filter_grades text[];
     filter_years text[];
     filter_accuracy_min numeric;
     filter_accuracy_max numeric;
@@ -23,6 +24,11 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
       -- 각 필터 항목에서 값 추출
       filter_type := filter_item->>'type';
       filter_tag_ids := ARRAY(SELECT jsonb_array_elements_text(filter_item->'tag_ids'));
+      filter_grades := CASE
+        WHEN filter_item->'grades' IS NOT NULL
+        THEN ARRAY(SELECT jsonb_array_elements_text(filter_item->'grades'))
+        ELSE NULL
+      END;
       filter_years := CASE
         WHEN filter_item->'years' IS NOT NULL
         THEN ARRAY(SELECT jsonb_array_elements_text(filter_item->'years'))
@@ -39,6 +45,7 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
       INNER JOIN accuracy_rate ar ON pt.problem_id = ar.problem_id
       WHERE pt.type = filter_type
         AND (filter_tag_ids IS NULL OR pt.tag_ids && filter_tag_ids)
+        AND (filter_grades IS NULL OR split_part(pt.problem_id, '_', 2) = ANY(filter_grades))
         AND (filter_years IS NULL OR split_part(pt.problem_id, '_', 3) = ANY(filter_years))
         AND (filter_accuracy_min IS NULL OR ar.accuracy_rate >= filter_accuracy_min)
         AND (filter_accuracy_max IS NULL OR ar.accuracy_rate <= filter_accuracy_max)

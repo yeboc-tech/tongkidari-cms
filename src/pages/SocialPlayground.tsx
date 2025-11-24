@@ -2,11 +2,12 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import SocialLeftLayout from '../components/template/SocialLeftLayout';
 import { Supabase, type ProblemInfo } from '../api/Supabase';
-import { PROBLEM_TAG_TYPES } from '../ssot/PROBLEM_TAG_TYPES';
 import OneProblem from '../components/OneProblem';
 import OneAnswer from '../components/OneAnswer';
 import { SUBJECTS } from '../ssot/subjects';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
+import type { SelectedChapterItem } from '../components/ChapterTree/ChapterTree';
+import type { ProblemFilterItem } from '../types/ProblemFilterItem';
 
 type CategoryType = '통합사회' | '사회탐구';
 type SubjectType = (typeof SUBJECTS.사회)['2015교육과정'][number];
@@ -29,7 +30,7 @@ function SocialPlayground() {
   );
   const selectedGrades = new Set(['고3']);
   const [selectedDifficulties, setSelectedDifficulties] = useState<Set<string>>(new Set(['상', '중', '하']));
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedChapterItems, setSelectedChapterItems] = useState<SelectedChapterItem[]>([]);
   const [accuracyMin, setAccuracyMin] = useState<string>('0');
   const [accuracyMax, setAccuracyMax] = useState<string>('100');
   const [searchResults, setSearchResults] = useState<ProblemInfo[]>([]);
@@ -37,9 +38,9 @@ function SocialPlayground() {
   const [showFullViewDialog, setShowFullViewDialog] = useState(false);
   const [currentViewIndex, setCurrentViewIndex] = useState(0);
 
-  // ChapterTree에서 선택된 ID들을 받아 저장
-  const handleSelectionChange = useCallback((selectedIds: string[]) => {
-    setSelectedTagIds(selectedIds);
+  // ChapterTree에서 선택된 아이템들(id + tagType)을 받아 저장
+  const handleSelectionChange = useCallback((selectedItems: SelectedChapterItem[]) => {
+    setSelectedChapterItems(selectedItems);
   }, []);
 
   // 키보드 방향키로 문제 이동
@@ -64,28 +65,47 @@ function SocialPlayground() {
   const handleApplyFilter = async () => {
     setIsLoading(true);
     try {
-      // Early return: selectedTagIds가 없으면 빈 결과 반환
-      if (selectedTagIds.length === 0) {
+      // Early return: selectedChapterItems가 없으면 빈 결과 반환
+      if (selectedChapterItems.length === 0) {
         setSearchResults([]);
         return;
       }
 
-      // categoryType에 따라 적절한 태그 타입 선택
-      const tagType = categoryType === '통합사회' ? PROBLEM_TAG_TYPES.DETAIL_TONGSA : '단원_사회탐구_경제';
-      // PROBLEM_TAG_TYPES.MOTHER;
-      // 단원_사회탐구_경제
-      console.log(tagType);
-      console.log(selectedTagIds);
+      // tagType별로 그룹화 (id에서 tagType 제거)
+      const filterMap = new Map<string, string[]>();
+      selectedChapterItems.forEach((item) => {
+        // id는 "tagType.originalId" 형태이므로 tagType 부분을 제거
+        const originalId = item.id.replace(`${item.tagType}.`, '');
 
-      // 1. 필터 조건으로 problem_id 목록 검색
-      const problemIds = await Supabase.searchByFilter({
-        type: tagType,
-        tagIds: selectedTagIds,
-        years: selectedYears.size > 0 ? Array.from(selectedYears) : undefined,
-        grades: selectedGrades.size > 0 ? Array.from(selectedGrades) : undefined,
-        accuracyMin: accuracyMin ? parseFloat(accuracyMin) : undefined,
-        accuracyMax: accuracyMax ? parseFloat(accuracyMax) : undefined,
+        if (!filterMap.has(item.tagType)) {
+          filterMap.set(item.tagType, []);
+        }
+        filterMap.get(item.tagType)!.push(originalId);
       });
+
+      // 공통 필터 조건
+      const commonYears = selectedYears.size > 0 ? Array.from(selectedYears) : undefined;
+      const commonGrades = selectedGrades.size > 0 ? Array.from(selectedGrades) : undefined;
+      const commonAccuracyMin = accuracyMin ? parseFloat(accuracyMin) : undefined;
+      const commonAccuracyMax = accuracyMax ? parseFloat(accuracyMax) : undefined;
+
+      // 필터 아이템 배열 생성
+      const filters: ProblemFilterItem[] = Array.from(filterMap.entries()).map(([tagType, tagIds]) => ({
+        type: tagType as any, // ProblemTagType으로 캐스팅 필요
+        tagIds,
+        grades: commonGrades,
+        years: commonYears,
+        accuracyMin: commonAccuracyMin,
+        accuracyMax: commonAccuracyMax,
+      }));
+
+      filters.map((filter) => {
+        // filter.type = '단원_사회탐구_경제';
+        console.log(filter);
+      });
+
+      // 1. 다중 필터 조건으로 problem_id 목록 검색
+      const problemIds = await Supabase.searchByMultiFilter({ filters });
 
       // 2. problem_id로 모든 정보 가져오기 (accuracy_rate + problem_tags)
       const problemInfos = await Supabase.fetchProblemInfoByIds(problemIds);
