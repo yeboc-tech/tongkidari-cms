@@ -23,7 +23,11 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
     LOOP
       -- 각 필터 항목에서 값 추출
       filter_type := filter_item->>'type';
-      filter_tag_ids := ARRAY(SELECT jsonb_array_elements_text(filter_item->'tag_ids'));
+      filter_tag_ids := CASE
+        WHEN filter_item->'tag_ids' IS NOT NULL AND jsonb_typeof(filter_item->'tag_ids') = 'array'
+        THEN ARRAY(SELECT jsonb_array_elements_text(filter_item->'tag_ids'))
+        ELSE NULL
+      END;
       filter_grades := CASE
         WHEN filter_item->'grades' IS NOT NULL
         THEN ARRAY(SELECT jsonb_array_elements_text(filter_item->'grades'))
@@ -44,7 +48,7 @@ CREATE OR REPLACE FUNCTION search_problems_by_filter_items(
       FROM problem_tags pt
       INNER JOIN accuracy_rate ar ON pt.problem_id = ar.problem_id
       WHERE pt.type = filter_type
-        AND (filter_tag_ids IS NULL OR pt.tag_ids && filter_tag_ids)
+        AND (filter_tag_ids IS NULL OR cardinality(filter_tag_ids) = 0 OR pt.tag_ids && filter_tag_ids)
         AND (filter_grades IS NULL OR split_part(pt.problem_id, '_', 2) = ANY(filter_grades))
         AND (filter_years IS NULL OR split_part(pt.problem_id, '_', 3) = ANY(filter_years))
         AND (filter_accuracy_min IS NULL OR ar.accuracy_rate >= filter_accuracy_min)

@@ -471,9 +471,7 @@ export const Supabase = {
    *   ]
    * })
    */
-  async searchByMultiFilter(params: {
-    filters: ProblemFilterItem[];
-  }): Promise<string[]> {
+  async searchByFilterItems(params: { filters: ProblemFilterItem[] }): Promise<string[]> {
     const { filters } = params;
 
     // 필터가 없으면 빈 배열 반환
@@ -611,9 +609,7 @@ export const Supabase = {
       }
 
       // 임시 방법: 모든 데이터를 가져와서 클라이언트에서 필터링
-      const { data, error } = await supabase
-        .from('ssot')
-        .select('*');
+      const { data, error } = await supabase.from('ssot').select('*');
 
       if (error) {
         console.error('Error fetching SSOT records:', error);
@@ -621,7 +617,7 @@ export const Supabase = {
       }
 
       // 클라이언트 사이드 필터링
-      const filteredData = (data || []).filter(record => keys.includes(record.key));
+      const filteredData = (data || []).filter((record) => keys.includes(record.key));
 
       return filteredData;
     },
