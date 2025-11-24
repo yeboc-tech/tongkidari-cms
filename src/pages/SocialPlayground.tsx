@@ -4,6 +4,7 @@ import SocialLeftLayout from '../components/template/SocialLeftLayout';
 import { Supabase, type ProblemInfo } from '../api/Supabase';
 import OneProblem from '../components/OneProblem';
 import OneAnswer from '../components/OneAnswer';
+import ErrorSnackbar from '../components/Snackbar/ErrorSnackbar';
 import { SUBJECTS } from '../ssot/subjects';
 import { 마더텅_단원_태그 } from '../ssot/마더텅_단원_태그';
 import type { SelectedChapterItem } from '../components/ChapterTree/ChapterTree';
@@ -37,6 +38,7 @@ function SocialPlayground() {
   const [isLoading, setIsLoading] = useState(false);
   const [showFullViewDialog, setShowFullViewDialog] = useState(false);
   const [currentViewIndex, setCurrentViewIndex] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // ChapterTree에서 선택된 아이템들(id + tagType)을 받아 저장
   const handleSelectionChange = useCallback((selectedItems: SelectedChapterItem[]) => {
@@ -105,7 +107,7 @@ function SocialPlayground() {
       });
 
       // 1. 다중 필터 조건으로 problem_id 목록 검색
-      const problemIds = await Supabase.searchByMultiFilter({ filters });
+      const problemIds = await Supabase.searchByFilterItems({ filters });
 
       // 2. problem_id로 모든 정보 가져오기 (accuracy_rate + problem_tags)
       const problemInfos = await Supabase.fetchProblemInfoByIds(problemIds);
@@ -162,6 +164,21 @@ function SocialPlayground() {
     } catch (error) {
       console.error('검색 실패:', error);
       setSearchResults([]);
+
+      // 에러 메시지 설정
+      let errorMsg = '문제 검색 중 오류가 발생했습니다.';
+      if (error instanceof Error) {
+        errorMsg += `\n${error.message}`;
+      } else if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        if (err.message) {
+          errorMsg += `\n${err.message}`;
+        }
+        if (err.code) {
+          errorMsg += `\n(오류 코드: ${err.code})`;
+        }
+      }
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -345,6 +362,9 @@ function SocialPlayground() {
           </div>
         </div>
       )}
+
+      {/* 에러 스낵바 */}
+      {errorMessage && <ErrorSnackbar message={errorMessage} onClose={() => setErrorMessage(null)} />}
     </div>
   );
 }
