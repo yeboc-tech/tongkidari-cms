@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
+import SaTamTagInput from '../molecules/SaTamTagInput/SaTamTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
 import BBoxEditor from '../BBoxEditor/BBoxEditor';
 import ErrorSnackbar from '../Snackbar/ErrorSnackbar';
@@ -37,6 +38,7 @@ export interface OneProblemProps {
 
   // 태그 데이터
   motherTongTag: SelectedTag | null;
+  saTamTag: SelectedTag | null;
   integratedTag: SelectedTag | null;
   customTags: TagWithId[];
   tagsLoading: boolean;
@@ -51,6 +53,7 @@ export interface OneProblemProps {
 
   // 이벤트 핸들러
   onMotherTongSelect: (tag: SelectedTag | null) => void;
+  onSaTamSelect: (tag: SelectedTag | null) => void;
   onIntegratedSelect: (tag: SelectedTag | null) => void;
   onCustomTagsChange: (tags: TagWithId[]) => void;
 }
@@ -64,6 +67,7 @@ function OneProblem({
   accuracyData,
   accuracyLoading,
   motherTongTag: motherTongTag,
+  saTamTag,
   integratedTag,
   customTags,
   tagsLoading,
@@ -71,6 +75,7 @@ function OneProblem({
   editedBase64,
   editedBBox,
   onMotherTongSelect: onMotherTongSelect,
+  onSaTamSelect,
   onIntegratedSelect,
   onCustomTagsChange,
 }: OneProblemProps) {
@@ -412,6 +417,7 @@ function OneProblem({
         ) : mode === 'edit' ? (
           <>
             {/* Edit 모드: 태그 입력기 */}
+            <SaTamTagInput subject={`사회탐구_${subject}`} onSelect={onSaTamSelect} value={saTamTag} />
             <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
             <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
             <CustomTagInput
@@ -424,6 +430,23 @@ function OneProblem({
         ) : (
           <>
             {/* View 모드: 태그 라벨만 표시 */}
+            {/* 사탐 단원 태그 */}
+            <div>
+              <label className="text-xs text-gray-600 block mb-1.5">사회탐구_{subject} 단원 태그</label>
+              <div className="flex flex-wrap gap-2">
+                {saTamTag && saTamTag.tagLabels.length > 0 ? (
+                  <span
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}
+                  >
+                    {saTamTag.tagLabels.join(' > ')}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400">사탐 단원 태그가 없습니다</span>
+                )}
+              </div>
+            </div>
+
             {/* 마더텅 단원 태그 */}
             <div>
               <label className="text-xs text-gray-600 block mb-1.5">MT {subject} 단원 태그</label>

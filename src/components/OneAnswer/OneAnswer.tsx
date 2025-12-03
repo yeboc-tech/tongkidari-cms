@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
+import SaTamTagInput from '../molecules/SaTamTagInput/SaTamTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
 import BBoxEditor from '../BBoxEditor/BBoxEditor';
 import ErrorSnackbar from '../Snackbar/ErrorSnackbar';
@@ -40,6 +41,7 @@ export interface OneAnswerProps {
 
   // 태그 데이터
   motherTongTag?: SelectedTag | null;
+  saTamTag?: SelectedTag | null;
   integratedTag?: SelectedTag | null;
   customTags?: TagWithId[];
   tagsLoading?: boolean;
@@ -52,6 +54,7 @@ export interface OneAnswerProps {
 
   // 이벤트 핸들러
   onMotherTongSelect?: (tag: SelectedTag | null) => void;
+  onSaTamSelect?: (tag: SelectedTag | null) => void;
   onIntegratedSelect?: (tag: SelectedTag | null) => void;
   onCustomTagsChange?: (tags: TagWithId[]) => void;
 }
@@ -66,12 +69,14 @@ function OneAnswer({
   accuracyData,
   accuracyLoading = false,
   motherTongTag = null,
+  saTamTag = null,
   integratedTag = null,
   customTags = [],
   tagsLoading = false,
   editedBase64,
   editedBBox,
   onMotherTongSelect = () => {},
+  onSaTamSelect = () => {},
   onIntegratedSelect = () => {},
   onCustomTagsChange = () => {},
 }: OneAnswerProps) {
@@ -414,6 +419,9 @@ function OneAnswer({
             <div className="text-xs text-gray-500 text-center py-2">태그 정보를 불러오는 중...</div>
           ) : (
             <>
+              {/* 사탐 단원 태그 */}
+              <SaTamTagInput subject={`사회탐구_${subject}`} onSelect={onSaTamSelect} value={saTamTag} />
+
               {/* 마더텅 단원 태그 */}
               <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
 

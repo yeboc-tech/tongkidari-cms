@@ -28,6 +28,7 @@ function ExamPage() {
 
   // 태그 입력기 상태 관리 (문제 번호별)
   const [madertongTags, setMtTags] = useState<Map<number, SelectedTag | null>>(new Map());
+  const [saTamTags, setSaTamTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [integratedTags, setIntegratedTags] = useState<Map<number, SelectedTag | null>>(new Map());
   const [customTagsMap, setCustomTagsMap] = useState<Map<number, TagWithId[]>>(new Map());
   const [tagsLoading, setTagsLoading] = useState(true);
@@ -153,8 +154,13 @@ function ExamPage() {
         const data = await Supabase.ProblemTags.fetch(questionIds);
 
         const mtTagMap = new Map<number, SelectedTag | null>();
+        const saTamMap = new Map<number, SelectedTag | null>();
         const integratedMap = new Map<number, SelectedTag | null>();
         const customMap = new Map<number, TagWithId[]>();
+
+        // examInfo에서 subject 추출
+        const subject = examInfo?.subject;
+        const saTamType = subject ? `단원_사회탐구_${subject}` : null;
 
         data.forEach((tag) => {
           // problem_id에서 문제 번호 추출
@@ -165,6 +171,11 @@ function ExamPage() {
 
           if (tag.type === PROBLEM_TAG_TYPES.MOTHER) {
             mtTagMap.set(questionNumber, {
+              tagIds: tag.tag_ids,
+              tagLabels: tag.tag_labels,
+            });
+          } else if (saTamType && tag.type === saTamType) {
+            saTamMap.set(questionNumber, {
               tagIds: tag.tag_ids,
               tagLabels: tag.tag_labels,
             });
@@ -183,6 +194,7 @@ function ExamPage() {
         });
 
         setMtTags(mtTagMap);
+        setSaTamTags(saTamMap);
         setIntegratedTags(integratedMap);
         setCustomTagsMap(customMap);
       } catch (error) {
@@ -309,6 +321,27 @@ function ExamPage() {
     }
   };
 
+  const handleSaTamSelect = (questionNumber: number) => async (tag: SelectedTag | null) => {
+    // 낙관적 업데이트: UI 먼저 업데이트
+    setSaTamTags((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(questionNumber, tag);
+      return newMap;
+    });
+
+    // subject로 tagType 생성
+    const subject = examInfo?.subject;
+    if (!subject) return;
+    const saTamType = `단원_사회탐구_${subject}` as ProblemTagType;
+
+    // 서버에 저장 (null이면 빈 배열로 전달하여 삭제)
+    if (tag) {
+      await saveTags(questionNumber, saTamType, tag.tagIds, tag.tagLabels);
+    } else {
+      await saveTags(questionNumber, saTamType, [], []);
+    }
+  };
+
   const handleIntegratedSelect = (questionNumber: number) => async (tag: SelectedTag | null) => {
     // 낙관적 업데이트: UI 먼저 업데이트
     setIntegratedTags((prev) => {
@@ -422,10 +455,12 @@ function ExamPage() {
               accuracyData,
               accuracyLoading: loading,
               motherTongTag: madertongTags.get(questionNumber) || null,
+              saTamTag: saTamTags.get(questionNumber) || null,
               integratedTag: integratedTags.get(questionNumber) || null,
               customTags: customTagsMap.get(questionNumber) || [],
               tagsLoading,
               onMotherTongSelect: handleMadertongSelect(questionNumber),
+              onSaTamSelect: handleSaTamSelect(questionNumber),
               onIntegratedSelect: handleIntegratedSelect(questionNumber),
               onCustomTagsChange: handleCustomTagsChange(questionNumber),
             };
