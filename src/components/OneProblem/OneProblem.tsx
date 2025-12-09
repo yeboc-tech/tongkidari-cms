@@ -486,7 +486,10 @@ function OneProblem({
         onPaste={mode === 'edit' ? handlePaste : undefined}
       >
         {imageError ? (
-          <div className="flex items-center justify-center h-48 text-gray-500">
+          <div
+            className={`flex items-center justify-center h-48 text-gray-500 ${mode === 'edit' ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+            onClick={mode === 'edit' ? handleImageClick : undefined}
+          >
             <div className="text-center">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -497,6 +500,7 @@ function OneProblem({
                 />
               </svg>
               <p className="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
+              {mode === 'edit' && <p className="mt-1 text-xs text-blue-500">클릭하여 이미지 편집</p>}
             </div>
           </div>
         ) : (
