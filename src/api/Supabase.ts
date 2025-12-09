@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { AccuracyRate } from '../types/accuracyRate';
 import { PROBLEM_TAG_TYPES, type ProblemTagType } from '../ssot/PROBLEM_TAG_TYPES';
 import { type BBox } from './Api';
+import { type ProblemFilterItem } from '../types/ProblemFilterItem';
 
 /**
  * Supabase API 래퍼
@@ -13,7 +14,21 @@ import { type BBox } from './Api';
 export interface EditedContent {
   resource_id: string;
   json: any;
-  base64: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EditedContentWithoutBase64 {
+  resource_id: string;
+  json: any;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SSOTRecord {
+  id: number;
+  key: string;
+  value: any;
   created_at: string;
   updated_at: string;
 }
@@ -48,11 +63,12 @@ export interface ProblemInfo {
   questionNumber: number;
   accuracyData?: AccuracyRate;
   motherTongTag: SelectedTag | null;
+  saTamTag: SelectedTag | null;
   integratedTag: SelectedTag | null;
   customTags: TagWithId[];
-  editedBase64?: string;
+  hasEditedProblem?: boolean;
   editedBBox?: BBox[];
-  answerEditedBase64?: string;
+  hasEditedAnswer?: boolean;
   answerEditedBBox?: BBox[];
 }
 
@@ -201,6 +217,39 @@ export const Supabase = {
 
       return data || [];
     },
+
+    /**
+     * 정확도 데이터 저장 또는 업데이트
+     * @param params - 저장할 정확도 정보
+     */
+    async upsert(params: {
+      problem_id: string;
+      accuracy_rate: number;
+      difficulty: string;
+      score: number;
+      correct_answer: string;
+    }): Promise<void> {
+      const { error } = await supabase.from('accuracy_rate').upsert(
+        {
+          problem_id: params.problem_id,
+          accuracy_rate: params.accuracy_rate,
+          difficulty: params.difficulty,
+          score: params.score,
+          correct_answer: params.correct_answer,
+          selection_rates: {},
+          is_user_edited: true,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'problem_id',
+        },
+      );
+
+      if (error) {
+        console.error('Error upserting accuracy rate:', error);
+        throw error;
+      }
+    },
   },
 
   /**
@@ -208,17 +257,87 @@ export const Supabase = {
    */
   EditedContent: {
     /**
-     * 편집된 콘텐츠 저장 또는 업데이트
+     * File을 base64로 변환하는 헬퍼 함수
+     * @param file - 변환할 File 객체
+     * @returns base64 문자열 (data:... 접두사 제외)
+     */
+    async fileToBase64(file: File): Promise<string> {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // data:image/png;base64, 부분 제거
+          const base64String = result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    },
+
+    /**
+     * S3에 이미지 업로드
+     * @param resourceId - 리소스 ID
+     * @param base64 - base64 이미지 데이터
+     * @throws Error S3 업로드 또는 캐시 무효화 실패 시
+     */
+    async uploadToS3(resourceId: string, base64: string): Promise<void> {
+      const { data, error } = await supabase.functions.invoke('upload-edited-content-s3', {
+        body: { resource_id: resourceId, base64 },
+      });
+
+      if (error) {
+        console.error('Error uploading to S3:', error);
+        throw new Error(`S3 업로드 요청 실패: ${error.message}`);
+      }
+
+      if (!data?.success) {
+        const errorMessage = data?.error || 'S3 upload failed';
+        const details = data?.details ? `\n상세: ${data.details}` : '';
+        throw new Error(`${errorMessage}${details}`);
+      }
+
+      console.log('S3 upload successful:', data.url);
+    },
+
+    /**
+     * S3에서 이미지 삭제
+     * @param resourceId - 리소스 ID
+     * @throws Error S3 삭제 또는 캐시 무효화 실패 시
+     */
+    async deleteFromS3(resourceId: string): Promise<void> {
+      const { data, error } = await supabase.functions.invoke('delete-edited-content-s3', {
+        body: { resource_id: resourceId },
+      });
+
+      if (error) {
+        console.error('Error deleting from S3:', error);
+        throw new Error(`S3 삭제 요청 실패: ${error.message}`);
+      }
+
+      if (!data?.success) {
+        const errorMessage = data?.error || 'S3 delete failed';
+        const details = data?.details ? `\n상세: ${data.details}` : '';
+        throw new Error(`${errorMessage}${details}`);
+      }
+
+      console.log('S3 delete successful:', data.key);
+    },
+
+    /**
+     * 편집된 콘텐츠 저장 또는 업데이트 (BBox와 파일 함께 저장)
      * @param resourceId - 리소스 ID (문제 ID)
      * @param bbox - BBox 데이터 배열
-     * @param base64 - 크롭된 이미지의 base64 문자열
+     * @param file - 크롭된 이미지 File 객체
      */
-    async upsertBBox(resourceId: string, bbox: BBox[], base64: string): Promise<void> {
+    async upsertBBox(resourceId: string, bbox: BBox[], file: File): Promise<void> {
+      // File을 base64로 변환
+      const base64 = await this.fileToBase64(file);
+
       const { error } = await supabase.from('edited_contents').upsert(
         {
           resource_id: resourceId,
           json: bbox,
-          base64,
           updated_at: new Date().toISOString(),
         },
         {
@@ -230,19 +349,24 @@ export const Supabase = {
         console.error('Error upserting edited content:', error);
         throw error;
       }
+
+      // S3에 업로드
+      await this.uploadToS3(resourceId, base64);
     },
 
     /**
-     * base64 이미지만 저장 (json은 빈 객체로)
+     * 파일만 저장 (json은 빈 객체로, S3에 업로드)
      * @param resourceId - 리소스 ID
-     * @param base64 - 이미지의 base64 문자열
+     * @param file - 이미지 File 객체
      */
-    async upsertBase64Only(resourceId: string, base64: string): Promise<void> {
+    async upsertFileOnly(resourceId: string, file: File): Promise<void> {
+      // File을 base64로 변환
+      const base64 = await this.fileToBase64(file);
+
       const { error } = await supabase.from('edited_contents').upsert(
         {
           resource_id: resourceId,
           json: {},
-          base64,
           updated_at: new Date().toISOString(),
         },
         {
@@ -251,9 +375,12 @@ export const Supabase = {
       );
 
       if (error) {
-        console.error('Error upserting base64 content:', error);
+        console.error('Error upserting file content:', error);
         throw error;
       }
+
+      // S3에 업로드
+      await this.uploadToS3(resourceId, base64);
     },
 
     /**
@@ -287,6 +414,9 @@ export const Supabase = {
         console.error('Error deleting edited content:', error);
         throw error;
       }
+
+      // S3에서도 삭제
+      await this.deleteFromS3(resourceId);
     },
 
     /**
@@ -305,6 +435,28 @@ export const Supabase = {
 
       if (error) {
         console.error('Error fetching edited contents by ids:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+
+    /**
+     * 여러 리소스의 편집된 콘텐츠 조회 (base64 제외, RPC 사용)
+     * @param resourceIds - 리소스 ID 배열
+     * @returns 편집된 콘텐츠 배열 (base64 제외)
+     */
+    async fetchWithoutBase64ByIds(resourceIds: string[]): Promise<EditedContentWithoutBase64[]> {
+      if (resourceIds.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabase.rpc('fetch_edited_contents_without_base64_by_ids', {
+        p_resource_ids: resourceIds,
+      });
+
+      if (error) {
+        console.error('Error fetching edited contents without base64 by ids:', error);
         throw error;
       }
 
@@ -340,6 +492,77 @@ export const Supabase = {
 
     if (error) {
       console.error('Error searching by filter:', error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return (data as Array<{ problem_id: string }>).map((row) => row.problem_id);
+  },
+
+  /**
+   * 여러 type-tagIds 세트로 문제 검색 (다중 필터, 각 필터에 독립적인 조건)
+   * @param filters - type, tagIds, years, accuracyMin, accuracyMax를 포함하는 필터 배열
+   * @returns problem_id 배열
+   *
+   * @example
+   * searchByMultiFilter({
+   *   filters: [
+   *     {
+   *       type: '단원_사회탐구_경제',
+   *       tagIds: ['1', '1-1'],
+   *       years: ['2024', '2023'],
+   *       accuracyMin: 30,
+   *       accuracyMax: 70
+   *     },
+   *     {
+   *       type: '단원_사회탐구_사회문화',
+   *       tagIds: ['1', '1-2'],
+   *       years: ['2024'],
+   *       accuracyMin: 50,
+   *       accuracyMax: 100
+   *     }
+   *   ]
+   * })
+   */
+  async searchByFilterItems(params: { filters: ProblemFilterItem[] }): Promise<string[]> {
+    const { filters } = params;
+
+    // 필터가 없으면 빈 배열 반환
+    if (!filters || filters.length === 0) {
+      return [];
+    }
+
+    // JSONB 형식으로 변환 (각 필터의 조건 포함)
+    const filtersJson = filters.map((f) => {
+      // accuracy_min이 0이고 accuracy_max가 100이면 필드 제거 (전체 범위이므로 필터링 불필요)
+      const shouldIncludeAccuracy = !(f.accuracyMin === 0 && f.accuracyMax === 100);
+
+      return {
+        type: f.type,
+        tag_ids: f.tagIds,
+        and_problem_filter_items:
+          f.andProblemFilterItems && f.andProblemFilterItems.length > 0
+            ? f.andProblemFilterItems.map((andItem) => ({
+                type: andItem.type,
+                tag_ids: andItem.tagIds,
+              }))
+            : undefined,
+        grades: f.grades && f.grades.length > 0 ? f.grades : undefined,
+        years: f.years && f.years.length > 0 ? f.years : undefined,
+        accuracy_min: shouldIncludeAccuracy ? (f.accuracyMin ?? undefined) : undefined,
+        accuracy_max: shouldIncludeAccuracy ? (f.accuracyMax ?? undefined) : undefined,
+      };
+    });
+
+    const { data, error } = await supabase.rpc('search_problems_by_filter_items', {
+      p_filters: filtersJson,
+    });
+
+    if (error) {
+      console.error('Error searching by multi filter:', error);
       throw error;
     }
 
@@ -394,6 +617,7 @@ export const Supabase = {
 
       // 태그 타입별로 분류
       let motherTongTag: SelectedTag | null = null;
+      let saTamTag: SelectedTag | null = null;
       let integratedTag: SelectedTag | null = null;
       const customTags: TagWithId[] = [];
 
@@ -402,6 +626,12 @@ export const Supabase = {
         const tag = tags[type];
         if (type === PROBLEM_TAG_TYPES.MOTHER) {
           motherTongTag = {
+            tagIds: tag.tag_ids,
+            tagLabels: tag.tag_labels,
+          };
+        } else if (type.startsWith('단원_사회탐구_')) {
+          // 사탐 단원 태그 (단원_사회탐구_경제, 단원_사회탐구_사회문화 등)
+          saTamTag = {
             tagIds: tag.tag_ids,
             tagLabels: tag.tag_labels,
           };
@@ -426,9 +656,59 @@ export const Supabase = {
         questionNumber,
         accuracyData,
         motherTongTag,
+        saTamTag,
         integratedTag,
         customTags,
       };
     });
+  },
+
+  /**
+   * SSOT 관련 API
+   */
+  SSOT: {
+    /**
+     * 여러 키로 SSOT 데이터 조회
+     * @param keys - SSOT 키 배열 (예: ['CHAPTER_사회탐구_경제', 'CHAPTER_자세한통사단원_1'])
+     * @returns SSOT 레코드 배열
+     */
+    async fetchByKeys(keys: string[]): Promise<SSOTRecord[]> {
+      if (keys.length === 0) {
+        return [];
+      }
+
+      // 임시 방법: 모든 데이터를 가져와서 클라이언트에서 필터링
+      const { data, error } = await supabase.from('ssot').select('*');
+
+      if (error) {
+        console.error('Error fetching SSOT records:', error);
+        throw error;
+      }
+
+      // 클라이언트 사이드 필터링
+      const filteredData = (data || []).filter((record) => keys.includes(record.key));
+
+      return filteredData;
+    },
+
+    /**
+     * 단일 키로 SSOT 데이터 조회
+     * @param key - SSOT 키 (예: 'CHAPTER_사회탐구_경제')
+     * @returns SSOT 레코드 또는 null
+     */
+    async fetchByKey(key: string): Promise<SSOTRecord | null> {
+      const { data, error } = await supabase.from('ssot').select('*').eq('key', key).single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned
+          return null;
+        }
+        console.error('Error fetching SSOT record:', error);
+        throw error;
+      }
+
+      return data;
+    },
   },
 };

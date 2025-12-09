@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
+import SaTamTagInput from '../molecules/SaTamTagInput/SaTamTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
 import BBoxEditor from '../BBoxEditor/BBoxEditor';
+import ErrorSnackbar from '../Snackbar/ErrorSnackbar';
+import SuccessSnackbar from '../Snackbar/SuccessSnackbar';
 import { AccuracyRate } from '../../types/accuracyRate';
 import { getQuestionImageUrl } from '../../constants/apiConfig';
 import { Api, type BBox } from '../../api/Api';
@@ -35,6 +38,7 @@ export interface OneProblemProps {
 
   // 태그 데이터
   motherTongTag: SelectedTag | null;
+  saTamTag: SelectedTag | null;
   integratedTag: SelectedTag | null;
   customTags: TagWithId[];
   tagsLoading: boolean;
@@ -42,15 +46,17 @@ export interface OneProblemProps {
   // 모드 ('edit' | 'view')
   mode?: 'edit' | 'view';
 
-  // 편집된 이미지 (base64)
-  editedBase64?: string;
+  // 편집된 콘텐츠 여부
+  isEdited?: boolean;
   // 편집된 BBox 배열
   editedBBox?: BBox[];
 
   // 이벤트 핸들러
   onMotherTongSelect: (tag: SelectedTag | null) => void;
+  onSaTamSelect: (tag: SelectedTag | null) => void;
   onIntegratedSelect: (tag: SelectedTag | null) => void;
   onCustomTagsChange: (tags: TagWithId[]) => void;
+  onAccuracyUpdate?: (data: AccuracyRate) => void;
 }
 
 // ========== Component ==========
@@ -62,36 +68,124 @@ function OneProblem({
   accuracyData,
   accuracyLoading,
   motherTongTag: motherTongTag,
+  saTamTag,
   integratedTag,
   customTags,
   tagsLoading,
   mode = 'edit',
-  editedBase64,
+  isEdited = false,
   editedBBox,
   onMotherTongSelect: onMotherTongSelect,
+  onSaTamSelect,
   onIntegratedSelect,
   onCustomTagsChange,
+  onAccuracyUpdate,
 }: OneProblemProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [showBBoxEditor, setShowBBoxEditor] = useState(false);
   const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
-  const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
+  const [currentIsEdited, setCurrentIsEdited] = useState(isEdited);
   const [currentBBox, setCurrentBBox] = useState<BBox[] | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // 정확도 입력 다이얼로그 상태
+  const [showAccuracyDialog, setShowAccuracyDialog] = useState(false);
+  const [currentAccuracyData, setCurrentAccuracyData] = useState<AccuracyRate | undefined>(accuracyData);
+  const [accuracyForm, setAccuracyForm] = useState({
+    accuracy_rate: '',
+    difficulty: '',
+    score: '',
+    correct_answer: '',
+  });
+  const [isSavingAccuracy, setIsSavingAccuracy] = useState(false);
 
   // props 변경 시 state 업데이트
   useEffect(() => {
-    setCurrentBase64(editedBase64);
+    setCurrentIsEdited(isEdited);
     setCurrentBBox(editedBBox);
     setImageError(false);
-  }, [problemId, editedBase64, editedBBox]);
+  }, [problemId, isEdited, editedBBox]);
+
+  // accuracyData props 변경 시 state 업데이트
+  useEffect(() => {
+    setCurrentAccuracyData(accuracyData);
+  }, [accuracyData]);
+
+  // 정확도 입력 다이얼로그 열기
+  const handleOpenAccuracyDialog = () => {
+    // 기존 데이터가 있으면 폼에 채우기
+    if (currentAccuracyData) {
+      setAccuracyForm({
+        accuracy_rate: currentAccuracyData.accuracy_rate.toString(),
+        difficulty: currentAccuracyData.difficulty,
+        score: currentAccuracyData.score.toString(),
+        correct_answer: currentAccuracyData.correct_answer,
+      });
+    } else {
+      setAccuracyForm({
+        accuracy_rate: '',
+        difficulty: '',
+        score: '',
+        correct_answer: '',
+      });
+    }
+    setShowAccuracyDialog(true);
+  };
+
+  // 정확도 저장 핸들러
+  const handleSaveAccuracy = async () => {
+    // 유효성 검사 (정답률만 필수)
+    const rate = parseFloat(accuracyForm.accuracy_rate);
+    const score = accuracyForm.score ? parseInt(accuracyForm.score, 10) : 0;
+
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      setErrorMessage('정답률은 0~100 사이의 숫자여야 합니다.');
+      return;
+    }
+
+    setIsSavingAccuracy(true);
+    try {
+      await Supabase.AccuracyRates.upsert({
+        problem_id: problemId,
+        accuracy_rate: rate,
+        difficulty: accuracyForm.difficulty.trim() || '-',
+        score: score,
+        correct_answer: accuracyForm.correct_answer.trim() || '-',
+      });
+
+      // 저장 성공 후 상태 업데이트
+      const newAccuracyData: AccuracyRate = {
+        problem_id: problemId,
+        accuracy_rate: rate,
+        difficulty: accuracyForm.difficulty.trim() || '-',
+        score: score,
+        correct_answer: accuracyForm.correct_answer.trim() || '-',
+        selection_rates: currentAccuracyData?.selection_rates || {},
+        is_user_edited: true,
+        created_at: currentAccuracyData?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      setCurrentAccuracyData(newAccuracyData);
+      onAccuracyUpdate?.(newAccuracyData);
+      setShowAccuracyDialog(false);
+      setShowSaveSnackbar(true);
+    } catch (error) {
+      console.error('Failed to save accuracy:', error);
+      setErrorMessage(error instanceof Error ? error.message : '저장에 실패했습니다.');
+    } finally {
+      setIsSavingAccuracy(false);
+    }
+  };
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');
@@ -99,11 +193,12 @@ function OneProblem({
   // problemId에서 subject 추출: "경제_고3_2024_03_학평_1_문제" -> "경제"
   const subject = problemId.split('_')[0];
 
-  // 문제 이미지 URL 생성 (base64가 있으면 우선 사용)
-  const imageUrl = currentBase64
-    ? `data:image/png;base64,${currentBase64}`
+  // 문제 이미지 URL 생성 (편집된 이미지가 있으면 edited CDN, 없으면 기본 CDN)
+  const imageUrl = currentIsEdited
+    ? `https://cdn.y3c.kr/tongkidari/edited-contents/${problemId}.png`
     : getQuestionImageUrl(examId, questionNumber);
 
+  console.log(imageUrl);
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {
     // currentBBox가 있으면 CSV 조회 없이 바로 에디터 열기
@@ -143,34 +238,19 @@ function OneProblem({
   // BBox 확인 핸들러 (bbox 배열 받음)
   const handleBBoxConfirm = async (file: File, bboxes: BBox[]) => {
     try {
-      // File을 base64로 변환
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          // data:image/png;base64, 부분 제거
-          const base64String = result.split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Supabase에 bboxes 배열과 file 저장 (S3에 업로드됨)
+      await Supabase.EditedContent.upsertBBox(problemId, bboxes, file);
 
-      // Supabase에 bboxes 배열과 base64 저장
-      await Supabase.EditedContent.upsertBBox(problemId, bboxes, base64);
-
-      // 저장 후 즉시 이미지 및 bbox 업데이트
-      setCurrentBase64(base64);
+      // 저장 후 상태 업데이트
+      setCurrentIsEdited(true);
       setCurrentBBox(bboxes);
 
       // Snackbar 표시
       setShowSaveSnackbar(true);
-      setTimeout(() => {
-        setShowSaveSnackbar(false);
-      }, 3000);
     } catch (error) {
-      console.error('Failed to save bbox:', error);
-      alert('BBox 저장에 실패했습니다.');
+      console.error('Save failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : '저장 실패');
+      throw error; // 에러를 BBoxEditor로 전달
     }
   };
 
@@ -195,21 +275,22 @@ function OneProblem({
       return;
     }
 
+    setIsDeleting(true);
+
     try {
       await Supabase.EditedContent.delete(problemId);
 
       // 삭제 후 원본 이미지 및 bbox로 복원
-      setCurrentBase64(undefined);
+      setCurrentIsEdited(false);
       setCurrentBBox(undefined);
 
       // Snackbar 표시
       setShowDeleteSnackbar(true);
-      setTimeout(() => {
-        setShowDeleteSnackbar(false);
-      }, 3000);
     } catch (error) {
       console.error('Failed to delete edited image:', error);
-      alert('이미지 삭제에 실패했습니다.');
+      setErrorMessage(error instanceof Error ? error.message : '이미지 삭제 실패');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -262,23 +343,11 @@ function OneProblem({
     if (!draggedFile) return;
 
     try {
-      // File을 base64로 변환
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          const base64String = result.split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(draggedFile);
-      });
+      // Supabase에 file 저장 (S3에 업로드됨)
+      await Supabase.EditedContent.upsertFileOnly(problemId, draggedFile);
 
-      // Supabase에 base64만 저장
-      await Supabase.EditedContent.upsertBase64Only(problemId, base64);
-
-      // 업로드 후 이미지 업데이트
-      setCurrentBase64(base64);
+      // 업로드 후 상태 업데이트
+      setCurrentIsEdited(true);
 
       // 다이얼로그 닫기 및 정리
       setShowUploadDialog(false);
@@ -290,12 +359,9 @@ function OneProblem({
 
       // Snackbar 표시
       setShowSaveSnackbar(true);
-      setTimeout(() => {
-        setShowSaveSnackbar(false);
-      }, 3000);
     } catch (error) {
-      console.error('Failed to upload image:', error);
-      alert('이미지 업로드에 실패했습니다.');
+      console.error('Upload failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : '업로드 실패');
     }
   };
 
@@ -332,7 +398,7 @@ function OneProblem({
   return (
     <div
       className={`border-2 rounded-lg p-4 transition-colors ${
-        currentBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
+        currentIsEdited ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
       }`}
     >
       {/* 헤더: 제목과 복사 버튼 */}
@@ -377,28 +443,54 @@ function OneProblem({
       </div>
 
       {/* 정확도 정보 */}
-      {accuracyData && (
-        <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
+      {currentAccuracyData ? (
+        <div
+          className="mb-3 grid grid-cols-4 gap-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleOpenAccuracyDialog}
+          title="클릭하여 수정"
+        >
           <div className="bg-blue-50 px-2 py-1 rounded">
             <span className="text-gray-600">정답률</span>
-            <p className="font-semibold text-blue-700">{accuracyData.accuracy_rate}%</p>
+            <p className="font-semibold text-blue-700">{currentAccuracyData.accuracy_rate}%</p>
           </div>
           <div className="bg-purple-50 px-2 py-1 rounded">
             <span className="text-gray-600">난이도</span>
-            <p className="font-semibold text-purple-700">{accuracyData.difficulty}</p>
+            <p className="font-semibold text-purple-700">{currentAccuracyData.difficulty}</p>
           </div>
           <div className="bg-green-50 px-2 py-1 rounded">
             <span className="text-gray-600">점수</span>
-            <p className="font-semibold text-green-700">{accuracyData.score}점</p>
+            <p className="font-semibold text-green-700">{currentAccuracyData.score}점</p>
           </div>
           <div className="bg-orange-50 px-2 py-1 rounded">
             <span className="text-gray-600">정답</span>
-            <p className="font-semibold text-orange-700">{accuracyData.correct_answer}</p>
+            <p className="font-semibold text-orange-700">{currentAccuracyData.correct_answer}</p>
           </div>
         </div>
-      )}
+      ) : !accuracyLoading ? (
+        <div
+          className="mb-3 grid grid-cols-4 gap-2 text-xs cursor-pointer hover:bg-gray-100 transition-colors"
+          onClick={handleOpenAccuracyDialog}
+        >
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">정답률</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">난이도</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">점수</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">정답</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+        </div>
+      ) : null}
 
-      {accuracyLoading && !accuracyData && (
+      {accuracyLoading && !currentAccuracyData && (
         <div className="mb-3 text-xs text-gray-500">정확도 정보를 불러오는 중...</div>
       )}
 
@@ -409,7 +501,7 @@ function OneProblem({
         ) : mode === 'edit' ? (
           <>
             {/* Edit 모드: 태그 입력기 */}
-            <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
+            <SaTamTagInput subject={`사회탐구_${subject}`} onSelect={onSaTamSelect} value={saTamTag} />
             <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
             <CustomTagInput
               onTagsChange={onCustomTagsChange}
@@ -421,19 +513,19 @@ function OneProblem({
         ) : (
           <>
             {/* View 모드: 태그 라벨만 표시 */}
-            {/* 마더텅 단원 태그 */}
+            {/* 사탐 단원 태그 */}
             <div>
-              <label className="text-xs text-gray-600 block mb-1.5">MT {subject} 단원 태그</label>
+              <label className="text-xs text-gray-600 block mb-1.5">사회탐구_{subject} 단원 태그</label>
               <div className="flex flex-wrap gap-2">
-                {motherTongTag && motherTongTag.tagLabels.length > 0 ? (
+                {saTamTag && saTamTag.tagLabels.length > 0 ? (
                   <span
                     className="px-3 py-1 rounded-full text-sm font-medium"
-                    style={{ backgroundColor: '#fce7ec', color: '#e34f6e' }}
+                    style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}
                   >
-                    {motherTongTag.tagLabels.join(' > ')}
+                    {saTamTag.tagLabels.join(' > ')}
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-400">MT 단원 태그가 없습니다</span>
+                  <span className="text-sm text-gray-400">사탐 단원 태그가 없습니다</span>
                 )}
               </div>
             </div>
@@ -487,8 +579,11 @@ function OneProblem({
         onDrop={handleDrop}
         onPaste={mode === 'edit' ? handlePaste : undefined}
       >
-        {!currentBase64 && imageError ? (
-          <div className="flex items-center justify-center h-48 text-gray-500">
+        {imageError ? (
+          <div
+            className={`flex items-center justify-center h-48 text-gray-500 ${mode === 'edit' ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+            onClick={mode === 'edit' ? handleImageClick : undefined}
+          >
             <div className="text-center">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -499,6 +594,7 @@ function OneProblem({
                 />
               </svg>
               <p className="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
+              {mode === 'edit' && <p className="mt-1 text-xs text-blue-500">클릭하여 이미지 편집</p>}
             </div>
           </div>
         ) : (
@@ -508,16 +604,11 @@ function OneProblem({
             className={`w-full h-auto transition-opacity ${mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''}`}
             loading="lazy"
             onClick={mode === 'edit' ? handleImageClick : undefined}
-            onError={() => {
-              // base64가 없을 때만 에러 상태 설정
-              if (!currentBase64) {
-                setImageError(true);
-              }
-            }}
+            onError={() => setImageError(true)}
           />
         )}
         {/* 편집된 이미지 삭제 버튼 */}
-        {currentBase64 && (
+        {currentIsEdited && (
           <button
             onClick={handleDeleteEditedImage}
             className="absolute bottom-1 right-1 bg-gray-600/40 hover:bg-gray-700/60 text-white rounded-full w-6 h-6 flex items-center justify-center transition-all shadow-md text-lg leading-none"
@@ -571,29 +662,16 @@ function OneProblem({
         />
       )}
 
-      {/* Save Success Snackbar */}
+      {/* Snackbars */}
       {showSaveSnackbar && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>BBox와 이미지가 저장되었습니다</span>
-          </div>
-        </div>
+        <SuccessSnackbar message="BBox와 이미지가 저장되었습니다" onClose={() => setShowSaveSnackbar(false)} />
       )}
 
-      {/* Delete Success Snackbar */}
       {showDeleteSnackbar && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>편집된 이미지가 삭제되었습니다</span>
-          </div>
-        </div>
+        <SuccessSnackbar message="편집된 이미지가 삭제되었습니다" onClose={() => setShowDeleteSnackbar(false)} />
       )}
+
+      {errorMessage && <ErrorSnackbar message={errorMessage} onClose={() => setErrorMessage(null)} />}
 
       {/* Upload Confirmation Dialog */}
       {showUploadDialog && uploadPreviewUrl && (
@@ -617,6 +695,95 @@ function OneProblem({
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
                   업로드
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deleting Overlay */}
+      {isDeleting && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-2xl">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">이미지 삭제 중...</p>
+              <p className="text-sm text-gray-600 mt-1">S3 삭제 및 캐시 무효화 진행 중</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 정확도 입력 다이얼로그 */}
+      {showAccuracyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-4">정확도 정보 입력</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">정답률 (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={accuracyForm.accuracy_rate}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, accuracy_rate: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 75.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">난이도</label>
+                  <select
+                    value={accuracyForm.difficulty}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, difficulty: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="상">상</option>
+                    <option value="중">중</option>
+                    <option value="하">하</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">점수</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={accuracyForm.score}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, score: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">정답</label>
+                  <input
+                    type="text"
+                    value={accuracyForm.correct_answer}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, correct_answer: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 3"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  onClick={() => setShowAccuracyDialog(false)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                  disabled={isSavingAccuracy}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveAccuracy}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  disabled={isSavingAccuracy}
+                >
+                  {isSavingAccuracy ? '저장 중...' : '저장'}
                 </button>
               </div>
             </div>

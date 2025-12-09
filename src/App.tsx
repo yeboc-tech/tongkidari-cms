@@ -8,6 +8,20 @@ import SciencePlayground from './pages/SciencePlayground'
 import Auth from './lib/Auth'
 import { SUBJECTS, type CategoryName } from './ssot/subjects'
 import { SearchInput } from './components'
+import { ChapterStoreProvider } from './contexts/ChapterStoreContext'
+
+// 미리 로드할 Chapter 키 목록
+const PRELOAD_CHAPTER_KEYS = [
+  // 통합사회
+  '단원_자세한통합사회_1',
+  '단원_자세한통합사회_2',
+  // 사회탐구
+  '단원_사회탐구_경제',
+  '단원_사회탐구_동아시아사',
+  '단원_사회탐구_사회문화',
+  '단원_사회탐구_생활과윤리',
+  '단원_사회탐구_정치와법',
+];
 
 // 과목명으로 카테고리 찾기
 function getCategoryBySubject(subject: string): CategoryName | null {
@@ -178,7 +192,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <ChapterStoreProvider preloadKeys={PRELOAD_CHAPTER_KEYS}>
+        <AppContent />
+      </ChapterStoreProvider>
     </BrowserRouter>
   );
 }

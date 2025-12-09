@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import type { Book, Chapter, Topic, Subtopic } from '../../ssot/types';
+import type { Chapter } from '../../ssot/types';
+
+export interface SelectedChapterItem {
+  id: string;
+  tagType: string;
+}
 
 interface ChapterTreeProps {
-  data: Book[];
-  onSelectionChange?: (selectedIds: string[]) => void;
+  data: Chapter[];
+  onSelectionChange?: (selectedItems: SelectedChapterItem[]) => void;
   accentColor?: string;
 }
 
@@ -36,74 +41,68 @@ function IndeterminateCheckbox({ checkState, accentColor = '#ff4081' }: Checkbox
 }
 
 function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: ChapterTreeProps) {
-  // 모든 항목을 펼친 상태로 초기화 (subtopics가 있는 Topic도 포함)
-  const getAllIds = (data: Book[]): string[] => {
-    const ids: string[] = [];
-    data.forEach((book) => {
-      ids.push(book.id);
-      if (book.chapters) {
-        book.chapters.forEach((chapter) => {
-          ids.push(chapter.id);
-          if (chapter.topics) {
-            chapter.topics.forEach((topic) => {
-              if (topic.subtopics && topic.subtopics.length > 0) {
-                ids.push(topic.id); // subtopics가 있는 Topic만 추가
-              }
-            });
-          }
-        });
+
+  // 모든 Chapter ID를 재귀적으로 수집하는 헬퍼 함수
+  const collectAllIds = (chapters: Chapter[]): string[] => {
+    const result: string[] = [];
+
+    const traverse = (chapter: Chapter) => {
+      result.push(chapter.id);
+      if (chapter.chapters && chapter.chapters.length > 0) {
+        chapter.chapters.forEach(traverse);
       }
-    });
-    return ids;
+    };
+
+    chapters.forEach(traverse);
+    return result;
   };
 
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(getAllIds(data)));
+  // 리프 노드(자식이 없는 노드) ID와 tagType 수집
+  const collectLeafItems = (chapters: Chapter[]): SelectedChapterItem[] => {
+    const result: SelectedChapterItem[] = [];
+
+    const traverse = (chapter: Chapter) => {
+      if (!chapter.chapters || chapter.chapters.length === 0) {
+        result.push({
+          id: chapter.id,
+          tagType: chapter.tagType || '',
+        });
+      } else {
+        chapter.chapters.forEach(traverse);
+      }
+    };
+
+    chapters.forEach(traverse);
+    return result;
+  };
+
+  // 모든 ID 수집 (초기 펼침 상태용)
+  const allIds = useMemo(() => collectAllIds(data), [data]);
+
+  // 리프 노드 아이템 수집 (선택 상태 전달용)
+  const leafNodeItems = useMemo(() => collectLeafItems(data), [data]);
+
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(allIds));
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
-  // onSelectionChange를 ref로 저장하여 의존성 문제 해결
   const onSelectionChangeRef = useRef(onSelectionChange);
 
   useEffect(() => {
     onSelectionChangeRef.current = onSelectionChange;
   }, [onSelectionChange]);
 
-  // data가 변경될 때마다 모든 항목을 펼친 상태로 재설정
+  // data가 변경되면 expandedItems 업데이트
   useEffect(() => {
-    setExpandedItems(new Set(getAllIds(data)));
-  }, [data]);
+    setExpandedItems(new Set(allIds));
+  }, [allIds]);
 
-  // 모든 리프 노드의 ID를 메모이제이션 (data가 변경될 때만 재계산)
-  const leafNodeIds = useMemo(() => {
-    const leafIds = new Set<string>();
-
-    data.forEach((book) => {
-      if (book.chapters) {
-        book.chapters.forEach((chapter) => {
-          if (chapter.topics) {
-            chapter.topics.forEach((topic) => {
-              if (topic.subtopics && topic.subtopics.length > 0) {
-                // Topic에 subtopics가 있으면, subtopics만 리프
-                topic.subtopics.forEach((subtopic) => leafIds.add(subtopic.id));
-              } else {
-                // Topic에 subtopics가 없으면, Topic이 리프
-                leafIds.add(topic.id);
-              }
-            });
-          }
-        });
-      }
-    });
-
-    return leafIds;
-  }, [data]);
-
-  // checkedItems가 변경될 때 부모 컴포넌트에 리프 노드만 전달
+  // 선택된 리프 노드만 부모에게 전달 (id와 tagType 포함)
   useEffect(() => {
     if (onSelectionChangeRef.current) {
-      const checkedLeafIds = Array.from(checkedItems).filter(id => leafNodeIds.has(id));
-      onSelectionChangeRef.current(checkedLeafIds);
+      const checkedLeafItems = leafNodeItems.filter((item) => checkedItems.has(item.id));
+      onSelectionChangeRef.current(checkedLeafItems);
     }
-  }, [checkedItems, leafNodeIds]);
+  }, [checkedItems, leafNodeItems]);
 
   const toggleExpanded = (id: string) => {
     setExpandedItems((prev) => {
@@ -117,48 +116,30 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
     });
   };
 
-  // Get all child IDs for a given item
-  const getAllChildIds = (item: Book | Chapter | Topic): string[] => {
-    const ids: string[] = [];
+  // 하위 모든 자식 ID를 재귀적으로 수집
+  const getAllChildIds = (chapter: Chapter): string[] => {
+    const result: string[] = [];
 
-    if ('chapters' in item) {
-      // Book
-      item.chapters.forEach((chapter) => {
-        ids.push(chapter.id);
-        if (chapter.topics) {
-          chapter.topics.forEach((topic) => {
-            ids.push(topic.id);
-            if (topic.subtopics) {
-              topic.subtopics.forEach((subtopic) => ids.push(subtopic.id));
-            }
-          });
-        }
-      });
-    } else if ('topics' in item) {
-      // Chapter
-      if (item.topics) {
-        item.topics.forEach((topic) => {
-          ids.push(topic.id);
-          if (topic.subtopics) {
-            topic.subtopics.forEach((subtopic) => ids.push(subtopic.id));
-          }
-        });
+    const traverse = (ch: Chapter) => {
+      result.push(ch.id);
+      if (ch.chapters && ch.chapters.length > 0) {
+        ch.chapters.forEach(traverse);
       }
-    } else if ('subtopics' in item) {
-      // Topic
-      if (item.subtopics) {
-        item.subtopics.forEach((subtopic) => ids.push(subtopic.id));
-      }
+    };
+
+    if (chapter.chapters && chapter.chapters.length > 0) {
+      chapter.chapters.forEach(traverse);
     }
 
-    return ids;
+    return result;
   };
 
-  // Get check state for an item (checked, unchecked, or indeterminate)
-  const getCheckState = (item: Book | Chapter | Topic): 'checked' | 'unchecked' | 'indeterminate' => {
-    const childIds = getAllChildIds(item);
+  // Check 상태 계산
+  const getCheckState = (chapter: Chapter): 'checked' | 'unchecked' | 'indeterminate' => {
+    const childIds = getAllChildIds(chapter);
+
     if (childIds.length === 0) {
-      return checkedItems.has(item.id) ? 'checked' : 'unchecked';
+      return checkedItems.has(chapter.id) ? 'checked' : 'unchecked';
     }
 
     const checkedChildren = childIds.filter((id) => checkedItems.has(id));
@@ -172,80 +153,41 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
     }
   };
 
-  // Handle checkbox change with cascading
-  const handleCheckboxChange = (id: string, item: Book | Chapter | Topic | Subtopic) => {
+  // Checkbox 변경 핸들러
+  const handleCheckboxChange = (chapter: Chapter) => {
+    const childIds = getAllChildIds(chapter);
+    const allIds = [chapter.id, ...childIds];
+
     setCheckedItems((prev) => {
       const newSet = new Set(prev);
 
-      if (newSet.has(id)) {
-        // Uncheck: remove this item and all children
-        newSet.delete(id);
+      // 현재 체크 상태 확인
+      const isChecked = newSet.has(chapter.id);
 
-        if ('chapters' in item || 'topics' in item || 'subtopics' in item) {
-          const childIds = getAllChildIds(item as Book | Chapter | Topic);
-          childIds.forEach((childId) => newSet.delete(childId));
-        }
+      if (isChecked) {
+        // Uncheck: 자신과 모든 하위 노드 체크 해제
+        allIds.forEach((id) => newSet.delete(id));
       } else {
-        // Check: add this item and all children
-        newSet.add(id);
-
-        if ('chapters' in item || 'topics' in item || 'subtopics' in item) {
-          const childIds = getAllChildIds(item as Book | Chapter | Topic);
-          childIds.forEach((childId) => newSet.add(childId));
-        }
+        // Check: 자신과 모든 하위 노드 체크
+        allIds.forEach((id) => newSet.add(id));
       }
 
       return newSet;
     });
   };
 
-  const renderSubtopic = (subtopic: Subtopic, level: number) => {
+  // 재귀적 렌더링 함수
+  const renderChapter = (chapter: Chapter, level: number): JSX.Element => {
+    const isExpanded = expandedItems.has(chapter.id);
+    const hasChildren = chapter.chapters && chapter.chapters.length > 0;
     const indent = level * 24;
-    const isChecked = checkedItems.has(subtopic.id);
+    const checkState = hasChildren ? getCheckState(chapter) : checkedItems.has(chapter.id) ? 'checked' : 'unchecked';
 
     return (
-      <div
-        key={subtopic.id}
-        className="flex items-center py-1 hover:bg-gray-50"
-        style={{ paddingLeft: `${indent}px` }}
-      >
-        <div className="w-6 h-6" /> {/* Empty space for no arrow */}
-        <div
-          className="flex items-center cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCheckboxChange(subtopic.id, subtopic);
-          }}
-        >
-          <input
-            type="checkbox"
-            className="w-4 h-4 mr-2 cursor-pointer"
-            style={{ accentColor }}
-            checked={isChecked}
-            onChange={() => {}}
-          />
-        </div>
-        <span className="text-sm cursor-pointer">{subtopic.title}</span>
-      </div>
-    );
-  };
-
-  const renderTopic = (topic: Topic, level: number) => {
-    const isExpanded = expandedItems.has(topic.id);
-    const hasChildren = topic.subtopics && topic.subtopics.length > 0;
-    const indent = level * 24;
-    const checkState = hasChildren ? getCheckState(topic) : (checkedItems.has(topic.id) ? 'checked' : 'unchecked');
-
-    return (
-      <div key={topic.id}>
-        <div
-          className="flex items-center py-1 hover:bg-gray-50"
-          style={{ paddingLeft: `${indent}px` }}
-        >
-          <div
-            className="cursor-pointer"
-            onClick={() => hasChildren && toggleExpanded(topic.id)}
-          >
+      <div key={chapter.id}>
+        <div className="flex items-center py-1 hover:bg-gray-50" style={{ paddingLeft: `${indent}px` }}>
+          {/* 펼침/접기 화살표 */}
+          <div className="cursor-pointer" onClick={() => hasChildren && toggleExpanded(chapter.id)}>
             {hasChildren ? (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -265,11 +207,13 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
               <div className="w-6 h-6" />
             )}
           </div>
+
+          {/* 체크박스 */}
           <div
             className="flex items-center cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
-              handleCheckboxChange(topic.id, topic);
+              handleCheckboxChange(chapter);
             }}
           >
             {hasChildren ? (
@@ -284,123 +228,16 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
               />
             )}
           </div>
-          <span className="text-sm cursor-pointer">{topic.title}</span>
+
+          {/* 제목 */}
+          <span className={`text-sm cursor-pointer ${level === 0 ? 'font-semibold' : level === 1 ? 'font-medium' : ''}`}>
+            {chapter.title}
+          </span>
         </div>
 
+        {/* 하위 chapters 재귀 렌더링 */}
         {hasChildren && isExpanded && (
-          <div>
-            {topic.subtopics!.map((subtopic) => renderSubtopic(subtopic, level + 1))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderChapter = (chapter: Chapter, level: number) => {
-    const isExpanded = expandedItems.has(chapter.id);
-    const hasChildren = chapter.topics && chapter.topics.length > 0;
-    const indent = level * 24;
-    const checkState = getCheckState(chapter);
-
-    return (
-      <div key={chapter.id}>
-        <div
-          className="flex items-center py-1 hover:bg-gray-50"
-          style={{ paddingLeft: `${indent}px` }}
-        >
-          <div
-            className="cursor-pointer"
-            onClick={() => hasChildren && toggleExpanded(chapter.id)}
-          >
-            {hasChildren ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-                className={`transition-transform ${isExpanded ? 'rotate-180' : 'rotate-90'}`}
-                style={{ width: '24px', color: isExpanded ? 'rgb(112, 112, 112)' : 'rgb(192, 192, 192)' }}
-              >
-                <path
-                  fill="currentColor"
-                  d="M16.586 15.5c.89 0 1.337-1.077.707-1.707l-4.586-4.586c-.39-.39-1.024-.39-1.414 0l-4.586 4.586c-.63.63-.184 1.707.707 1.707h9.172z"
-                />
-              </svg>
-            ) : (
-              <div className="w-6 h-6" />
-            )}
-          </div>
-          <div
-            className="flex items-center cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCheckboxChange(chapter.id, chapter);
-            }}
-          >
-            <IndeterminateCheckbox checkState={checkState} accentColor={accentColor} />
-          </div>
-          <span className="text-sm font-medium cursor-pointer">{chapter.title}</span>
-        </div>
-
-        {hasChildren && isExpanded && (
-          <div>
-            {chapter.topics.map((topic) => renderTopic(topic, level + 1))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderBook = (book: Book) => {
-    const isExpanded = expandedItems.has(book.id);
-    const hasChildren = book.chapters && book.chapters.length > 0;
-    const checkState = getCheckState(book);
-
-    return (
-      <div key={book.id}>
-        <div
-          className="flex items-center py-2 hover:bg-gray-50"
-        >
-          <div
-            className="cursor-pointer"
-            onClick={() => hasChildren && toggleExpanded(book.id)}
-          >
-            {hasChildren ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-                className={`transition-transform ${isExpanded ? 'rotate-180' : 'rotate-90'}`}
-                style={{ width: '24px', color: isExpanded ? 'rgb(112, 112, 112)' : 'rgb(192, 192, 192)' }}
-              >
-                <path
-                  fill="currentColor"
-                  d="M16.586 15.5c.89 0 1.337-1.077.707-1.707l-4.586-4.586c-.39-.39-1.024-.39-1.414 0l-4.586 4.586c-.63.63-.184 1.707.707 1.707h9.172z"
-                />
-              </svg>
-            ) : (
-              <div className="w-6 h-6" />
-            )}
-          </div>
-          <div
-            className="flex items-center cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCheckboxChange(book.id, book);
-            }}
-          >
-            <IndeterminateCheckbox checkState={checkState} accentColor={accentColor} />
-          </div>
-          <span className="text-sm font-semibold cursor-pointer">{book.title}</span>
-        </div>
-
-        {hasChildren && isExpanded && (
-          <div>
-            {book.chapters.map((chapter) => renderChapter(chapter, 1))}
-          </div>
+          <div>{chapter.chapters!.map((child) => renderChapter(child, level + 1))}</div>
         )}
       </div>
     );
@@ -408,9 +245,7 @@ function ChapterTree({ data, onSelectionChange, accentColor = '#ff4081' }: Chapt
 
   return (
     <div className="border border-gray-300 rounded-lg p-4 bg-white">
-      <div className="space-y-1">
-        {data.map((book) => renderBook(book))}
-      </div>
+      <div className="space-y-1">{data.map((chapter) => renderChapter(chapter, 0))}</div>
     </div>
   );
 }

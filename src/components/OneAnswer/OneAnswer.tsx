@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
+import SaTamTagInput from '../molecules/SaTamTagInput/SaTamTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
 import BBoxEditor from '../BBoxEditor/BBoxEditor';
+import ErrorSnackbar from '../Snackbar/ErrorSnackbar';
+import SuccessSnackbar from '../Snackbar/SuccessSnackbar';
 import { AccuracyRate } from '../../types/accuracyRate';
 import { getSolutionImageUrl } from '../../constants/apiConfig';
 import { Api, type BBox } from '../../api/Api';
@@ -38,18 +41,20 @@ export interface OneAnswerProps {
 
   // 태그 데이터
   motherTongTag?: SelectedTag | null;
+  saTamTag?: SelectedTag | null;
   integratedTag?: SelectedTag | null;
   customTags?: TagWithId[];
   tagsLoading?: boolean;
 
-  // 편집된 이미지 (base64)
-  editedBase64?: string;
+  // 편집된 콘텐츠 여부
+  isEdited?: boolean;
 
   // 편집된 BBox 배열
   editedBBox?: BBox[];
 
   // 이벤트 핸들러
   onMotherTongSelect?: (tag: SelectedTag | null) => void;
+  onSaTamSelect?: (tag: SelectedTag | null) => void;
   onIntegratedSelect?: (tag: SelectedTag | null) => void;
   onCustomTagsChange?: (tags: TagWithId[]) => void;
 }
@@ -64,12 +69,14 @@ function OneAnswer({
   accuracyData,
   accuracyLoading = false,
   motherTongTag = null,
+  saTamTag = null,
   integratedTag = null,
   customTags = [],
   tagsLoading = false,
-  editedBase64,
+  isEdited = false,
   editedBBox,
   onMotherTongSelect = () => {},
+  onSaTamSelect = () => {},
   onIntegratedSelect = () => {},
   onCustomTagsChange = () => {},
 }: OneAnswerProps) {
@@ -77,22 +84,24 @@ function OneAnswer({
   const [showBBoxEditor, setShowBBoxEditor] = useState(false);
   const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
-  const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
+  const [currentIsEdited, setCurrentIsEdited] = useState(isEdited);
   const [currentBBox, setCurrentBBox] = useState<BBox[] | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedFile, setDraggedFile] = useState<File | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // props 변경 시 state 업데이트
   useEffect(() => {
-    setCurrentBase64(editedBase64);
+    setCurrentIsEdited(isEdited);
     setCurrentBBox(editedBBox);
     setImageError(false);
-  }, [answerId, editedBase64, editedBBox]);
+  }, [answerId, isEdited, editedBBox]);
 
   // answerId에서 examId 추출: "경제_고3_2024_03_학평_1_해설" -> "경제_고3_2024_03_학평"
   const examId = answerId.replace(/_\d+_해설$/, '');
@@ -100,9 +109,9 @@ function OneAnswer({
   // answerId에서 subject 추출: "경제_고3_2024_03_학평_1_해설" -> "경제"
   const subject = answerId.split('_')[0];
 
-  // 해설 이미지 URL 생성 (base64가 있으면 우선 사용)
-  const imageUrl = currentBase64
-    ? `data:image/png;base64,${currentBase64}`
+  // 해설 이미지 URL 생성 (편집된 경우 edited-contents CDN, 아니면 기본 CDN)
+  const imageUrl = currentIsEdited
+    ? `https://cdn.y3c.kr/tongkidari/edited-contents/${answerId}.png`
     : getSolutionImageUrl(examId, questionNumber);
 
   // 이미지 클릭 핸들러
@@ -149,34 +158,19 @@ function OneAnswer({
   // BBox 확인 핸들러 (bbox 배열 받음)
   const handleBBoxConfirm = async (file: File, bboxes: BBox[]) => {
     try {
-      // File을 base64로 변환
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          // data:image/png;base64, 부분 제거
-          const base64String = result.split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Supabase에 bboxes 배열과 File 저장 (answerId 사용)
+      await Supabase.EditedContent.upsertBBox(answerId, bboxes, file);
 
-      // Supabase에 bboxes 배열과 base64 저장 (answerId 사용)
-      await Supabase.EditedContent.upsertBBox(answerId, bboxes, base64);
-
-      // 저장 후 즉시 이미지 및 bbox 업데이트
-      setCurrentBase64(base64);
+      // 저장 후 즉시 isEdited 및 bbox 업데이트
+      setCurrentIsEdited(true);
       setCurrentBBox(bboxes);
 
       // Snackbar 표시
       setShowSaveSnackbar(true);
-      setTimeout(() => {
-        setShowSaveSnackbar(false);
-      }, 3000);
     } catch (error) {
-      console.error('Failed to save bbox:', error);
-      alert('BBox 저장에 실패했습니다.');
+      console.error('Save failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : '저장 실패');
+      throw error; // 에러를 BBoxEditor로 전달
     }
   };
 
@@ -201,21 +195,22 @@ function OneAnswer({
       return;
     }
 
+    setIsDeleting(true);
+
     try {
       await Supabase.EditedContent.delete(answerId);
 
       // 삭제 후 원본 이미지 및 bbox로 복원
-      setCurrentBase64(undefined);
+      setCurrentIsEdited(false);
       setCurrentBBox(undefined);
 
       // Snackbar 표시
       setShowDeleteSnackbar(true);
-      setTimeout(() => {
-        setShowDeleteSnackbar(false);
-      }, 3000);
     } catch (error) {
       console.error('Failed to delete edited image:', error);
-      alert('이미지 삭제에 실패했습니다.');
+      setErrorMessage(error instanceof Error ? error.message : '이미지 삭제 실패');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -264,23 +259,11 @@ function OneAnswer({
     if (!draggedFile) return;
 
     try {
-      // File을 base64로 변환
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          const base64String = result.split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(draggedFile);
-      });
+      // Supabase에 File 직접 업로드
+      await Supabase.EditedContent.upsertFileOnly(answerId, draggedFile);
 
-      // Supabase에 base64만 저장
-      await Supabase.EditedContent.upsertBase64Only(answerId, base64);
-
-      // 업로드 후 이미지 업데이트
-      setCurrentBase64(base64);
+      // 업로드 후 isEdited 업데이트
+      setCurrentIsEdited(true);
 
       // 다이얼로그 닫기 및 정리
       setShowUploadDialog(false);
@@ -290,10 +273,11 @@ function OneAnswer({
       setUploadPreviewUrl(null);
       setDraggedFile(null);
 
-      alert('이미지가 업로드되었습니다.');
+      // Snackbar 표시
+      setShowSaveSnackbar(true);
     } catch (error) {
       console.error('Failed to upload image:', error);
-      alert('이미지 업로드에 실패했습니다.');
+      setErrorMessage(error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.');
     }
   };
 
@@ -330,7 +314,7 @@ function OneAnswer({
   return (
     <div
       className={`border-2 rounded-lg p-4 transition-colors ${
-        currentBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
+        currentIsEdited ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
       }`}
     >
       {/* 헤더: 제목과 복사 버튼 */}
@@ -407,6 +391,9 @@ function OneAnswer({
             <div className="text-xs text-gray-500 text-center py-2">태그 정보를 불러오는 중...</div>
           ) : (
             <>
+              {/* 사탐 단원 태그 */}
+              <SaTamTagInput subject={`사회탐구_${subject}`} onSelect={onSaTamSelect} value={saTamTag} />
+
               {/* 마더텅 단원 태그 */}
               <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
 
@@ -430,8 +417,11 @@ function OneAnswer({
         onDrop={mode === 'edit' ? handleDrop : undefined}
         onPaste={mode === 'edit' ? handlePaste : undefined}
       >
-        {!currentBase64 && imageError ? (
-          <div className="flex items-center justify-center h-48 text-gray-500">
+        {!currentIsEdited && imageError ? (
+          <div
+            className={`flex items-center justify-center h-48 text-gray-500 ${mode === 'edit' ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+            onClick={mode === 'edit' ? handleImageClick : undefined}
+          >
             <div className="text-center">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -442,6 +432,7 @@ function OneAnswer({
                 />
               </svg>
               <p className="mt-2 text-sm">이미지를 불러올 수 없습니다</p>
+              {mode === 'edit' && <p className="mt-1 text-xs text-blue-500">클릭하여 이미지 편집</p>}
             </div>
           </div>
         ) : (
@@ -452,8 +443,8 @@ function OneAnswer({
             loading="lazy"
             onClick={mode === 'edit' ? handleImageClick : undefined}
             onError={() => {
-              // base64가 없을 때만 에러 상태 설정
-              if (!currentBase64) {
+              // 편집된 이미지가 아닐 때만 에러 상태 설정
+              if (!currentIsEdited) {
                 setImageError(true);
               }
             }}
@@ -461,7 +452,7 @@ function OneAnswer({
         )}
 
         {/* 편집된 이미지 삭제 버튼 */}
-        {currentBase64 && (
+        {currentIsEdited && (
           <button
             onClick={handleDeleteEditedImage}
             className="absolute bottom-1 right-1 bg-gray-600/40 hover:bg-gray-700/60 text-white rounded-full w-6 h-6 flex items-center justify-center transition-all shadow-md text-lg leading-none"
@@ -539,26 +530,26 @@ function OneAnswer({
         </div>
       )}
 
-      {/* Save Success Snackbar */}
+      {/* Snackbars */}
       {showSaveSnackbar && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>BBox와 이미지가 저장되었습니다</span>
-          </div>
-        </div>
+        <SuccessSnackbar message="BBox와 이미지가 저장되었습니다" onClose={() => setShowSaveSnackbar(false)} />
       )}
 
-      {/* Delete Success Snackbar */}
       {showDeleteSnackbar && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>편집된 이미지가 삭제되었습니다</span>
+        <SuccessSnackbar message="편집된 이미지가 삭제되었습니다" onClose={() => setShowDeleteSnackbar(false)} />
+      )}
+
+      {errorMessage && <ErrorSnackbar message={errorMessage} onClose={() => setErrorMessage(null)} />}
+
+      {/* Deleting Overlay */}
+      {isDeleting && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-2xl">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">이미지 삭제 중...</p>
+              <p className="text-sm text-gray-600 mt-1">S3 삭제 및 캐시 무효화 진행 중</p>
+            </div>
           </div>
         </div>
       )}
