@@ -135,19 +135,22 @@ function CategoryPage() {
     navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
   };
 
-  // 첫 번째 과목 자동 선택 또는 유효하지 않은 과목 리셋
+  // 기본 과목 선택 또는 유효하지 않은 과목 리셋
   useEffect(() => {
     if (subjects.length > 0) {
-      // 선택된 과목이 없거나, 현재 과목 목록에 없으면 첫 번째 과목으로 설정
+      // 선택된 과목이 없거나, 현재 과목 목록에 없으면 기본 과목으로 설정
       const isValidSubject = selectedSubject && (subjects as readonly string[]).includes(selectedSubject);
 
       if (!isValidSubject) {
-        const firstSubject = subjects[0] as string;
-        setSelectedSubject(firstSubject);
+        // '사회문화'가 있으면 기본 선택, 없으면 첫 번째 과목
+        const defaultSubject = (subjects as readonly string[]).includes('사회문화')
+          ? '사회문화'
+          : (subjects[0] as string);
+        setSelectedSubject(defaultSubject);
 
         // URL에 subject 파라미터 추가
         const newParams = new URLSearchParams(searchParams);
-        newParams.set('subject', firstSubject);
+        newParams.set('subject', defaultSubject);
         navigate(`/category/${categoryId}?${newParams.toString()}`, { replace: true });
       }
     }
