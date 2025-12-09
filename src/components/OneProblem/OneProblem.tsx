@@ -197,7 +197,6 @@ function OneProblem({
     ? `https://cdn.y3c.kr/tongkidari/edited-contents/${problemId}.png`
     : getQuestionImageUrl(examId, questionNumber);
 
-  console.log(imageUrl);
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {
     // currentBBox가 있으면 CSV 조회 없이 바로 에디터 열기
@@ -208,23 +207,19 @@ function OneProblem({
 
     // currentBBox가 없으면 CSV에서 메타데이터 가져오기
     setLoadingMetadata(true);
+    const defaultBBox: BBox[] = [{ page: 0, x0: 50, y0: 50, x1: 100, y1: 100 }];
+
     try {
       const metadata = await Api.Meta.fetchProblemMetadata(problemId);
-      if (metadata) {
-        // bbox가 비어있으면 1번 페이지 기본값 설정
-        if (metadata.bbox.length === 0) {
-          metadata.bbox = [{ page: 0, x0: 50, y0: 50, x1: 100, y1: 100 }];
-        }
-        setProblemMetadata(metadata);
-        setShowBBoxEditor(true);
-      } else {
-        alert('문제 메타데이터를 찾을 수 없습니다.');
-      }
+      // 메타데이터가 있고 bbox도 있으면 사용, 아니면 기본값
+      const bbox = metadata?.bbox?.length ? metadata.bbox : defaultBBox;
+      setProblemMetadata({ ...metadata, bbox } as ProblemMetadata);
     } catch (error) {
       console.error('Failed to fetch problem metadata:', error);
-      alert('문제 메타데이터를 불러오는데 실패했습니다.');
+      setProblemMetadata({ bbox: defaultBBox } as ProblemMetadata);
     } finally {
       setLoadingMetadata(false);
+      setShowBBoxEditor(true);
     }
   };
 
@@ -580,7 +575,9 @@ function OneProblem({
       >
         {imageError ? (
           <div
-            className={`flex items-center justify-center h-48 text-gray-500 ${mode === 'edit' ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+            className={`flex items-center justify-center h-48 text-gray-500 ${
+              mode === 'edit' ? 'cursor-pointer hover:bg-gray-200' : ''
+            }`}
             onClick={mode === 'edit' ? handleImageClick : undefined}
           >
             <div className="text-center">
