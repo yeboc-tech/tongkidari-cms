@@ -503,21 +503,26 @@ export const Supabase = {
     }
 
     // JSONB 형식으로 변환 (각 필터의 조건 포함)
-    const filtersJson = filters.map((f) => ({
-      type: f.type,
-      tag_ids: f.tagIds,
-      and_problem_filter_items:
-        f.andProblemFilterItems && f.andProblemFilterItems.length > 0
-          ? f.andProblemFilterItems.map((andItem) => ({
-              type: andItem.type,
-              tag_ids: andItem.tagIds,
-            }))
-          : undefined,
-      grades: f.grades && f.grades.length > 0 ? f.grades : undefined,
-      years: f.years && f.years.length > 0 ? f.years : undefined,
-      accuracy_min: f.accuracyMin ?? undefined,
-      accuracy_max: f.accuracyMax ?? undefined,
-    }));
+    const filtersJson = filters.map((f) => {
+      // accuracy_min이 0이고 accuracy_max가 100이면 필드 제거 (전체 범위이므로 필터링 불필요)
+      const shouldIncludeAccuracy = !(f.accuracyMin === 0 && f.accuracyMax === 100);
+
+      return {
+        type: f.type,
+        tag_ids: f.tagIds,
+        and_problem_filter_items:
+          f.andProblemFilterItems && f.andProblemFilterItems.length > 0
+            ? f.andProblemFilterItems.map((andItem) => ({
+                type: andItem.type,
+                tag_ids: andItem.tagIds,
+              }))
+            : undefined,
+        grades: f.grades && f.grades.length > 0 ? f.grades : undefined,
+        years: f.years && f.years.length > 0 ? f.years : undefined,
+        accuracy_min: shouldIncludeAccuracy ? (f.accuracyMin ?? undefined) : undefined,
+        accuracy_max: shouldIncludeAccuracy ? (f.accuracyMax ?? undefined) : undefined,
+      };
+    });
 
     const { data, error } = await supabase.rpc('search_problems_by_filter_items', {
       p_filters: filtersJson,
