@@ -63,6 +63,7 @@ export interface ProblemInfo {
   questionNumber: number;
   accuracyData?: AccuracyRate;
   motherTongTag: SelectedTag | null;
+  saTamTag: SelectedTag | null;
   integratedTag: SelectedTag | null;
   customTags: TagWithId[];
   hasEditedProblem?: boolean;
@@ -578,6 +579,7 @@ export const Supabase = {
 
       // 태그 타입별로 분류
       let motherTongTag: SelectedTag | null = null;
+      let saTamTag: SelectedTag | null = null;
       let integratedTag: SelectedTag | null = null;
       const customTags: TagWithId[] = [];
 
@@ -586,6 +588,12 @@ export const Supabase = {
         const tag = tags[type];
         if (type === PROBLEM_TAG_TYPES.MOTHER) {
           motherTongTag = {
+            tagIds: tag.tag_ids,
+            tagLabels: tag.tag_labels,
+          };
+        } else if (type.startsWith('단원_사회탐구_')) {
+          // 사탐 단원 태그 (단원_사회탐구_경제, 단원_사회탐구_사회문화 등)
+          saTamTag = {
             tagIds: tag.tag_ids,
             tagLabels: tag.tag_labels,
           };
@@ -610,6 +618,7 @@ export const Supabase = {
         questionNumber,
         accuracyData,
         motherTongTag,
+        saTamTag,
         integratedTag,
         customTags,
       };

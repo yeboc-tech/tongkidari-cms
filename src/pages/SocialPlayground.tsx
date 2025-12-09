@@ -255,7 +255,7 @@ function SocialPlayground() {
                     accuracyData={problemInfo.accuracyData}
                     accuracyLoading={false}
                     motherTongTag={problemInfo.motherTongTag}
-                    saTamTag={null}
+                    saTamTag={problemInfo.saTamTag}
                     integratedTag={problemInfo.integratedTag}
                     customTags={problemInfo.customTags}
                     tagsLoading={false}
@@ -335,7 +335,7 @@ function SocialPlayground() {
                     accuracyData={searchResults[currentViewIndex].accuracyData}
                     accuracyLoading={false}
                     motherTongTag={searchResults[currentViewIndex].motherTongTag}
-                    saTamTag={null}
+                    saTamTag={searchResults[currentViewIndex].saTamTag}
                     integratedTag={searchResults[currentViewIndex].integratedTag}
                     customTags={searchResults[currentViewIndex].customTags}
                     tagsLoading={false}
