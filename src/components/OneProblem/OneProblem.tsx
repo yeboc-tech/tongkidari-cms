@@ -391,7 +391,6 @@ function OneProblem({
           <>
             {/* Edit 모드: 태그 입력기 */}
             <SaTamTagInput subject={`사회탐구_${subject}`} onSelect={onSaTamSelect} value={saTamTag} />
-            <MotherTongTagInput subject={subject} onSelect={onMotherTongSelect} value={motherTongTag} />
             <DetailTongsaTagInput onSelect={onIntegratedSelect} value={integratedTag} />
             <CustomTagInput
               onTagsChange={onCustomTagsChange}
@@ -416,23 +415,6 @@ function OneProblem({
                   </span>
                 ) : (
                   <span className="text-sm text-gray-400">사탐 단원 태그가 없습니다</span>
-                )}
-              </div>
-            </div>
-
-            {/* 마더텅 단원 태그 */}
-            <div>
-              <label className="text-xs text-gray-600 block mb-1.5">MT {subject} 단원 태그</label>
-              <div className="flex flex-wrap gap-2">
-                {motherTongTag && motherTongTag.tagLabels.length > 0 ? (
-                  <span
-                    className="px-3 py-1 rounded-full text-sm font-medium"
-                    style={{ backgroundColor: '#fce7ec', color: '#e34f6e' }}
-                  >
-                    {motherTongTag.tagLabels.join(' > ')}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-400">MT 단원 태그가 없습니다</span>
                 )}
               </div>
             </div>
