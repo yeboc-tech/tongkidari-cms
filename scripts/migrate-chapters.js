@@ -77,9 +77,31 @@ function normalizeStrings(obj) {
 }
 
 /**
+ * Check if key already exists in Supabase
+ */
+async function checkKeyExists(key) {
+  const { data, error } = await supabase.from('ssot').select('key').eq('key', key).single();
+
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116: Row not found
+    console.error(`Error checking key ${key}:`, error);
+    throw error;
+  }
+
+  return !!data;
+}
+
+/**
  * Upload chapter data to Supabase
  */
 async function uploadChapter(key, value) {
+  // Check if key already exists
+  const exists = await checkKeyExists(key);
+  if (exists) {
+    console.log(`⏭️  Skipping ${key} (already exists)`);
+    return { skipped: true };
+  }
+
   console.log(`Uploading ${key}...`);
 
   // value 전체를 NFC로 정규화
@@ -124,6 +146,7 @@ async function processDirectory(dirName) {
     console.log(`Found ${tsFiles.length} TypeScript files`);
 
     let successCount = 0;
+    let skipCount = 0;
     let failCount = 0;
 
     for (const file of tsFiles) {
@@ -141,9 +164,13 @@ async function processDirectory(dirName) {
         }
 
         // Upload to Supabase
-        await uploadChapter(key, chapterData);
+        const result = await uploadChapter(key, chapterData);
 
-        successCount++;
+        if (result?.skipped) {
+          skipCount++;
+        } else {
+          successCount++;
+        }
       } catch (error) {
         console.error(`❌ Failed to process ${file}:`, error.message);
         failCount++;
@@ -152,9 +179,10 @@ async function processDirectory(dirName) {
 
     console.log(`\nDirectory ${dirName} complete:`);
     console.log(`  ✅ Success: ${successCount}`);
+    console.log(`  ⏭️  Skipped: ${skipCount}`);
     console.log(`  ❌ Failed: ${failCount}`);
 
-    return { successCount, failCount };
+    return { successCount, skipCount, failCount };
   } catch (error) {
     console.error(`Error reading directory ${dirName}:`, error);
     throw error;
@@ -170,12 +198,14 @@ async function migrate() {
   console.log('='.repeat(60));
 
   let totalSuccess = 0;
+  let totalSkip = 0;
   let totalFail = 0;
 
   for (const dir of DIRECTORIES) {
     try {
       const result = await processDirectory(dir.path);
       totalSuccess += result.successCount;
+      totalSkip += result.skipCount;
       totalFail += result.failCount;
     } catch (error) {
       console.error(`Failed to process directory ${dir.path}:`, error);
@@ -187,6 +217,7 @@ async function migrate() {
   console.log('Migration Summary');
   console.log('='.repeat(60));
   console.log(`Total Success: ${totalSuccess}`);
+  console.log(`Total Skipped: ${totalSkip}`);
   console.log(`Total Failed: ${totalFail}`);
   console.log('='.repeat(60));
 }
