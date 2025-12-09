@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import MotherTongTagInput from '../molecules/MotherTongTagInput';
 import DetailTongsaTagInput from '../molecules/DetailTongsaTagInput';
 import SaTamTagInput from '../molecules/SaTamTagInput/SaTamTagInput';
 import CustomTagInput from '../tag-input/CustomTagInput/CustomTagInput';
@@ -67,7 +66,7 @@ function OneProblem({
   problemId,
   accuracyData,
   accuracyLoading,
-  motherTongTag: motherTongTag,
+  motherTongTag: _motherTongTag,
   saTamTag,
   integratedTag,
   customTags,
@@ -75,7 +74,7 @@ function OneProblem({
   mode = 'edit',
   isEdited = false,
   editedBBox,
-  onMotherTongSelect: onMotherTongSelect,
+  onMotherTongSelect: _onMotherTongSelect,
   onSaTamSelect,
   onIntegratedSelect,
   onCustomTagsChange,
