@@ -217,6 +217,39 @@ export const Supabase = {
 
       return data || [];
     },
+
+    /**
+     * 정확도 데이터 저장 또는 업데이트
+     * @param params - 저장할 정확도 정보
+     */
+    async upsert(params: {
+      problem_id: string;
+      accuracy_rate: number;
+      difficulty: string;
+      score: number;
+      correct_answer: string;
+    }): Promise<void> {
+      const { error } = await supabase.from('accuracy_rate').upsert(
+        {
+          problem_id: params.problem_id,
+          accuracy_rate: params.accuracy_rate,
+          difficulty: params.difficulty,
+          score: params.score,
+          correct_answer: params.correct_answer,
+          selection_rates: {},
+          is_user_edited: true,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'problem_id',
+        },
+      );
+
+      if (error) {
+        console.error('Error upserting accuracy rate:', error);
+        throw error;
+      }
+    },
   },
 
   /**

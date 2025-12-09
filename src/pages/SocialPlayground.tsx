@@ -16,16 +16,20 @@ type SubjectType = (typeof SUBJECTS.사회)['2015교육과정'][number];
 function SocialPlayground() {
   useAuth(); // 인증 체크
 
-  // 첫 번째 사용 가능한 과목을 기본값으로 설정
-  const getFirstAvailableSubject = (): SubjectType => {
-    const availableSubject = SUBJECTS.사회['2015교육과정'].find((subject) =>
+  // 사회문화를 기본값으로, 없으면 첫 번째 사용 가능한 과목
+  const getDefaultSubject = (): SubjectType => {
+    const subjects = SUBJECTS.사회['2015교육과정'];
+    if ((subjects as readonly string[]).includes('사회문화')) {
+      return '사회문화' as SubjectType;
+    }
+    const availableSubject = subjects.find((subject) =>
       마더텅_단원_태그.some((book) => book.id === subject),
     );
-    return (availableSubject || SUBJECTS.사회['2015교육과정'][0]) as SubjectType;
+    return (availableSubject || subjects[0]) as SubjectType;
   };
 
   const [categoryType, setCategoryType] = useState<CategoryType>('사회탐구');
-  const [selectedSubject, setSelectedSubject] = useState<SubjectType>(getFirstAvailableSubject());
+  const [selectedSubject, setSelectedSubject] = useState<SubjectType>(getDefaultSubject());
   const [selectedYears, setSelectedYears] = useState<Set<string>>(
     new Set(['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015', '2014', '2013']),
   );

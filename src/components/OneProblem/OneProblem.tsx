@@ -56,6 +56,7 @@ export interface OneProblemProps {
   onSaTamSelect: (tag: SelectedTag | null) => void;
   onIntegratedSelect: (tag: SelectedTag | null) => void;
   onCustomTagsChange: (tags: TagWithId[]) => void;
+  onAccuracyUpdate?: (data: AccuracyRate) => void;
 }
 
 // ========== Component ==========
@@ -78,6 +79,7 @@ function OneProblem({
   onSaTamSelect,
   onIntegratedSelect,
   onCustomTagsChange,
+  onAccuracyUpdate,
 }: OneProblemProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [showBBoxEditor, setShowBBoxEditor] = useState(false);
@@ -95,12 +97,95 @@ function OneProblem({
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // 정확도 입력 다이얼로그 상태
+  const [showAccuracyDialog, setShowAccuracyDialog] = useState(false);
+  const [currentAccuracyData, setCurrentAccuracyData] = useState<AccuracyRate | undefined>(accuracyData);
+  const [accuracyForm, setAccuracyForm] = useState({
+    accuracy_rate: '',
+    difficulty: '',
+    score: '',
+    correct_answer: '',
+  });
+  const [isSavingAccuracy, setIsSavingAccuracy] = useState(false);
+
   // props 변경 시 state 업데이트
   useEffect(() => {
     setCurrentIsEdited(isEdited);
     setCurrentBBox(editedBBox);
     setImageError(false);
   }, [problemId, isEdited, editedBBox]);
+
+  // accuracyData props 변경 시 state 업데이트
+  useEffect(() => {
+    setCurrentAccuracyData(accuracyData);
+  }, [accuracyData]);
+
+  // 정확도 입력 다이얼로그 열기
+  const handleOpenAccuracyDialog = () => {
+    // 기존 데이터가 있으면 폼에 채우기
+    if (currentAccuracyData) {
+      setAccuracyForm({
+        accuracy_rate: currentAccuracyData.accuracy_rate.toString(),
+        difficulty: currentAccuracyData.difficulty,
+        score: currentAccuracyData.score.toString(),
+        correct_answer: currentAccuracyData.correct_answer,
+      });
+    } else {
+      setAccuracyForm({
+        accuracy_rate: '',
+        difficulty: '',
+        score: '',
+        correct_answer: '',
+      });
+    }
+    setShowAccuracyDialog(true);
+  };
+
+  // 정확도 저장 핸들러
+  const handleSaveAccuracy = async () => {
+    // 유효성 검사 (정답률만 필수)
+    const rate = parseFloat(accuracyForm.accuracy_rate);
+    const score = accuracyForm.score ? parseInt(accuracyForm.score, 10) : 0;
+
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      setErrorMessage('정답률은 0~100 사이의 숫자여야 합니다.');
+      return;
+    }
+
+    setIsSavingAccuracy(true);
+    try {
+      await Supabase.AccuracyRates.upsert({
+        problem_id: problemId,
+        accuracy_rate: rate,
+        difficulty: accuracyForm.difficulty.trim() || '-',
+        score: score,
+        correct_answer: accuracyForm.correct_answer.trim() || '-',
+      });
+
+      // 저장 성공 후 상태 업데이트
+      const newAccuracyData: AccuracyRate = {
+        problem_id: problemId,
+        accuracy_rate: rate,
+        difficulty: accuracyForm.difficulty.trim() || '-',
+        score: score,
+        correct_answer: accuracyForm.correct_answer.trim() || '-',
+        selection_rates: currentAccuracyData?.selection_rates || {},
+        is_user_edited: true,
+        created_at: currentAccuracyData?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      setCurrentAccuracyData(newAccuracyData);
+      onAccuracyUpdate?.(newAccuracyData);
+      setShowAccuracyDialog(false);
+      setShowSaveSnackbar(true);
+    } catch (error) {
+      console.error('Failed to save accuracy:', error);
+      setErrorMessage(error instanceof Error ? error.message : '저장에 실패했습니다.');
+    } finally {
+      setIsSavingAccuracy(false);
+    }
+  };
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');
@@ -358,28 +443,54 @@ function OneProblem({
       </div>
 
       {/* 정확도 정보 */}
-      {accuracyData && (
-        <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
+      {currentAccuracyData ? (
+        <div
+          className="mb-3 grid grid-cols-4 gap-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleOpenAccuracyDialog}
+          title="클릭하여 수정"
+        >
           <div className="bg-blue-50 px-2 py-1 rounded">
             <span className="text-gray-600">정답률</span>
-            <p className="font-semibold text-blue-700">{accuracyData.accuracy_rate}%</p>
+            <p className="font-semibold text-blue-700">{currentAccuracyData.accuracy_rate}%</p>
           </div>
           <div className="bg-purple-50 px-2 py-1 rounded">
             <span className="text-gray-600">난이도</span>
-            <p className="font-semibold text-purple-700">{accuracyData.difficulty}</p>
+            <p className="font-semibold text-purple-700">{currentAccuracyData.difficulty}</p>
           </div>
           <div className="bg-green-50 px-2 py-1 rounded">
             <span className="text-gray-600">점수</span>
-            <p className="font-semibold text-green-700">{accuracyData.score}점</p>
+            <p className="font-semibold text-green-700">{currentAccuracyData.score}점</p>
           </div>
           <div className="bg-orange-50 px-2 py-1 rounded">
             <span className="text-gray-600">정답</span>
-            <p className="font-semibold text-orange-700">{accuracyData.correct_answer}</p>
+            <p className="font-semibold text-orange-700">{currentAccuracyData.correct_answer}</p>
           </div>
         </div>
-      )}
+      ) : !accuracyLoading ? (
+        <div
+          className="mb-3 grid grid-cols-4 gap-2 text-xs cursor-pointer hover:bg-gray-100 transition-colors"
+          onClick={handleOpenAccuracyDialog}
+        >
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">정답률</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">난이도</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">점수</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+          <div className="bg-gray-50 px-2 py-1 rounded border border-dashed border-gray-300">
+            <span className="text-gray-400">정답</span>
+            <p className="font-semibold text-gray-400">-</p>
+          </div>
+        </div>
+      ) : null}
 
-      {accuracyLoading && !accuracyData && (
+      {accuracyLoading && !currentAccuracyData && (
         <div className="mb-3 text-xs text-gray-500">정확도 정보를 불러오는 중...</div>
       )}
 
@@ -599,6 +710,82 @@ function OneProblem({
             <div className="text-center">
               <p className="text-lg font-semibold text-gray-900">이미지 삭제 중...</p>
               <p className="text-sm text-gray-600 mt-1">S3 삭제 및 캐시 무효화 진행 중</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 정확도 입력 다이얼로그 */}
+      {showAccuracyDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-4">정확도 정보 입력</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">정답률 (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={accuracyForm.accuracy_rate}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, accuracy_rate: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 75.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">난이도</label>
+                  <select
+                    value={accuracyForm.difficulty}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, difficulty: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="상">상</option>
+                    <option value="중">중</option>
+                    <option value="하">하</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">점수</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={accuracyForm.score}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, score: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">정답</label>
+                  <input
+                    type="text"
+                    value={accuracyForm.correct_answer}
+                    onChange={(e) => setAccuracyForm({ ...accuracyForm, correct_answer: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: 3"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  onClick={() => setShowAccuracyDialog(false)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                  disabled={isSavingAccuracy}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveAccuracy}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  disabled={isSavingAccuracy}
+                >
+                  {isSavingAccuracy ? '저장 중...' : '저장'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
