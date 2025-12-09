@@ -255,13 +255,15 @@ function SocialPlayground() {
                     accuracyData={problemInfo.accuracyData}
                     accuracyLoading={false}
                     motherTongTag={problemInfo.motherTongTag}
+                    saTamTag={null}
                     integratedTag={problemInfo.integratedTag}
                     customTags={problemInfo.customTags}
                     tagsLoading={false}
-                    editedBase64={problemInfo.editedBase64}
+                    isEdited={problemInfo.hasEditedProblem}
                     editedBBox={problemInfo.editedBBox}
                     mode="view"
                     onMotherTongSelect={() => {}}
+                    onSaTamSelect={() => {}}
                     onIntegratedSelect={() => {}}
                     onCustomTagsChange={() => {}}
                   />
@@ -333,13 +335,15 @@ function SocialPlayground() {
                     accuracyData={searchResults[currentViewIndex].accuracyData}
                     accuracyLoading={false}
                     motherTongTag={searchResults[currentViewIndex].motherTongTag}
+                    saTamTag={null}
                     integratedTag={searchResults[currentViewIndex].integratedTag}
                     customTags={searchResults[currentViewIndex].customTags}
                     tagsLoading={false}
-                    editedBase64={searchResults[currentViewIndex].editedBase64}
+                    isEdited={searchResults[currentViewIndex].hasEditedProblem}
                     editedBBox={searchResults[currentViewIndex].editedBBox}
                     mode="view"
                     onMotherTongSelect={() => {}}
+                    onSaTamSelect={() => {}}
                     onIntegratedSelect={() => {}}
                     onCustomTagsChange={() => {}}
                   />
@@ -352,7 +356,7 @@ function SocialPlayground() {
                     questionNumber={searchResults[currentViewIndex].questionNumber}
                     title={`답안 ${searchResults[currentViewIndex].questionNumber}`}
                     answerId={searchResults[currentViewIndex].problemId.replace('_문제', '_해설')}
-                    editedBase64={searchResults[currentViewIndex].answerEditedBase64}
+                    isEdited={searchResults[currentViewIndex].hasEditedAnswer}
                     editedBBox={searchResults[currentViewIndex].answerEditedBBox}
                     mode="view"
                   />

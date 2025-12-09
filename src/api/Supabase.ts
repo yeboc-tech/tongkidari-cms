@@ -14,7 +14,6 @@ import { type ProblemFilterItem } from '../types/ProblemFilterItem';
 export interface EditedContent {
   resource_id: string;
   json: any;
-  base64: string;
   created_at: string;
   updated_at: string;
 }
@@ -224,6 +223,25 @@ export const Supabase = {
    */
   EditedContent: {
     /**
+     * File을 base64로 변환하는 헬퍼 함수
+     * @param file - 변환할 File 객체
+     * @returns base64 문자열 (data:... 접두사 제외)
+     */
+    async fileToBase64(file: File): Promise<string> {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // data:image/png;base64, 부분 제거
+          const base64String = result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    },
+
+    /**
      * S3에 이미지 업로드
      * @param resourceId - 리소스 ID
      * @param base64 - base64 이미지 데이터
@@ -273,17 +291,19 @@ export const Supabase = {
     },
 
     /**
-     * 편집된 콘텐츠 저장 또는 업데이트
+     * 편집된 콘텐츠 저장 또는 업데이트 (BBox와 파일 함께 저장)
      * @param resourceId - 리소스 ID (문제 ID)
      * @param bbox - BBox 데이터 배열
-     * @param base64 - 크롭된 이미지의 base64 문자열
+     * @param file - 크롭된 이미지 File 객체
      */
-    async upsertBBox(resourceId: string, bbox: BBox[], base64: string): Promise<void> {
+    async upsertBBox(resourceId: string, bbox: BBox[], file: File): Promise<void> {
+      // File을 base64로 변환
+      const base64 = await this.fileToBase64(file);
+
       const { error } = await supabase.from('edited_contents').upsert(
         {
           resource_id: resourceId,
           json: bbox,
-          base64,
           updated_at: new Date().toISOString(),
         },
         {
@@ -296,21 +316,23 @@ export const Supabase = {
         throw error;
       }
 
-      // S3에 업로드 (비동기, 실패해도 계속 진행)
+      // S3에 업로드
       await this.uploadToS3(resourceId, base64);
     },
 
     /**
-     * base64 이미지만 저장 (json은 빈 객체로)
+     * 파일만 저장 (json은 빈 객체로, S3에 업로드)
      * @param resourceId - 리소스 ID
-     * @param base64 - 이미지의 base64 문자열
+     * @param file - 이미지 File 객체
      */
-    async upsertBase64Only(resourceId: string, base64: string): Promise<void> {
+    async upsertFileOnly(resourceId: string, file: File): Promise<void> {
+      // File을 base64로 변환
+      const base64 = await this.fileToBase64(file);
+
       const { error } = await supabase.from('edited_contents').upsert(
         {
           resource_id: resourceId,
           json: {},
-          base64,
           updated_at: new Date().toISOString(),
         },
         {
@@ -319,11 +341,11 @@ export const Supabase = {
       );
 
       if (error) {
-        console.error('Error upserting base64 content:', error);
+        console.error('Error upserting file content:', error);
         throw error;
       }
 
-      // S3에 업로드 (비동기, 실패해도 계속 진행)
+      // S3에 업로드
       await this.uploadToS3(resourceId, base64);
     },
 

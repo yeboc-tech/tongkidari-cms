@@ -33,12 +33,10 @@ function ExamPage() {
   const [customTagsMap, setCustomTagsMap] = useState<Map<number, TagWithId[]>>(new Map());
   const [tagsLoading, setTagsLoading] = useState(true);
 
-  // 편집된 콘텐츠 상태 (문제 ID별 base64와 bbox 맵)
-  const [editedProblemBase64Map, setEditedProblemBase64Map] = useState<Map<string, string>>(new Map());
+  // 편집된 콘텐츠 상태 (문제/해설 ID별 편집 여부와 bbox 맵)
+  const [isEditedProblemMap, setIsEditedProblemMap] = useState<Map<string, boolean>>(new Map());
   const [editedProblemBBoxMap, setEditedProblemBBoxMap] = useState<Map<string, BBox[]>>(new Map());
-
-  // 편집된 해설 콘텐츠 상태 (해설 ID별 base64와 bbox 맵)
-  const [editedAnswerBase64Map, setEditedAnswerBase64Map] = useState<Map<string, string>>(new Map());
+  const [isEditedAnswerMap, setIsEditedAnswerMap] = useState<Map<string, boolean>>(new Map());
   const [editedAnswerBBoxMap, setEditedAnswerBBoxMap] = useState<Map<string, BBox[]>>(new Map());
 
   // exam_id 파싱
@@ -247,29 +245,9 @@ function ExamPage() {
           }
         });
 
-        // base64 Map은 CDN URL을 저장하도록 변경
-        const problemBase64Map = new Map<string, string>();
-        const answerBase64Map = new Map<string, string>();
-
-        // 모든 리소스에 대해 CDN URL 생성
-        allResourceIds.forEach((resourceId) => {
-          const isProblem = resourceId.endsWith('_문제');
-          const hasEdited = isProblem
-            ? problemHasEditedMap.has(resourceId)
-            : answerHasEditedMap.has(resourceId);
-
-          const cdnUrl = `https://cdn.y3c.kr/tongkidari/${hasEdited ? 'edited-contents' : 'contents'}/${resourceId}.png`;
-
-          if (isProblem) {
-            problemBase64Map.set(resourceId, cdnUrl);
-          } else {
-            answerBase64Map.set(resourceId, cdnUrl);
-          }
-        });
-
-        setEditedProblemBase64Map(problemBase64Map);
+        setIsEditedProblemMap(problemHasEditedMap);
         setEditedProblemBBoxMap(problemBBoxMap);
-        setEditedAnswerBase64Map(answerBase64Map);
+        setIsEditedAnswerMap(answerHasEditedMap);
         setEditedAnswerBBoxMap(answerBBoxMap);
       } catch (error) {
         console.error('Error fetching edited contents:', error);
@@ -467,13 +445,13 @@ function ExamPage() {
 
             // OneProblem에만 전달되는 편집 관련 props
             const problemEditProps = {
-              editedBase64: editedProblemBase64Map.get(problemId),
+              isEdited: isEditedProblemMap.get(problemId) ?? false,
               editedBBox: editedProblemBBoxMap.get(problemId),
             };
 
             // OneAnswer에만 전달되는 편집 관련 props
             const answerEditProps = {
-              editedBase64: editedAnswerBase64Map.get(answerId),
+              isEdited: isEditedAnswerMap.get(answerId) ?? false,
               editedBBox: editedAnswerBBoxMap.get(answerId),
             };
 

@@ -46,8 +46,8 @@ export interface OneProblemProps {
   // 모드 ('edit' | 'view')
   mode?: 'edit' | 'view';
 
-  // 편집된 이미지 (base64)
-  editedBase64?: string;
+  // 편집된 콘텐츠 여부
+  isEdited?: boolean;
   // 편집된 BBox 배열
   editedBBox?: BBox[];
 
@@ -72,7 +72,7 @@ function OneProblem({
   customTags,
   tagsLoading,
   mode = 'edit',
-  editedBase64,
+  isEdited = false,
   editedBBox,
   onMotherTongSelect: onMotherTongSelect,
   onSaTamSelect,
@@ -83,7 +83,7 @@ function OneProblem({
   const [showBBoxEditor, setShowBBoxEditor] = useState(false);
   const [problemMetadata, setProblemMetadata] = useState<ProblemMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
-  const [currentBase64, setCurrentBase64] = useState<string | undefined>(editedBase64);
+  const [currentIsEdited, setCurrentIsEdited] = useState(isEdited);
   const [currentBBox, setCurrentBBox] = useState<BBox[] | undefined>(editedBBox);
   const [showDeleteSnackbar, setShowDeleteSnackbar] = useState(false);
   const [showSaveSnackbar, setShowSaveSnackbar] = useState(false);
@@ -97,10 +97,10 @@ function OneProblem({
 
   // props 변경 시 state 업데이트
   useEffect(() => {
-    setCurrentBase64(editedBase64);
+    setCurrentIsEdited(isEdited);
     setCurrentBBox(editedBBox);
     setImageError(false);
-  }, [problemId, editedBase64, editedBBox]);
+  }, [problemId, isEdited, editedBBox]);
 
   // problemId에서 examId 추출: "경제_고3_2024_03_학평_1_문제" -> "경제_고3_2024_03_학평"
   const examId = problemId.replace(/_\d+_문제$/, '');
@@ -108,8 +108,10 @@ function OneProblem({
   // problemId에서 subject 추출: "경제_고3_2024_03_학평_1_문제" -> "경제"
   const subject = problemId.split('_')[0];
 
-  // 문제 이미지 URL 생성 (CDN URL 또는 로컬 URL)
-  const imageUrl = currentBase64 || getQuestionImageUrl(examId, questionNumber);
+  // 문제 이미지 URL 생성 (편집된 이미지가 있으면 edited CDN, 없으면 기본 CDN)
+  const imageUrl = currentIsEdited
+    ? `https://cdn.y3c.kr/tongkidari/edited-contents/${problemId}.png`
+    : getQuestionImageUrl(examId, questionNumber);
 
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {
@@ -150,24 +152,11 @@ function OneProblem({
   // BBox 확인 핸들러 (bbox 배열 받음)
   const handleBBoxConfirm = async (file: File, bboxes: BBox[]) => {
     try {
-      // File을 base64로 변환
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          // data:image/png;base64, 부분 제거
-          const base64String = result.split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Supabase에 bboxes 배열과 file 저장 (S3에 업로드됨)
+      await Supabase.EditedContent.upsertBBox(problemId, bboxes, file);
 
-      // Supabase에 bboxes 배열과 base64 저장
-      await Supabase.EditedContent.upsertBBox(problemId, bboxes, base64);
-
-      // 저장 후 즉시 이미지 및 bbox 업데이트
-      setCurrentBase64(base64);
+      // 저장 후 상태 업데이트
+      setCurrentIsEdited(true);
       setCurrentBBox(bboxes);
 
       // Snackbar 표시
@@ -206,7 +195,7 @@ function OneProblem({
       await Supabase.EditedContent.delete(problemId);
 
       // 삭제 후 원본 이미지 및 bbox로 복원
-      setCurrentBase64(undefined);
+      setCurrentIsEdited(false);
       setCurrentBBox(undefined);
 
       // Snackbar 표시
@@ -268,35 +257,18 @@ function OneProblem({
     if (!draggedFile) return;
 
     try {
-      // File을 base64로 변환
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          const base64String = result.split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(draggedFile);
-      });
+      // Supabase에 file 저장 (S3에 업로드됨)
+      await Supabase.EditedContent.upsertFileOnly(problemId, draggedFile);
 
-      // Supabase에 base64만 저장
-      try {
-        await Supabase.EditedContent.upsertBase64Only(problemId, base64);
+      // 업로드 후 상태 업데이트
+      setCurrentIsEdited(true);
 
-        // 업로드 후 이미지 업데이트
-        setCurrentBase64(base64);
-
-        // 다이얼로그 닫기 및 정리
-        setShowUploadDialog(false);
-        if (uploadPreviewUrl) {
-          URL.revokeObjectURL(uploadPreviewUrl);
-        }
-        setUploadPreviewUrl(null);
-      } catch (error) {
-        console.error('Upload failed:', error);
-        setErrorMessage(error instanceof Error ? error.message : '업로드 실패');
+      // 다이얼로그 닫기 및 정리
+      setShowUploadDialog(false);
+      if (uploadPreviewUrl) {
+        URL.revokeObjectURL(uploadPreviewUrl);
       }
+      setUploadPreviewUrl(null);
       setDraggedFile(null);
 
       // Snackbar 표시
@@ -340,7 +312,7 @@ function OneProblem({
   return (
     <div
       className={`border-2 rounded-lg p-4 transition-colors ${
-        currentBase64 ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
+        currentIsEdited ? 'border-yellow-200 hover:border-yellow-400' : 'border-gray-200 hover:border-blue-500'
       }`}
     >
       {/* 헤더: 제목과 복사 버튼 */}
@@ -513,7 +485,7 @@ function OneProblem({
         onDrop={handleDrop}
         onPaste={mode === 'edit' ? handlePaste : undefined}
       >
-        {!currentBase64 && imageError ? (
+        {imageError ? (
           <div className="flex items-center justify-center h-48 text-gray-500">
             <div className="text-center">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -534,16 +506,11 @@ function OneProblem({
             className={`w-full h-auto transition-opacity ${mode === 'edit' ? 'cursor-pointer hover:opacity-80' : ''}`}
             loading="lazy"
             onClick={mode === 'edit' ? handleImageClick : undefined}
-            onError={() => {
-              // base64가 없을 때만 에러 상태 설정
-              if (!currentBase64) {
-                setImageError(true);
-              }
-            }}
+            onError={() => setImageError(true)}
           />
         )}
         {/* 편집된 이미지 삭제 버튼 */}
-        {currentBase64 && (
+        {currentIsEdited && (
           <button
             onClick={handleDeleteEditedImage}
             className="absolute bottom-1 right-1 bg-gray-600/40 hover:bg-gray-700/60 text-white rounded-full w-6 h-6 flex items-center justify-center transition-all shadow-md text-lg leading-none"
