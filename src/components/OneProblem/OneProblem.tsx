@@ -113,6 +113,7 @@ function OneProblem({
     ? `https://cdn.y3c.kr/tongkidari/edited-contents/${problemId}.png`
     : getQuestionImageUrl(examId, questionNumber);
 
+  console.log(imageUrl);
   // 이미지 클릭 핸들러
   const handleImageClick = async () => {
     // currentBBox가 있으면 CSV 조회 없이 바로 에디터 열기

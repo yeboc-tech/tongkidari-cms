@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { S3 } from 'https://deno.land/x/s3@0.5.0/mod.ts';
 
 const TARGET_BUCKET = 'cdn.y3c.kr';
-const TARGET_DIR = '/tongkidari/edited-content/';
+const TARGET_DIR = '/tongkidari/edited-contents/';
 const TARGET_REGION = 'ap-northeast-2';
 const CLOUDFRONT_DISTRIBUTION_ID = 'E124HBPNT0RV9V';
 
